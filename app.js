@@ -849,8 +849,9 @@ if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner 
     AdManager.showBanner();
 }
 
+
 // ==========================================
-//    EDIT PDF - DRAG & DROP ENABLED
+//    EDIT PDF - PHASE 3 (ADVANCED TOOLS)
 // ==========================================
 
 let editPdfDoc = null;
@@ -865,18 +866,87 @@ const renderCtx = renderCanvas ? renderCanvas.getContext('2d') : null;
 const overlayCanvas = document.getElementById('pdf-overlay-canvas');
 const overlayCtx = overlayCanvas ? overlayCanvas.getContext('2d') : null;
 
-let currentTool = 'none'; // 'text' ya 'whiteout'
+let currentTool = 'none'; // 'text', 'whiteout', 'draw', 'image'
+let editColor = '#000000';
+let editSize = 20;
+
 let isDrawing = false;
 let startX = 0;
 let startY = 0;
+let currentPath = null; // For Freehand Drawing
 
-// DRAG & DROP STATE
 let activeDragIndex = -1;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 
-let pageEdits = {}; 
+let pageEdits = {}; // { 1: [ {type: 'text'...}, {type: 'draw'...} ] }
 
+// --- UI Toggle Helper ---
+function setToolActive(btnId, toolName) {
+    document.querySelectorAll('.edit-toolbar-btn').forEach(b => b.classList.remove('edit-tool-active'));
+    if(btnId) document.getElementById(btnId).classList.add('edit-tool-active');
+    currentTool = toolName;
+}
+
+document.getElementById('edit-color-picker')?.addEventListener('input', (e) => editColor = e.target.value);
+document.getElementById('edit-size-picker')?.addEventListener('input', (e) => editSize = parseInt(e.target.value) || 20);
+
+// --- Toolbar Listeners ---
+document.getElementById('btn-edit-text')?.addEventListener('click', () => setToolActive('btn-edit-text', 'text'));
+document.getElementById('btn-edit-whiteout')?.addEventListener('click', () => setToolActive('btn-edit-whiteout', 'whiteout'));
+document.getElementById('btn-edit-draw')?.addEventListener('click', () => setToolActive('btn-edit-draw', 'draw'));
+document.getElementById('btn-edit-clear')?.addEventListener('click', () => {
+    pageEdits[editPageNum] = [];
+    drawOverlay();
+    showCustomAlert("Page cleared!");
+});
+
+// Image Insert Tool
+document.getElementById('btn-edit-image')?.addEventListener('click', () => {
+    setToolActive('btn-edit-image', 'image');
+    document.getElementById('edit-image-input').click();
+});
+
+document.getElementById('edit-image-input')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file && (file.type === 'image/png' || file.type === 'image/jpeg')) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const dataUrl = event.target.result;
+            const img = new Image();
+            img.onload = function() {
+                // Add to edits array in center of screen
+                if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
+                // Scale image to fit decently
+                let w = img.width;
+                let h = img.height;
+                const maxDim = 200;
+                if(w > maxDim || h > maxDim) {
+                    const ratio = Math.min(maxDim/w, maxDim/h);
+                    w = w * ratio;
+                    h = h * ratio;
+                }
+                pageEdits[editPageNum].push({ 
+                    type: 'image', 
+                    x: overlayCanvas.width/2 - w/2, 
+                    y: overlayCanvas.height/2 - h/2, 
+                    w: w, 
+                    h: h, 
+                    dataUrl: dataUrl,
+                    imgType: file.type,
+                    imgObj: img // caching for fast rendering
+                });
+                drawOverlay();
+                document.getElementById('edit-image-input').value = ""; // Reset input
+            }
+            img.src = dataUrl;
+        }
+        reader.readAsDataURL(file);
+    }
+});
+
+
+// --- PDF Load ---
 document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
@@ -884,21 +954,15 @@ document.getElementById('edit-pdf-input')?.addEventListener('change', function(e
         const fileReader = new FileReader();
         fileReader.onload = function() {
             originalPdfBytes = new Uint8Array(this.result);
-            
             pdfjsLib.getDocument(originalPdfBytes).promise.then(pdf => {
                 editPdfDoc = pdf;
                 editPageNum = 1;
                 pageEdits = {}; 
                 document.getElementById('page-count').textContent = pdf.numPages;
-                
                 document.getElementById('edit-upload-section').style.display = 'none';
                 document.getElementById('edit-workspace').style.display = 'flex';
-                
                 renderEditPage(editPageNum);
-            }).catch(error => {
-                console.error("Error loading PDF:", error);
-                showCustomAlert("Error loading PDF. Please try another file.");
-            });
+            }).catch(error => { showCustomAlert("Error loading PDF."); });
         };
         fileReader.readAsArrayBuffer(file);
     }
@@ -906,19 +970,14 @@ document.getElementById('edit-pdf-input')?.addEventListener('change', function(e
 
 function renderEditPage(num) {
     if (!editPdfDoc) return;
-
     editPdfDoc.getPage(num).then(page => {
         const viewport = page.getViewport({ scale: editScale });
-        
         renderCanvas.height = viewport.height;
         renderCanvas.width = viewport.width;
         overlayCanvas.height = viewport.height;
         overlayCanvas.width = viewport.width;
-        
-        const renderContext = { canvasContext: renderCtx, viewport: viewport };
-        page.render(renderContext);
+        page.render({ canvasContext: renderCtx, viewport: viewport });
         document.getElementById('page-num').textContent = num;
-        
         drawOverlay(); 
     });
 }
@@ -933,11 +992,30 @@ function drawOverlay() {
             overlayCtx.fillStyle = 'white';
             overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
             overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)';
+            overlayCtx.lineWidth = 1;
             overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
         } else if (edit.type === 'text') {
-            overlayCtx.font = "20px Arial";
-            overlayCtx.fillStyle = 'black';
+            overlayCtx.font = `${edit.size}px Arial`;
+            overlayCtx.fillStyle = edit.color;
             overlayCtx.fillText(edit.text, edit.x, edit.y);
+        } else if (edit.type === 'draw') {
+            overlayCtx.strokeStyle = edit.color;
+            overlayCtx.lineWidth = edit.size;
+            overlayCtx.lineCap = 'round';
+            overlayCtx.lineJoin = 'round';
+            overlayCtx.beginPath();
+            if(edit.points.length > 0) {
+                overlayCtx.moveTo(edit.points[0].x, edit.points[0].y);
+                for(let i=1; i<edit.points.length; i++) {
+                    overlayCtx.lineTo(edit.points[i].x, edit.points[i].y);
+                }
+                overlayCtx.stroke();
+            }
+        } else if (edit.type === 'image' && edit.imgObj) {
+            overlayCtx.drawImage(edit.imgObj, edit.x, edit.y, edit.w, edit.h);
+            overlayCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; // Blue border for visibility
+            overlayCtx.lineWidth = 2;
+            overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
         }
     });
 }
@@ -946,84 +1024,73 @@ function getCursorPos(e) {
     const rect = overlayCanvas.getBoundingClientRect();
     const scaleX = overlayCanvas.width / rect.width;
     const scaleY = overlayCanvas.height / rect.height;
-    
     let clientX = e.clientX;
     let clientY = e.clientY;
     if(e.touches && e.touches.length > 0) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
     }
-    
-    return {
-        x: (clientX - rect.left) * scaleX,
-        y: (clientY - rect.top) * scaleY
-    };
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
 }
 
 function startAction(e) {
+    if (currentTool === 'none') return;
     e.preventDefault();
     const pos = getCursorPos(e);
     const edits = pageEdits[editPageNum] || [];
     
-    // 1. Pehle check karo ki kya hum kisi purane text/box par click kar rahe hain (Drag & Drop Logic)
+    // Check Dragging logic FIRST (For Text, Whiteout, Images)
     for (let i = edits.length - 1; i >= 0; i--) {
         const edit = edits[i];
         let isHit = false;
         
         if (edit.type === 'whiteout') {
-            const minX = Math.min(edit.x, edit.x + edit.w);
-            const maxX = Math.max(edit.x, edit.x + edit.w);
-            const minY = Math.min(edit.y, edit.y + edit.h);
-            const maxY = Math.max(edit.y, edit.y + edit.h);
-            
-            if (pos.x >= minX && pos.x <= maxX && pos.y >= minY && pos.y <= maxY) {
-                isHit = true;
-            }
+            if (pos.x >= edit.x && pos.x <= edit.x + edit.w && pos.y >= edit.y && pos.y <= edit.y + edit.h) isHit = true;
+        } else if (edit.type === 'image') {
+            if (pos.x >= edit.x && pos.x <= edit.x + edit.w && pos.y >= edit.y && pos.y <= edit.y + edit.h) isHit = true;
         } else if (edit.type === 'text') {
-            overlayCtx.font = "20px Arial";
+            overlayCtx.font = `${edit.size}px Arial`;
             const textWidth = overlayCtx.measureText(edit.text).width;
-            // Text ka click area thoda bada rakhte hain taaki mobile par touch karna aasan ho
-            if (pos.x >= edit.x - 5 && pos.x <= edit.x + textWidth + 5 && pos.y >= edit.y - 25 && pos.y <= edit.y + 10) {
-                isHit = true;
-            }
+            if (pos.x >= edit.x - 5 && pos.x <= edit.x + textWidth + 5 && pos.y >= edit.y - edit.size && pos.y <= edit.y + 10) isHit = true;
         }
         
-        if (isHit) {
+        if (isHit && currentTool !== 'draw') { // Drawing tool overrides dragging so you can draw over images
             activeDragIndex = i;
             dragOffsetX = pos.x - edit.x;
             dragOffsetY = pos.y - edit.y;
-            
-            // Jo element pakda hai use top par le aao taaki wo doosro ke upar dikhe
             const item = edits.splice(i, 1)[0];
             edits.push(item);
             activeDragIndex = edits.length - 1;
-            
-            return; // Agar drag shuru ho gaya toh naya text ya box mat banao
+            return; 
         }
     }
 
-    // 2. Agar drag nahi ho raha, tab naya tool chalega
-    if (currentTool === 'none') return;
-    
+    // Apply New Tool
     if (currentTool === 'text') {
         const text = prompt("Enter text to add:");
         if (text) {
             if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
-            pageEdits[editPageNum].push({ type: 'text', x: pos.x, y: pos.y, text: text });
+            pageEdits[editPageNum].push({ type: 'text', x: pos.x, y: pos.y, text: text, color: editColor, size: editSize });
             drawOverlay();
         }
     } else if (currentTool === 'whiteout') {
         isDrawing = true;
         startX = pos.x;
         startY = pos.y;
+    } else if (currentTool === 'draw') {
+        isDrawing = true;
+        if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
+        currentPath = { type: 'draw', color: editColor, size: editSize, points: [ {x: pos.x, y: pos.y} ] };
+        pageEdits[editPageNum].push(currentPath);
     }
 }
 
 function moveAction(e) {
+    if (currentTool === 'none') return;
     e.preventDefault();
     const pos = getCursorPos(e);
     
-    // Dragging Logic
+    // Dragging
     if (activeDragIndex !== -1) {
         const edit = pageEdits[editPageNum][activeDragIndex];
         edit.x = pos.x - dragOffsetX;
@@ -1032,56 +1099,50 @@ function moveAction(e) {
         return;
     }
     
-    // Drawing Box Logic
-    if (!isDrawing || currentTool !== 'whiteout') return;
-    
-    drawOverlay(); 
-    overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    overlayCtx.fillRect(startX, startY, pos.x - startX, pos.y - startY);
-    overlayCtx.strokeStyle = 'red';
-    overlayCtx.strokeRect(startX, startY, pos.x - startX, pos.y - startY);
+    if (!isDrawing) return;
+
+    if (currentTool === 'whiteout') {
+        drawOverlay(); 
+        overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        overlayCtx.fillRect(startX, startY, pos.x - startX, pos.y - startY);
+        overlayCtx.strokeStyle = 'red';
+        overlayCtx.lineWidth = 1;
+        overlayCtx.strokeRect(startX, startY, pos.x - startX, pos.y - startY);
+    } else if (currentTool === 'draw') {
+        currentPath.points.push({x: pos.x, y: pos.y});
+        drawOverlay();
+    }
 }
 
 function endAction(e) {
     e.preventDefault();
-    
-    // Dragging Stop Logic
     if (activeDragIndex !== -1) {
         activeDragIndex = -1;
         return;
     }
     
-    // Drawing Box Stop Logic
-    if (!isDrawing || currentTool !== 'whiteout') return;
+    if (!isDrawing) return;
     isDrawing = false;
+    currentPath = null;
     
-    let clientX = e.clientX;
-    let clientY = e.clientY;
-    if(e.type === 'touchend' && e.changedTouches.length > 0) {
-        clientX = e.changedTouches[0].clientX;
-        clientY = e.changedTouches[0].clientY;
+    if (currentTool === 'whiteout') {
+        const pos = getCursorPos(e); // final pos fallback
+        let clientX = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : 0);
+        let clientY = e.clientY || (e.changedTouches ? e.changedTouches[0].clientY : 0);
+        const rect = overlayCanvas.getBoundingClientRect();
+        const scaleX = overlayCanvas.width / rect.width;
+        const scaleY = overlayCanvas.height / rect.height;
+        const endX = (clientX - rect.left) * scaleX;
+        const endY = (clientY - rect.top) * scaleY;
+        
+        const w = endX - startX;
+        const h = endY - startY;
+        if (Math.abs(w) > 5 && Math.abs(h) > 5) {
+            if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
+            pageEdits[editPageNum].push({ type: 'whiteout', x: w < 0 ? endX : startX, y: h < 0 ? endY : startY, w: Math.abs(w), h: Math.abs(h) });
+        }
+        drawOverlay();
     }
-    
-    const rect = overlayCanvas.getBoundingClientRect();
-    const scaleX = overlayCanvas.width / rect.width;
-    const scaleY = overlayCanvas.height / rect.height;
-    const endX = (clientX - rect.left) * scaleX;
-    const endY = (clientY - rect.top) * scaleY;
-    
-    const w = endX - startX;
-    const h = endY - startY;
-    
-    if (Math.abs(w) > 5 && Math.abs(h) > 5) {
-        if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
-        pageEdits[editPageNum].push({ 
-            type: 'whiteout', 
-            x: w < 0 ? endX : startX, 
-            y: h < 0 ? endY : startY, 
-            w: Math.abs(w), 
-            h: Math.abs(h) 
-        });
-    }
-    drawOverlay();
 }
 
 overlayCanvas?.addEventListener('mousedown', startAction);
@@ -1091,39 +1152,23 @@ overlayCanvas?.addEventListener('touchstart', startAction, {passive: false});
 overlayCanvas?.addEventListener('touchmove', moveAction, {passive: false});
 overlayCanvas?.addEventListener('touchend', endAction);
 
-// 4. Toolbar Buttons Logic
-document.getElementById('btn-edit-text')?.addEventListener('click', () => {
-    currentTool = 'text';
-    showCustomAlert("Text Tool Active: PDF par jahan text likhna hai wahan click karein.<br><br>Tip: Aap kisi bhi likhe hue text ko pakad kar move (drag) bhi kar sakte hain!");
-});
+document.getElementById('prev-page')?.addEventListener('click', () => { if (editPageNum > 1) { editPageNum--; renderEditPage(editPageNum); } });
+document.getElementById('next-page')?.addEventListener('click', () => { if (editPageNum < editPdfDoc?.numPages) { editPageNum++; renderEditPage(editPageNum); } });
 
-document.getElementById('btn-edit-whiteout')?.addEventListener('click', () => {
-    currentTool = 'whiteout';
-    showCustomAlert("Eraser Active: PDF par white box banane ke liye ungli/mouse drag karein.<br><br>Tip: Aap banaye hue white box ko pakad kar idhar-udhar khiska bhi sakte hain.");
-});
+// Hex to RGB converter for PDF-lib
+function hexToRgbPdf(hex) {
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 7) {
+        r = parseInt(hex.substring(1, 3), 16) / 255;
+        g = parseInt(hex.substring(3, 5), 16) / 255;
+        b = parseInt(hex.substring(5, 7), 16) / 255;
+    }
+    return rgb(r, g, b);
+}
 
-document.getElementById('btn-edit-clear')?.addEventListener('click', () => {
-    pageEdits[editPageNum] = [];
-    drawOverlay();
-    showCustomAlert("Is page ki saari editing clear ho gayi.");
-});
-
-document.getElementById('prev-page')?.addEventListener('click', () => {
-    if (editPageNum <= 1) return;
-    editPageNum--;
-    renderEditPage(editPageNum);
-});
-
-document.getElementById('next-page')?.addEventListener('click', () => {
-    if (editPageNum >= editPdfDoc?.numPages) return;
-    editPageNum++;
-    renderEditPage(editPageNum);
-});
-
-// 5. Final Save Logic
+// 5. Final Save Logic (Handles Text, Whiteout, Drawings, and Images)
 document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
     if (!originalPdfBytes) return;
-    
     const btn = document.getElementById('btn-edit-save');
     const oldText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -1142,24 +1187,50 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 const pdfY = height - (edit.y / editScale); 
                 
                 if (edit.type === 'whiteout') {
-                    const pdfW = edit.w / editScale;
-                    const pdfH = edit.h / editScale;
                     page.drawRectangle({
-                        x: pdfX,
-                        y: pdfY - pdfH,
-                        width: pdfW,
-                        height: pdfH,
+                        x: pdfX, y: pdfY - (edit.h / editScale),
+                        width: edit.w / editScale, height: edit.h / editScale,
                         color: rgb(1, 1, 1),
                     });
                 } else if (edit.type === 'text') {
                     const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-                    const pdfFontSize = 20 / editScale; 
                     page.drawText(edit.text, {
-                        x: pdfX,
-                        y: pdfY,
-                        size: pdfFontSize,
+                        x: pdfX, y: pdfY,
+                        size: edit.size / editScale,
                         font: helveticaFont,
-                        color: rgb(0, 0, 0),
+                        color: hexToRgbPdf(edit.color),
+                    });
+                } else if (edit.type === 'draw') {
+                    for(let k=0; k < edit.points.length - 1; k++) {
+                        const p1 = edit.points[k];
+                        const p2 = edit.points[k+1];
+                        page.drawLine({
+                            start: { x: p1.x / editScale, y: height - (p1.y / editScale) },
+                            end: { x: p2.x / editScale, y: height - (p2.y / editScale) },
+                            thickness: edit.size / editScale,
+                            color: hexToRgbPdf(edit.color)
+                        });
+                    }
+                } else if (edit.type === 'image') {
+                    // Fetch binary data from DataUrl
+                    const res = await fetch(edit.dataUrl);
+                    const imageBytes = await res.arrayBuffer();
+                    
+                    let pdfImage;
+                    if (edit.imgType === 'image/png') {
+                        pdfImage = await pdfDoc.embedPng(imageBytes);
+                    } else {
+                        pdfImage = await pdfDoc.embedJpg(imageBytes);
+                    }
+                    
+                    const pdfW = edit.w / editScale;
+                    const pdfH = edit.h / editScale;
+                    
+                    page.drawImage(pdfImage, {
+                        x: pdfX,
+                        y: pdfY - pdfH,
+                        width: pdfW,
+                        height: pdfH
                     });
                 }
             }
@@ -1169,8 +1240,7 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
         const outputName = getBaseName(editOriginalFileName) + '_Edited.pdf';
         
         await processAndDownload(savedBytes, outputName, 'application/pdf');
-        showCustomAlert("Success! Edited PDF save ho gayi hai.");
-        
+        showCustomAlert("Success! Edited PDF saved successfully.");
         if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
         
     } catch (error) {
