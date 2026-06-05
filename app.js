@@ -877,16 +877,57 @@ let currentPath = null;
 let activeDragIndex = -1;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
-let hasMovedDuringClick = false; // Issue 2 fix: Track if it was a drag or just a tap
+let hasMovedDuringClick = false; 
+
+// Trash Zone Logic Variables
+let isHoveringTrash = false;
+const trashZone = document.getElementById('drag-trash-zone');
 
 let pageEdits = {}; 
+
+// --- Custom Text Modal Logic ---
+let pendingTextAction = null; 
+
+function openTextModal(initialText = "", actionData) {
+    pendingTextAction = actionData;
+    const modal = document.getElementById('custom-text-modal');
+    const input = document.getElementById('custom-text-input');
+    
+    document.getElementById('text-modal-title').innerText = actionData.type === 'new' ? "Add New Text" : "Edit Text";
+    input.value = initialText;
+    modal.style.display = 'flex';
+    input.focus();
+}
+
+document.getElementById('btn-text-cancel')?.addEventListener('click', () => {
+    document.getElementById('custom-text-modal').style.display = 'none';
+    pendingTextAction = null;
+});
+
+document.getElementById('btn-text-save')?.addEventListener('click', () => {
+    const val = document.getElementById('custom-text-input').value;
+    if(val && val.trim() !== '' && pendingTextAction) {
+        if(pendingTextAction.type === 'new') {
+            if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
+            pageEdits[editPageNum].push({ type: 'text', x: pendingTextAction.pos.x, y: pendingTextAction.pos.y, text: val, color: editColor, size: editSize });
+        } else if(pendingTextAction.type === 'edit') {
+            const edit = pageEdits[editPageNum][pendingTextAction.index];
+            edit.text = val;
+            edit.color = editColor;
+            edit.size = editSize;
+        }
+        drawOverlay();
+    }
+    document.getElementById('custom-text-modal').style.display = 'none';
+    pendingTextAction = null;
+});
 
 // --- UI Toggle Helper ---
 function setToolActive(btnId, toolName) {
     document.querySelectorAll('.edit-toolbar-btn').forEach(b => b.classList.remove('edit-tool-active'));
     if(btnId) document.getElementById(btnId).classList.add('edit-tool-active');
     currentTool = toolName;
-    drawOverlay(); // Tool change hone par box border hide/show karne ke liye
+    drawOverlay(); 
 }
 
 document.getElementById('edit-color-picker')?.addEventListener('input', (e) => editColor = e.target.value);
@@ -984,13 +1025,13 @@ function drawOverlay() {
             overlayCtx.fillStyle = 'white';
             overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
             
-            // Issue 6 Fix: Outline ONLY visible when eraser tool is active so user can find and drag it
+            // Fix 1: Eraser Outline is completely invisible, UNLESS Eraser tool is active so user can find and drag it.
             if (currentTool === 'whiteout') {
-                overlayCtx.strokeStyle = 'rgba(0,0,0,0.1)';
+                overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)';
                 overlayCtx.lineWidth = 1;
-                overlayCtx.setLineDash([4, 4]); // Dashed line for clarity
+                overlayCtx.setLineDash([4, 4]); 
                 overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
-                overlayCtx.setLineDash([]); // Reset dash
+                overlayCtx.setLineDash([]); 
             }
         } else if (edit.type === 'text') {
             overlayCtx.font = `${edit.size}px Arial`;
@@ -1035,11 +1076,14 @@ function getCursorPos(e) {
 
 function startAction(e) {
     if (currentTool === 'none') return;
+    if (e.target === document.getElementById('custom-text-input') || e.target.closest('#custom-text-modal')) return;
+    
     e.preventDefault();
     const pos = getCursorPos(e);
     const edits = pageEdits[editPageNum] || [];
-    hasMovedDuringClick = false; // Reset drag tracker on new click
+    hasMovedDuringClick = false; 
     
+    // Check Dragging hit logic
     for (let i = edits.length - 1; i >= 0; i--) {
         const edit = edits[i];
         let isHit = false;
@@ -1052,26 +1096,40 @@ function startAction(e) {
             overlayCtx.font = `${edit.size}px Arial`;
             const textWidth = overlayCtx.measureText(edit.text).width;
             if (pos.x >= edit.x - 5 && pos.x <= edit.x + textWidth + 5 && pos.y >= edit.y - edit.size && pos.y <= edit.y + 10) isHit = true;
+        } else if (edit.type === 'draw') {
+            // Rough bounding box check for drawings to allow drag/delete
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            edit.points.forEach(p => {
+                if(p.x < minX) minX = p.x; if(p.x > maxX) maxX = p.x;
+                if(p.y < minY) minY = p.y; if(p.y > maxY) maxY = p.y;
+            });
+            if (pos.x >= minX - 10 && pos.x <= maxX + 10 && pos.y >= minY - 10 && pos.y <= maxY + 10) isHit = true;
         }
         
-        if (isHit && currentTool !== 'draw') { 
+        // Drawing tool overrides dragging so you can draw over images, UNLESS you are trying to drag a drawing
+        if (isHit && (currentTool !== 'draw' || edit.type === 'draw')) { 
             activeDragIndex = i;
-            dragOffsetX = pos.x - edit.x;
-            dragOffsetY = pos.y - edit.y;
+            
+            if(edit.type === 'draw') {
+                dragOffsetX = pos.x; 
+                dragOffsetY = pos.y;
+            } else {
+                dragOffsetX = pos.x - edit.x;
+                dragOffsetY = pos.y - edit.y;
+            }
+            
             const item = edits.splice(i, 1)[0];
             edits.push(item);
             activeDragIndex = edits.length - 1;
+            
+            // Show Trash Zone
+            trashZone.style.display = 'flex';
             return; 
         }
     }
 
     if (currentTool === 'text') {
-        const text = prompt("Enter text to add:");
-        if (text) {
-            if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
-            pageEdits[editPageNum].push({ type: 'text', x: pos.x, y: pos.y, text: text, color: editColor, size: editSize });
-            drawOverlay();
-        }
+        openTextModal("", { type: 'new', pos: { x: pos.x, y: pos.y } });
     } else if (currentTool === 'whiteout') {
         isDrawing = true;
         startX = pos.x;
@@ -1089,12 +1147,34 @@ function moveAction(e) {
     e.preventDefault();
     const pos = getCursorPos(e);
     
-    // Dragging
+    // Dragging Logic
     if (activeDragIndex !== -1) {
-        hasMovedDuringClick = true; // Mark as dragged, not clicked
+        hasMovedDuringClick = true; 
         const edit = pageEdits[editPageNum][activeDragIndex];
-        edit.x = pos.x - dragOffsetX;
-        edit.y = pos.y - dragOffsetY;
+        
+        if(edit.type === 'draw') {
+            const dx = pos.x - dragOffsetX;
+            const dy = pos.y - dragOffsetY;
+            edit.points.forEach(p => { p.x += dx; p.y += dy; });
+            dragOffsetX = pos.x;
+            dragOffsetY = pos.y;
+        } else {
+            edit.x = pos.x - dragOffsetX;
+            edit.y = pos.y - dragOffsetY;
+        }
+        
+        // Trash Highlight Logic
+        const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+        if (clientY > window.innerHeight - 100) {
+            isHoveringTrash = true;
+            trashZone.style.transform = 'translateX(-50%) scale(1.1)';
+            trashZone.style.background = 'rgba(220, 38, 38, 1)';
+        } else {
+            isHoveringTrash = false;
+            trashZone.style.transform = 'translateX(-50%) scale(1)';
+            trashZone.style.background = 'rgba(239, 68, 68, 0.95)';
+        }
+        
         drawOverlay();
         return;
     }
@@ -1119,18 +1199,21 @@ function endAction(e) {
     e.preventDefault();
     
     if (activeDragIndex !== -1) {
-        // Issue 2 Fix: If item wasn't moved, it means user just tapped on it. Prompt to edit!
-        if (!hasMovedDuringClick) {
+        trashZone.style.display = 'none';
+        
+        if (isHoveringTrash) {
+            // Delete Element!
+            pageEdits[editPageNum].splice(activeDragIndex, 1);
+            isHoveringTrash = false;
+            showCustomAlert("Element deleted successfully.");
+        } else if (!hasMovedDuringClick) {
+            // Tap to Edit
             const edit = pageEdits[editPageNum][activeDragIndex];
             if (edit.type === 'text' && currentTool === 'text') {
-                const newText = prompt("Edit your text:", edit.text);
-                if (newText !== null && newText.trim() !== "") {
-                    edit.text = newText;
-                    edit.color = editColor; // Update with latest color
-                    edit.size = editSize;   // Update with latest size
-                }
+                openTextModal(edit.text, { type: 'edit', index: activeDragIndex });
             }
         }
+        
         activeDragIndex = -1;
         drawOverlay();
         return;
