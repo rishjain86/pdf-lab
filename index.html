@@ -360,7 +360,6 @@
                     <h3>Edit PDF</h3>
                     <p>Add text, draw, and modify.</p>
                 </div>
-                <!-- ... (Remaining dashboard tools are unchanged) ... -->
                 <div class="tool-card" onclick="switchView('merge')">
                     <i class="fas fa-object-group tool-icon" style="color: #ef4444;"></i>
                     <h3>Merge PDF</h3>
@@ -396,6 +395,101 @@
                     <h3>JPG to PDF</h3>
                     <p>Images to PDF document.</p>
                 </div>
+                <div class="tool-card" onclick="switchView('htmltopdf')">
+                    <i class="fas fa-code tool-icon" style="color: #f97316;"></i>
+                    <h3>HTML to PDF</h3>
+                    <p>Code to document.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('rotate')">
+                    <i class="fas fa-sync-alt tool-icon" style="color: #3b82f6;"></i>
+                    <h3>Rotate PDF</h3>
+                    <p>Fix page orientation.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('delete')">
+                    <i class="fas fa-trash-alt tool-icon" style="color: #ef4444;"></i>
+                    <h3>Delete Pages</h3>
+                    <p>Remove unwanted pages.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('watermark')">
+                    <i class="fas fa-stamp tool-icon" style="color: #ec4899;"></i>
+                    <h3>Watermark</h3>
+                    <p>Add text watermark.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('imagewatermark')">
+                    <i class="fas fa-images tool-icon" style="color: #ec4899;"></i>
+                    <h3>Image Watermark</h3>
+                    <p>Add logo overlay.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('sign')">
+                    <i class="fas fa-signature tool-icon" style="color: #8b5cf6;"></i>
+                    <h3>Sign PDF</h3>
+                    <p>Add your signature.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('pagenumbers')">
+                    <i class="fas fa-sort-numeric-down tool-icon" style="color: #6366f1;"></i>
+                    <h3>Page Numbers</h3>
+                    <p>Add numbers to pages.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('extract')">
+                    <i class="fas fa-file-alt tool-icon" style="color: #14b8a6;"></i>
+                    <h3>Extract Text</h3>
+                    <p>Get text from document.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('flatten')">
+                    <i class="fas fa-layer-group tool-icon" style="color: #64748b;"></i>
+                    <h3>Flatten PDF</h3>
+                    <p>Make form uneditable.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('crop')">
+                    <i class="fas fa-crop tool-icon" style="color: #3b82f6;"></i>
+                    <h3>Crop PDF</h3>
+                    <p>Adjust page margins.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('metadata')">
+                    <i class="fas fa-info-circle tool-icon" style="color: #eab308;"></i>
+                    <h3>Edit Metadata</h3>
+                    <p>Change author & title.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('repair')">
+                    <i class="fas fa-tools tool-icon" style="color: #10b981;"></i>
+                    <h3>Repair PDF</h3>
+                    <p>Fix corrupt documents.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('reorder')">
+                    <i class="fas fa-sort-amount-up tool-icon" style="color: #8b5cf6;"></i>
+                    <h3>Reorder Pages</h3>
+                    <p>Change page sequence.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('addtext')">
+                    <i class="fas fa-font tool-icon" style="color: #6366f1;"></i>
+                    <h3>Add Text</h3>
+                    <p>Embed custom text.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('addblank')">
+                    <i class="fas fa-file-medical tool-icon" style="color: #10b981;"></i>
+                    <h3>Add Blank Page</h3>
+                    <p>Insert an empty page.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('resizepdf')">
+                    <i class="fas fa-expand-arrows-alt tool-icon" style="color: #14b8a6;"></i>
+                    <h3>Resize PDF</h3>
+                    <p>Scale document sizes.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('splitevenodd')">
+                    <i class="fas fa-columns tool-icon" style="color: #6366f1;"></i>
+                    <h3>Split Even/Odd</h3>
+                    <p>Separate page sets.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('addmargins')">
+                    <i class="fas fa-border-all tool-icon" style="color: #3b82f6;"></i>
+                    <h3>Add Margins</h3>
+                    <p>Increase border size.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('removeannots')">
+                    <i class="fas fa-eraser tool-icon" style="color: #8b5cf6;"></i>
+                    <h3>Clean Annots</h3>
+                    <p>Remove annotations.</p>
+                </div>
             </div>
 
             <div class="seo-section">
@@ -411,7 +505,7 @@
             <div id="history-list"></div>
         </div>
 
-        <!-- EXTENDED EDIT PDF SECTION -->
+        <!-- FULL-SCREEN EDIT PDF SECTION -->
         <div id="view-edit" class="view-section">
             <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
             
@@ -427,10 +521,17 @@
                 </button>
             </div>
 
-            <div id="edit-workspace" style="display: none; flex-direction: column; align-items: center; background: var(--surface-color); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border);">
+            <!-- FULL SCREEN EDITOR WORKSPACE (NEW STRUCTURE) -->
+            <div id="edit-workspace" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: var(--bg-color); flex-direction: column;">
                 
+                <!-- Editor Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--surface-color); border-bottom: 1px solid var(--glass-border);">
+                    <div style="color: white; font-weight: 600; font-size: 1.1rem;"><i class="fas fa-edit" style="color: var(--accent);"></i> Pro PDF Editor</div>
+                    <button id="btn-close-editor" onclick="document.getElementById('edit-workspace').style.display='none'; document.getElementById('edit-upload-section').style.display='block'; window.switchView('dashboard');" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 500;"><i class="fas fa-times"></i> Exit Editor</button>
+                </div>
+
                 <!-- EXTENDED Toolbar -->
-                <div id="edit-toolbar" style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: flex-start; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; width: 100%; align-items: center;">
+                <div id="edit-toolbar" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; background: rgba(0,0,0,0.2); padding: 10px; width: 100%; align-items: center; border-bottom: 1px solid var(--glass-border);">
                     
                     <button class="edit-toolbar-btn" id="btn-edit-text" style="background: #3b82f6; color: white;">
                         <i class="fas fa-font"></i> Text
@@ -447,10 +548,8 @@
                     <button class="edit-toolbar-btn" id="btn-edit-image" style="background: #8b5cf6; color: white;">
                         <i class="fas fa-image"></i> Image
                     </button>
-                    <!-- Hidden input for Image Insert tool -->
                     <input type="file" id="edit-image-input" accept="image/png, image/jpeg" style="display: none;">
 
-                    <!-- Color & Size Settings -->
                     <div class="tool-settings" style="display: flex; gap: 8px; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 10px;">
                         <input type="color" id="edit-color-picker" value="#000000" style="width: 30px; height: 30px; border: none; cursor: pointer; background: transparent; padding: 0;" title="Select Color">
                         
@@ -458,6 +557,13 @@
                             <i class="fas fa-text-height" style="color: var(--text-secondary); font-size: 0.8rem; margin-right: 5px;"></i>
                             <input type="number" id="edit-size-picker" value="20" min="5" max="150" style="width: 45px; border: none; background: transparent; color: white; outline: none; font-size: 0.9rem;" title="Size (Text/Brush)">
                         </div>
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    <div style="display: flex; gap: 10px; align-items: center; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
+                        <button id="prev-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-left"></i></button>
+                        <span style="font-size: 0.9rem;">Page <span id="page-num">1</span> / <span id="page-count">--</span></span>
+                        <button id="next-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-right"></i></button>
                     </div>
 
                     <button class="edit-toolbar-btn" id="btn-edit-clear" style="background: #ef4444; color: white; margin-left: auto;">
@@ -468,19 +574,13 @@
                     </button>
                 </div>
 
-                <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: center;">
-                    <button id="prev-page" style="padding: 8px 15px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;">Previous</button>
-                    <span>Page: <span id="page-num">1</span> / <span id="page-count">--</span></span>
-                    <button id="next-page" style="padding: 8px 15px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;">Next</button>
-                </div>
-                
-                <div style="width: 100%; overflow-x: auto; overflow-y: auto; max-height: 70vh; background: #cbd5e1; padding: 15px; border-radius: 8px; text-align: center;">
-                    <div style="position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: inline-block; background: white; margin: 0 auto; text-align: left;">
+                <!-- FULL SCREEN SCROLLABLE CANVAS -->
+                <div style="flex: 1; width: 100%; overflow: auto; background: #cbd5e1; padding: 20px; display: flex; justify-content: center; align-items: flex-start;">
+                    <div style="position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.5); background: white;">
                         <canvas id="pdf-render-canvas" style="display: block;"></canvas>
                         <canvas id="pdf-overlay-canvas" style="position: absolute; top: 0; left: 0; z-index: 10; touch-action: none; cursor: crosshair;"></canvas>
                     </div>
                 </div>
-                
             </div>
         </div>
 
@@ -513,6 +613,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=8"></script>
+    <script type="module" src="app.js?v=9"></script>
 </body>
 </html>
