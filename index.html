@@ -521,60 +521,38 @@
                 </button>
             </div>
 
-            <!-- FULL SCREEN EDITOR WORKSPACE (NEW STRUCTURE) -->
             <div id="edit-workspace" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: var(--bg-color); flex-direction: column;">
                 
-                <!-- Editor Header -->
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--surface-color); border-bottom: 1px solid var(--glass-border);">
                     <div style="color: white; font-weight: 600; font-size: 1.1rem;"><i class="fas fa-edit" style="color: var(--accent);"></i> Pro PDF Editor</div>
                     <button id="btn-close-editor" onclick="document.getElementById('edit-workspace').style.display='none'; document.getElementById('edit-upload-section').style.display='block'; window.switchView('dashboard');" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 500;"><i class="fas fa-times"></i> Exit Editor</button>
                 </div>
 
-                <!-- EXTENDED Toolbar -->
                 <div id="edit-toolbar" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; background: rgba(0,0,0,0.2); padding: 10px; width: 100%; align-items: center; border-bottom: 1px solid var(--glass-border);">
-                    
-                    <button class="edit-toolbar-btn" id="btn-edit-text" style="background: #3b82f6; color: white;">
-                        <i class="fas fa-font"></i> Text
-                    </button>
-                    
-                    <button class="edit-toolbar-btn" id="btn-edit-draw" style="background: #f59e0b; color: white;">
-                        <i class="fas fa-pen"></i> Draw
-                    </button>
-                    
-                    <button class="edit-toolbar-btn" id="btn-edit-whiteout" style="background: #f8fafc; color: #0f172a;">
-                        <i class="fas fa-eraser"></i> Eraser
-                    </button>
-                    
-                    <button class="edit-toolbar-btn" id="btn-edit-image" style="background: #8b5cf6; color: white;">
-                        <i class="fas fa-image"></i> Image
-                    </button>
+                    <button class="edit-toolbar-btn" id="btn-edit-text" style="background: #3b82f6; color: white;"><i class="fas fa-font"></i> Text</button>
+                    <button class="edit-toolbar-btn" id="btn-edit-draw" style="background: #f59e0b; color: white;"><i class="fas fa-pen"></i> Draw</button>
+                    <button class="edit-toolbar-btn" id="btn-edit-whiteout" style="background: #f8fafc; color: #0f172a;"><i class="fas fa-eraser"></i> Eraser</button>
+                    <button class="edit-toolbar-btn" id="btn-edit-image" style="background: #8b5cf6; color: white;"><i class="fas fa-image"></i> Image</button>
                     <input type="file" id="edit-image-input" accept="image/png, image/jpeg" style="display: none;">
 
                     <div class="tool-settings" style="display: flex; gap: 8px; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 10px;">
                         <input type="color" id="edit-color-picker" value="#000000" style="width: 30px; height: 30px; border: none; cursor: pointer; background: transparent; padding: 0;" title="Select Color">
-                        
                         <div style="display: flex; align-items: center; background: var(--surface-color); border: 1px solid var(--glass-border); border-radius: 4px; padding: 2px 5px;">
                             <i class="fas fa-text-height" style="color: var(--text-secondary); font-size: 0.8rem; margin-right: 5px;"></i>
                             <input type="number" id="edit-size-picker" value="20" min="5" max="150" style="width: 45px; border: none; background: transparent; color: white; outline: none; font-size: 0.9rem;" title="Size (Text/Brush)">
                         </div>
                     </div>
 
-                    <!-- Pagination Controls -->
                     <div style="display: flex; gap: 10px; align-items: center; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
                         <button id="prev-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-left"></i></button>
                         <span style="font-size: 0.9rem;">Page <span id="page-num">1</span> / <span id="page-count">--</span></span>
                         <button id="next-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-right"></i></button>
                     </div>
 
-                    <button class="edit-toolbar-btn" id="btn-edit-clear" style="background: #ef4444; color: white; margin-left: auto;">
-                        <i class="fas fa-trash-alt"></i> Clear
-                    </button>
-                    <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white;">
-                        <i class="fas fa-save"></i> Save PDF
-                    </button>
+                    <button class="edit-toolbar-btn" id="btn-edit-clear" style="background: #ef4444; color: white; margin-left: auto;"><i class="fas fa-trash-alt"></i> Clear</button>
+                    <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white;"><i class="fas fa-save"></i> Save PDF</button>
                 </div>
 
-                <!-- FULL SCREEN SCROLLABLE CANVAS -->
                 <div style="flex: 1; width: 100%; overflow: auto; background: #cbd5e1; padding: 20px; display: flex; justify-content: center; align-items: flex-start;">
                     <div style="position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.5); background: white;">
                         <canvas id="pdf-render-canvas" style="display: block;"></canvas>
@@ -582,6 +560,23 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- NEW: THEMED CUSTOM TEXT MODAL -->
+        <div id="custom-text-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+            <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 320px; max-width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <h3 style="color: white; margin-bottom: 15px;" id="text-modal-title">Enter Text</h3>
+                <input type="text" id="custom-text-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; margin-bottom: 20px; outline: none; font-size: 1rem;" placeholder="Type something...">
+                <div style="display: flex; gap: 10px;">
+                    <button id="btn-text-cancel" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #ef4444; color: white; font-weight: 600; font-size: 1rem;">Cancel</button>
+                    <button id="btn-text-save" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #10b981; color: white; font-weight: 600; font-size: 1rem;">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: DRAG & DROP TRASH ZONE -->
+        <div id="drag-trash-zone" style="display: none; position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(239, 68, 68, 0.95); color: white; padding: 15px 30px; border-radius: 50px; z-index: 99999; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.6); align-items: center; gap: 10px; font-weight: 600; font-size: 1.1rem; transition: 0.2s;">
+            <i class="fas fa-trash-alt" style="font-size: 1.3rem;"></i> Drop here to delete
         </div>
 
         <div id="view-merge" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="merge-ui-container"></div></div>
@@ -613,6 +608,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=9"></script>
+    <script type="module" src="app.js?v=10"></script>
 </body>
 </html>
