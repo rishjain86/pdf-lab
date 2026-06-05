@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- PDF.js Library for Rendering PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -497,6 +498,7 @@
             <div id="history-list"></div>
         </div>
 
+        <!-- UPDATED EDIT PDF SECTION WITH SCROLLABLE WRAPPER -->
         <div id="view-edit" class="view-section">
             <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
             
@@ -535,9 +537,12 @@
                     <button id="next-page" style="padding: 8px 15px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;">Next</button>
                 </div>
                 
-                <div style="position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.5); overflow: hidden; display: inline-block; background: white;">
-                    <canvas id="pdf-render-canvas" style="display: block;"></canvas>
-                    <canvas id="pdf-overlay-canvas" style="position: absolute; top: 0; left: 0; z-index: 10; touch-action: none; cursor: crosshair;"></canvas>
+                <!-- THE SCROLLABLE WRAPPER (Fixes Problem 1) -->
+                <div style="width: 100%; overflow-x: auto; overflow-y: auto; max-height: 70vh; background: #cbd5e1; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: inline-block; background: white; margin: 0 auto; text-align: left;">
+                        <canvas id="pdf-render-canvas" style="display: block;"></canvas>
+                        <canvas id="pdf-overlay-canvas" style="position: absolute; top: 0; left: 0; z-index: 10; touch-action: none; cursor: crosshair;"></canvas>
+                    </div>
                 </div>
                 
             </div>
@@ -572,6 +577,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=6"></script>
+    <script type="module" src="app.js?v=7"></script>
 </body>
 </html>
