@@ -199,6 +199,9 @@
             font-size: 0.9rem;
         }
 
+        .text-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 100%; }
+        .text-container { flex: 1; min-width: 0; margin-right: 15px; }
+
         .back-btn {
             display: inline-flex;
             align-items: center;
@@ -238,6 +241,24 @@
             color: var(--text-secondary);
         }
 
+        /* Edit PDF Toolbar Buttons */
+        .edit-toolbar-btn {
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+        
+        .edit-toolbar-btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
         @media (max-width: 768px) {
             .sidebar { display: none; }
             .mobile-header { display: flex; }
@@ -258,6 +279,9 @@
             .seo-section h3 { font-size: 1.1rem; }
             .seo-section p, .seo-section ul { font-size: 0.85rem; }
             .download-btn { margin: 10px 15px; font-size: 0.9rem; padding: 10px; }
+            
+            #edit-toolbar { flex-direction: column; width: 100%; }
+            .edit-toolbar-btn { justify-content: center; width: 100%; }
         }
     </style>
 </head>
@@ -478,7 +502,7 @@
             
             <div class="page-header">
                 <h2><i class="fas fa-edit"></i> Edit PDF</h2>
-                <p>View and modify your PDF visually.</p>
+                <p>Add text or erase content on your PDF visually.</p>
             </div>
 
             <div id="edit-upload-section" style="text-align: center; padding: 40px; border: 2px dashed var(--glass-border); border-radius: 12px; margin-bottom: 20px;">
@@ -489,12 +513,33 @@
             </div>
 
             <div id="edit-workspace" style="display: none; flex-direction: column; align-items: center; background: var(--surface-color); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border);">
+                
+                <div id="edit-toolbar" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; width: 100%;">
+                    <button class="edit-toolbar-btn" id="btn-edit-text" style="background: #3b82f6; color: white;">
+                        <i class="fas fa-font"></i> Add Text
+                    </button>
+                    <button class="edit-toolbar-btn" id="btn-edit-whiteout" style="background: #f8fafc; color: #0f172a;">
+                        <i class="fas fa-eraser"></i> Eraser (White Box)
+                    </button>
+                    <button class="edit-toolbar-btn" id="btn-edit-clear" style="background: #ef4444; color: white;">
+                        <i class="fas fa-trash-alt"></i> Clear Edits
+                    </button>
+                    <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white; margin-left: auto;">
+                        <i class="fas fa-save"></i> Save PDF
+                    </button>
+                </div>
+
                 <div style="display: flex; gap: 15px; margin-bottom: 15px; align-items: center;">
                     <button id="prev-page" style="padding: 8px 15px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;">Previous</button>
                     <span>Page: <span id="page-num">1</span> / <span id="page-count">--</span></span>
                     <button id="next-page" style="padding: 8px 15px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;">Next</button>
                 </div>
-                <canvas id="pdf-render-canvas" style="border: 1px solid black; max-width: 100%; box-shadow: 0 4px 10px rgba(0,0,0,0.3); background: white;"></canvas>
+                
+                <div style="position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.5); overflow: hidden; display: inline-block; background: white;">
+                    <canvas id="pdf-render-canvas" style="display: block;"></canvas>
+                    <canvas id="pdf-overlay-canvas" style="position: absolute; top: 0; left: 0; z-index: 10; touch-action: none; cursor: crosshair;"></canvas>
+                </div>
+                
             </div>
         </div>
 
@@ -527,6 +572,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=5"></script>
+    <script type="module" src="app.js?v=6"></script>
 </body>
 </html>
