@@ -635,7 +635,6 @@ setupMultipleFileLogic('compress', async (files) => {
     }
 });
 
-// FIXED UNLOCK LOGIC (SMART CLOUD FALLBACK FOR AES)
 setupMultipleFileLogic('unlock', async (files) => {
     const password = document.getElementById('unlock-password').value;
     if (!password) {
@@ -714,7 +713,6 @@ setupMultipleFileLogic('protect', async (files) => {
     }
 });
 
-// --- MANUAL HANDLERS FOR CUSTOM ENGINE TOOLS ---
 if (ui.htmltopdf) {
     document.getElementById('btn-htmltopdf-action')?.addEventListener('click', async () => {
         const htmlContent = document.getElementById('html-input').value;
@@ -847,75 +845,213 @@ document.getElementById('mobile-search')?.addEventListener('input', (e) => {
     });
 });
 
-// --- LOAD ADMOB BANNER AT BOTTOM ---
 if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner === 'function') {
     AdManager.showBanner();
 }
 
 // ==========================================
-//        EDIT PDF - PHASE 1 LOGIC
+//    EDIT PDF - FULL LOGIC (PHASES 1 & 2)
 // ==========================================
 
 let editPdfDoc = null;
+let originalPdfBytes = null;
+let editOriginalFileName = "";
 let editPageNum = 1;
-const editScale = 1.5; // PDF ki clarity/zoom level
+const editScale = 1.5;
+
 const renderCanvas = document.getElementById('pdf-render-canvas');
 const renderCtx = renderCanvas ? renderCanvas.getContext('2d') : null;
 
-// 1. File Upload Handler
+const overlayCanvas = document.getElementById('pdf-overlay-canvas');
+const overlayCtx = overlayCanvas ? overlayCanvas.getContext('2d') : null;
+
+let currentTool = 'none'; // 'text' ya 'whiteout'
+let isDrawing = false;
+let startX = 0;
+let startY = 0;
+
+// Har page ki editing save karne ke liye
+let pageEdits = {}; 
+
+// 1. File Upload Logic
 document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
+        editOriginalFileName = file.name;
         const fileReader = new FileReader();
-        
         fileReader.onload = function() {
-            const typedarray = new Uint8Array(this.result);
+            originalPdfBytes = new Uint8Array(this.result);
             
-            // PDF.js se document load karo
-            pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+            pdfjsLib.getDocument(originalPdfBytes).promise.then(pdf => {
                 editPdfDoc = pdf;
-                editPageNum = 1; // Hamesha first page se start karo
+                editPageNum = 1;
+                pageEdits = {}; // Purani drawing clear kardo
                 document.getElementById('page-count').textContent = pdf.numPages;
                 
-                // UI switch: Upload section chhupao, Workspace dikhao
                 document.getElementById('edit-upload-section').style.display = 'none';
                 document.getElementById('edit-workspace').style.display = 'flex';
                 
-                // Pehla page render karo
                 renderEditPage(editPageNum);
             }).catch(error => {
                 console.error("Error loading PDF:", error);
                 showCustomAlert("Error loading PDF. Please try another file.");
             });
         };
-        
         fileReader.readAsArrayBuffer(file);
     }
 });
 
-// 2. Page Render Function (PDF ko Canvas par draw karna)
+// 2. Page Render & Overlay Sync Logic
 function renderEditPage(num) {
     if (!editPdfDoc) return;
 
     editPdfDoc.getPage(num).then(page => {
         const viewport = page.getViewport({ scale: editScale });
         
-        // Canvas ka size PDF page ke size ke hisaab se set karo
+        // Dono canvas ka size barabar rakho
         renderCanvas.height = viewport.height;
         renderCanvas.width = viewport.width;
+        overlayCanvas.height = viewport.height;
+        overlayCanvas.width = viewport.width;
         
-        const renderContext = {
-            canvasContext: renderCtx,
-            viewport: viewport
-        };
-        
-        // Asli magic: PDF ko canvas par render karna
+        const renderContext = { canvasContext: renderCtx, viewport: viewport };
         page.render(renderContext);
         document.getElementById('page-num').textContent = num;
+        
+        drawOverlay(); // Agar is page par pehle se kuch likha hai, toh dikhao
     });
 }
 
-// 3. Next aur Previous Page Buttons Logic
+function drawOverlay() {
+    if (!overlayCtx) return;
+    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    const edits = pageEdits[editPageNum] || [];
+    
+    edits.forEach(edit => {
+        if (edit.type === 'whiteout') {
+            overlayCtx.fillStyle = 'white';
+            overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
+            // User ko samjh aaye isliye ek halka border
+            overlayCtx.strokeStyle = 'rgba(0,0,0,0.1)';
+            overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
+        } else if (edit.type === 'text') {
+            overlayCtx.font = "20px Arial";
+            overlayCtx.fillStyle = 'black';
+            overlayCtx.fillText(edit.text, edit.x, edit.y);
+        }
+    });
+}
+
+// 3. Touch aur Mouse interaction Logic (Drawings ke liye)
+function getCursorPos(e) {
+    const rect = overlayCanvas.getBoundingClientRect();
+    const scaleX = overlayCanvas.width / rect.width;
+    const scaleY = overlayCanvas.height / rect.height;
+    
+    let clientX = e.clientX;
+    let clientY = e.clientY;
+    if(e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+    }
+    
+    return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+    };
+}
+
+function startAction(e) {
+    if (currentTool === 'none') return;
+    e.preventDefault();
+    const pos = getCursorPos(e);
+    
+    if (currentTool === 'text') {
+        const text = prompt("Enter text to add:");
+        if (text) {
+            if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
+            pageEdits[editPageNum].push({ type: 'text', x: pos.x, y: pos.y, text: text });
+            drawOverlay();
+        }
+    } else if (currentTool === 'whiteout') {
+        isDrawing = true;
+        startX = pos.x;
+        startY = pos.y;
+    }
+}
+
+function moveAction(e) {
+    if (!isDrawing || currentTool !== 'whiteout') return;
+    e.preventDefault();
+    const pos = getCursorPos(e);
+    drawOverlay(); // Purana draw karo
+    
+    // Live drag hota hua white box dikhao
+    overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    overlayCtx.fillRect(startX, startY, pos.x - startX, pos.y - startY);
+    overlayCtx.strokeStyle = 'red';
+    overlayCtx.strokeRect(startX, startY, pos.x - startX, pos.y - startY);
+}
+
+function endAction(e) {
+    if (!isDrawing || currentTool !== 'whiteout') return;
+    e.preventDefault();
+    isDrawing = false;
+    
+    let clientX = e.clientX;
+    let clientY = e.clientY;
+    if(e.type === 'touchend' && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
+    }
+    
+    const rect = overlayCanvas.getBoundingClientRect();
+    const scaleX = overlayCanvas.width / rect.width;
+    const scaleY = overlayCanvas.height / rect.height;
+    const endX = (clientX - rect.left) * scaleX;
+    const endY = (clientY - rect.top) * scaleY;
+    
+    const w = endX - startX;
+    const h = endY - startY;
+    
+    // Sirf tab save karo jab actual mein thoda drag hua ho (accidental click na ho)
+    if (Math.abs(w) > 5 && Math.abs(h) > 5) {
+        if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
+        pageEdits[editPageNum].push({ 
+            type: 'whiteout', 
+            x: w < 0 ? endX : startX, 
+            y: h < 0 ? endY : startY, 
+            w: Math.abs(w), 
+            h: Math.abs(h) 
+        });
+    }
+    drawOverlay();
+}
+
+overlayCanvas?.addEventListener('mousedown', startAction);
+overlayCanvas?.addEventListener('mousemove', moveAction);
+overlayCanvas?.addEventListener('mouseup', endAction);
+overlayCanvas?.addEventListener('touchstart', startAction, {passive: false});
+overlayCanvas?.addEventListener('touchmove', moveAction, {passive: false});
+overlayCanvas?.addEventListener('touchend', endAction);
+
+// 4. Toolbar Buttons Logic
+document.getElementById('btn-edit-text')?.addEventListener('click', () => {
+    currentTool = 'text';
+    showCustomAlert("Text Tool Active: PDF par jahan text likhna hai wahan click karein.");
+});
+
+document.getElementById('btn-edit-whiteout')?.addEventListener('click', () => {
+    currentTool = 'whiteout';
+    showCustomAlert("Eraser Active: PDF par white box banane ke liye ungli/mouse drag karein.");
+});
+
+document.getElementById('btn-edit-clear')?.addEventListener('click', () => {
+    pageEdits[editPageNum] = [];
+    drawOverlay();
+    showCustomAlert("Is page ki saari editing clear ho gayi.");
+});
+
 document.getElementById('prev-page')?.addEventListener('click', () => {
     if (editPageNum <= 1) return;
     editPageNum--;
@@ -926,4 +1062,67 @@ document.getElementById('next-page')?.addEventListener('click', () => {
     if (editPageNum >= editPdfDoc?.numPages) return;
     editPageNum++;
     renderEditPage(editPageNum);
+});
+
+// 5. Final Save Logic (Canvas drawing ko PDF mein embed karna)
+document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
+    if (!originalPdfBytes) return;
+    
+    const btn = document.getElementById('btn-edit-save');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    
+    try {
+        const pdfDoc = await PDFDocument.load(originalPdfBytes);
+        const pages = pdfDoc.getPages();
+        
+        // Saari editing array ko check karo
+        for (const [pageNumStr, edits] of Object.entries(pageEdits)) {
+            const pageNum = parseInt(pageNumStr);
+            const page = pages[pageNum - 1]; // Array index starts from 0
+            const { width, height } = page.getSize();
+            
+            for (const edit of edits) {
+                // Canvas coordinates ko real PDF coordinates mein convert karo
+                const pdfX = edit.x / editScale;
+                const pdfY = height - (edit.y / editScale); // PDF starts Y from bottom
+                
+                if (edit.type === 'whiteout') {
+                    const pdfW = edit.w / editScale;
+                    const pdfH = edit.h / editScale;
+                    page.drawRectangle({
+                        x: pdfX,
+                        y: pdfY - pdfH,
+                        width: pdfW,
+                        height: pdfH,
+                        color: rgb(1, 1, 1),
+                    });
+                } else if (edit.type === 'text') {
+                    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+                    const pdfFontSize = 20 / editScale; 
+                    page.drawText(edit.text, {
+                        x: pdfX,
+                        y: pdfY,
+                        size: pdfFontSize,
+                        font: helveticaFont,
+                        color: rgb(0, 0, 0),
+                    });
+                }
+            }
+        }
+        
+        const savedBytes = await pdfDoc.save();
+        const outputName = getBaseName(editOriginalFileName) + '_Edited.pdf';
+        
+        // Aapka pehle se bana hua smart download/history function call
+        await processAndDownload(savedBytes, outputName, 'application/pdf');
+        showCustomAlert("Success! Edited PDF save ho gayi hai.");
+        
+        if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
+        
+    } catch (error) {
+        handleError(error);
+    } finally {
+        btn.innerHTML = oldText;
+    }
 });
