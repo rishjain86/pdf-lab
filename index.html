@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6519206650027176"
+     crossorigin="anonymous"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Amazing PDF Tool</title>
+    
+    <link rel="icon" type="image/png" href="assets/icon.png?v=5">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --accent: #3b82f6;
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 260px;
+            background-color: var(--surface-color);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            transition: 0.3s;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .brand-logo span {
+            font-weight: 700;
+            font-size: 1.3rem;
+            background: linear-gradient(to right, #10b981, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-btn {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            cursor: pointer;
+            transition: 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+            border-left: 3px solid var(--accent);
+        }
+
+        /* NEW DOWNLOAD BUTTON STYLING */
+        .download-btn {
+            margin: 15px;
+            background: linear-gradient(45deg, #10b981, #3b82f6);
+            color: white !important;
+            border-radius: 8px;
+            justify-content: center;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+            transition: 0.3s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4) !important;
+            background-color: transparent; /* Override default hover */
+            border-left: none;
+        }
+
+        .menu-label {
+            padding: 20px 20px 10px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        /* --- MAIN CONTENT & MOBILE HEADER --- */
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-y: auto;
+            padding-bottom: 60px;
+        }
+
+        .mobile-header {
+            display: none;
+            padding: 15px 20px;
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--glass-border);
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .view-section {
+            display: none;
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            color: var(--text-secondary);
+        }
+
+        /* --- DASHBOARD GRID --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .tool-card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--glass-border);
+            padding: 25px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-align: left;
+            height: 100%;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .tool-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .tool-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .tool-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* TEXT OVERFLOW FIX CLASSES */
+        .text-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 100%; }
+        .text-container { flex: 1; min-width: 0; margin-right: 15px; }
+
+        .info-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 20px; line-height: 1.6; }
+
+        /* BACK BUTTON STYLING */
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent);
+            background: rgba(59, 130, 246, 0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 25px;
+            font-weight: 500;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: 0.3s;
+            width: fit-content;
+        }
+
+        .back-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: translateX(-3px);
+        }
+
+        /* SEO SECTION STYLING - FULL WIDTH */
+        .seo-section {
+            margin-top: 50px; 
+            padding: 40px 10px; 
+            background-color: transparent; 
+            border-top: 1px solid var(--glass-border); 
+            line-height: 1.8;
+            text-align: justify; 
+        }
+
+        .seo-section h2, .seo-section h3 {
+            color: var(--text-main);
+            text-align: left;
+        }
+
+        .seo-section p, .seo-section ul {
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .mobile-header { display: flex; }
+            .view-section { padding: 20px; }
+            .page-header h1 { font-size: 1.5rem; }
+            
+            .dashboard-grid { 
+                grid-template-columns: repeat(2, 1fr); 
+                gap: 12px; 
+            }
+            .tool-card { padding: 15px 12px; }
+            .tool-icon { font-size: 1.5rem; margin-bottom: 10px; }
+            .tool-card h3 { font-size: 0.9rem; margin-bottom: 5px; }
+            .tool-card p { font-size: 0.75rem; }
+            
+            .seo-section { padding: 20px 0; margin-top: 30px; }
+            .seo-section h2 { font-size: 1.3rem; }
+            .seo-section h3 { font-size: 1.1rem; }
+            .seo-section p, .seo-section ul { font-size: 0.85rem; }
+            .download-btn { margin: 10px 15px; font-size: 0.9rem; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="brand-logo" onclick="switchView('dashboard')" style="cursor: pointer;">
+            <img src="assets/icon.png?v=5" style="width: 32px; height: 32px; border-radius: 6px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain;">
+            <span>Amazing PDF</span>
+        </div>
+
+        <a href="assets/AmazingPDF.apk" download class="nav-btn download-btn">
+            <i class="fab fa-android" style="font-size: 1.2rem;"></i> Download App
+        </a>
+
+        <div class="nav-btn active" onclick="switchView('dashboard')">
+            <i class="fas fa-home"></i> Dashboard
+        </div>
+        <div class="nav-btn" onclick="switchView('history')">
+            <i class="fas fa-history"></i> My History
+        </div>
+        
+        <div class="menu-label">Main Tools</div>
+        <div class="nav-btn" onclick="switchView('merge')"><i class="fas fa-object-group"></i> Merge PDF</div>
+        <div class="nav-btn" onclick="switchView('split')"><i class="fas fa-cut"></i> Split PDF</div>
+        <div class="nav-btn" onclick="switchView('compress')"><i class="fas fa-compress"></i> Compress PDF</div>
+        
+        <div class="menu-label">Security</div>
+        <div class="nav-btn" onclick="switchView('protect')"><i class="fas fa-lock"></i> Protect PDF</div>
+        <div class="nav-btn" onclick="switchView('unlock')"><i class="fas fa-unlock"></i> Unlock PDF</div>
+        <div class="nav-btn" onclick="switchView('watermark')"><i class="fas fa-stamp"></i> Watermark</div>
+        <div class="nav-btn" onclick="switchView('sign')"><i class="fas fa-signature"></i> Sign PDF</div>
+
+        <div class="menu-label">About & Legal</div>
+        <a href="about.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-info-circle"></i> About Us</a>
+        <a href="contact.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-envelope"></i> Contact Us</a>
+        <a href="privacy.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-user-shield"></i> Privacy Policy</a>
+        <a href="terms.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-file-contract"></i> Terms & Cond.</a>
+    </div>
+
+    <div class="main-wrapper">
+        
+        <div class="mobile-header">
+            <div class="brand-logo" onclick="switchView('dashboard')" style="padding: 0; border: none; cursor: pointer;">
+                <img src="assets/icon.png?v=5" style="width: 42px; height: 42px; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain;">
+            </div>
+            <input type="text" id="mobile-search" placeholder="Search tools..." style="width: 55%; padding: 10px; border-radius: 20px; border: 1px solid var(--glass-border); background: var(--surface-color); color: white; font-size: 0.85rem; padding-left: 15px; outline: none;">
+            <div onclick="switchView('history')" style="cursor: pointer; color: var(--text-secondary); font-size: 1.4rem;">
+                <i class="fas fa-history"></i>
+            </div>
+        </div>
+
+        <div id="view-dashboard" class="view-section active">
+            <div class="page-header">
+                <h1>Every tool you need to work with PDFs</h1>
+                <p>100% FREE, Fast, and Secure.</p>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="tool-card" onclick="switchView('history')">
+                    <i class="fas fa-history tool-icon" style="color: #3b82f6;"></i>
+                    <h3>My History</h3>
+                    <p>Access downloaded files.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('merge')">
+                    <i class="fas fa-object-group tool-icon" style="color: #ef4444;"></i>
+                    <h3>Merge PDF</h3>
+                    <p>Combine multiple PDFs.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('split')">
+                    <i class="fas fa-cut tool-icon" style="color: #f59e0b;"></i>
+                    <h3>Split PDF</h3>
+                    <p>Extract specific pages.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('compress')">
+                    <i class="fas fa-compress-arrows-alt tool-icon" style="color: #10b981;"></i>
+                    <h3>Compress PDF</h3>
+                    <p>Reduce file size.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('protect')">
+                    <i class="fas fa-lock tool-icon" style="color: #8b5cf6;"></i>
+                    <h3>Protect PDF</h3>
+                    <p>Add secure password.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('unlock')">
+                    <i class="fas fa-unlock tool-icon" style="color: #06b6d4;"></i>
+                    <h3>Unlock PDF</h3>
+                    <p>Remove passwords.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('pdftojpg')">
+                    <i class="fas fa-file-archive tool-icon" style="color: #eab308;"></i>
+                    <h3>PDF to JPG</h3>
+                    <p>Extract pages as images.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('jpgtopdf')">
+                    <i class="fas fa-images tool-icon" style="color: #f97316;"></i>
+                    <h3>JPG to PDF</h3>
+                    <p>Images to PDF document.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('htmltopdf')">
+                    <i class="fas fa-code tool-icon" style="color: #f97316;"></i>
+                    <h3>HTML to PDF</h3>
+                    <p>Code to document.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('rotate')">
+                    <i class="fas fa-sync-alt tool-icon" style="color: #3b82f6;"></i>
+                    <h3>Rotate PDF</h3>
+                    <p>Fix page orientation.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('delete')">
+                    <i class="fas fa-trash-alt tool-icon" style="color: #ef4444;"></i>
+                    <h3>Delete Pages</h3>
+                    <p>Remove unwanted pages.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('watermark')">
+                    <i class="fas fa-stamp tool-icon" style="color: #ec4899;"></i>
+                    <h3>Watermark</h3>
+                    <p>Add text watermark.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('imagewatermark')">
+                    <i class="fas fa-images tool-icon" style="color: #ec4899;"></i>
+                    <h3>Image Watermark</h3>
+                    <p>Add logo overlay.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('sign')">
+                    <i class="fas fa-signature tool-icon" style="color: #8b5cf6;"></i>
+                    <h3>Sign PDF</h3>
+                    <p>Add your signature.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('pagenumbers')">
+                    <i class="fas fa-sort-numeric-down tool-icon" style="color: #6366f1;"></i>
+                    <h3>Page Numbers</h3>
+                    <p>Add numbers to pages.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('extract')">
+                    <i class="fas fa-file-alt tool-icon" style="color: #14b8a6;"></i>
+                    <h3>Extract Text</h3>
+                    <p>Get text from document.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('flatten')">
+                    <i class="fas fa-layer-group tool-icon" style="color: #64748b;"></i>
+                    <h3>Flatten PDF</h3>
+                    <p>Make form uneditable.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('crop')">
+                    <i class="fas fa-crop tool-icon" style="color: #3b82f6;"></i>
+                    <h3>Crop PDF</h3>
+                    <p>Adjust page margins.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('metadata')">
+                    <i class="fas fa-info-circle tool-icon" style="color: #eab308;"></i>
+                    <h3>Edit Metadata</h3>
+                    <p>Change author & title.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('repair')">
+                    <i class="fas fa-tools tool-icon" style="color: #10b981;"></i>
+                    <h3>Repair PDF</h3>
+                    <p>Fix corrupt documents.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('reorder')">
+                    <i class="fas fa-sort-amount-up tool-icon" style="color: #8b5cf6;"></i>
+                    <h3>Reorder Pages</h3>
+                    <p>Change page sequence.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('addtext')">
+                    <i class="fas fa-font tool-icon" style="color: #6366f1;"></i>
+                    <h3>Add Text</h3>
+                    <p>Embed custom text.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('addblank')">
+                    <i class="fas fa-file-medical tool-icon" style="color: #10b981;"></i>
+                    <h3>Add Blank Page</h3>
+                    <p>Insert an empty page.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('resizepdf')">
+                    <i class="fas fa-expand-arrows-alt tool-icon" style="color: #14b8a6;"></i>
+                    <h3>Resize PDF</h3>
+                    <p>Scale document sizes.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('splitevenodd')">
+                    <i class="fas fa-columns tool-icon" style="color: #6366f1;"></i>
+                    <h3>Split Even/Odd</h3>
+                    <p>Separate page sets.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('addmargins')">
+                    <i class="fas fa-border-all tool-icon" style="color: #3b82f6;"></i>
+                    <h3>Add Margins</h3>
+                    <p>Increase border size.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('removeannots')">
+                    <i class="fas fa-eraser tool-icon" style="color: #8b5cf6;"></i>
+                    <h3>Clean Annots</h3>
+                    <p>Remove annotations.</p>
+                </div>
+                
+                <a href="about.html" style="text-decoration: none; color: inherit;">
+                    <div class="tool-card">
+                        <i class="fas fa-info-circle tool-icon" style="color: #3b82f6;"></i>
+                        <h3>About Us</h3>
+                        <p>Learn more about us.</p>
+                    </div>
+                </a>
+                <a href="contact.html" style="text-decoration: none; color: inherit;">
+                    <div class="tool-card">
+                        <i class="fas fa-envelope tool-icon" style="color: #10b981;"></i>
+                        <h3>Contact Us</h3>
+                        <p>Get in touch for support.</p>
+                    </div>
+                </a>
+                <a href="privacy.html" style="text-decoration: none; color: inherit;">
+                    <div class="tool-card">
+                        <i class="fas fa-user-shield tool-icon" style="color: #f59e0b;"></i>
+                        <h3>Privacy Policy</h3>
+                        <p>How we protect your data.</p>
+                    </div>
+                </a>
+                <a href="terms.html" style="text-decoration: none; color: inherit;">
+                    <div class="tool-card">
+                        <i class="fas fa-file-contract tool-icon" style="color: #64748b;"></i>
+                        <h3>Terms & Cond.</h3>
+                        <p>App usage guidelines.</p>
+                    </div>
+                </a>
+            </div>
+
+            <div class="seo-section">
+                <h2 style="font-size: 1.8rem; margin-bottom: 20px;">Welcome to Amazing PDF - Your Ultimate Document Tool</h2>
+                <p style="margin-bottom: 20px;">Managing digital documents shouldn't be complicated. <strong>Amazing PDF</strong> is a fast, reliable, and 100% free online PDF utility designed to help you handle your files effortlessly. Whether you need to merge, split, compress, or convert documents, our intuitive web application provides professional-grade tools directly in your browser without any software installation.</p>
+                
+                <h3 style="font-size: 1.4rem; margin-bottom: 15px;">Why Choose Amazing PDF?</h3>
+                <ul style="margin-left: 20px; margin-bottom: 25px;">
+                    <li style="margin-bottom: 10px;"><strong>Lightning Fast Processing:</strong> Built with modern web technologies to ensure your documents are ready in seconds.</li>
+                    <li style="margin-bottom: 10px;"><strong>User-Friendly Interface:</strong> A clean, minimalist design that makes PDF management accessible to everyone, from students to working professionals.</li>
+                    <li style="margin-bottom: 10px;"><strong>Privacy First:</strong> We respect your data. Your files are processed securely and are never permanently stored on our servers. Your privacy is our top priority.</li>
+                    <li style="margin-bottom: 10px;"><strong>Completely Free:</strong> No hidden charges, no premium subscriptions, and no annoying watermarks on your final documents.</li>
+                </ul>
+
+                <h3 style="font-size: 1.4rem; margin-bottom: 15px;">How to Use Our Tools</h3>
+                <p>Getting started is incredibly easy. Simply select the specific tool you need from our dashboard, upload your PDF file, and let our system do the heavy lifting. Once processed, your optimized file will be immediately available for download in your <em>My History</em> section.</p>
+            </div>
+
+        </div>
+
+        <div id="view-history" class="view-section">
+            <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
+            <h2><i class="fas fa-history"></i> My Download History</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">Your processed files are saved locally.</p>
+            <div id="history-list"></div>
+        </div>
+
+        <div id="view-merge" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="merge-ui-container"></div></div>
+        <div id="view-split" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="split-ui-container"></div></div>
+        <div id="view-compress" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="compress-ui-container"></div></div>
+        <div id="view-delete" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="delete-ui-container"></div></div>
+        <div id="view-rotate" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="rotate-ui-container"></div></div>
+        <div id="view-pdftojpg" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="pdftojpg-ui-container"></div></div>
+        <div id="view-jpgtopdf" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="jpgtopdf-ui-container"></div></div>
+        <div id="view-protect" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="protect-ui-container"></div></div>
+        <div id="view-unlock" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="unlock-ui-container"></div></div>
+        <div id="view-watermark" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="watermark-ui-container"></div></div>
+        <div id="view-sign" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="sign-ui-container"></div></div>
+        <div id="view-extract" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="extract-ui-container"></div></div>
+        <div id="view-flatten" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="flatten-ui-container"></div></div>
+        <div id="view-crop" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="crop-ui-container"></div></div>
+        <div id="view-metadata" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="metadata-ui-container"></div></div>
+        <div id="view-repair" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="repair-ui-container"></div></div>
+        <div id="view-reorder" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="reorder-ui-container"></div></div>
+        <div id="view-imagewatermark" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="imagewatermark-ui-container"></div></div>
+        <div id="view-htmltopdf" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="htmltopdf-ui-container"></div></div>
+        <div id="view-addtext" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="addtext-ui-container"></div></div>
+        <div id="view-addblank" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="addblank-ui-container"></div></div>
+        <div id="view-resizepdf" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="resizepdf-ui-container"></div></div>
+        <div id="view-splitevenodd" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="splitevenodd-ui-container"></div></div>
+        <div id="view-addmargins" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="addmargins-ui-container"></div></div>
+        <div id="view-removeannots" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="removeannots-ui-container"></div></div>
+        <div id="view-pagenumbers" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="pagenumbers-ui-container"></div></div>
+
+    </div>
+
+    <script type="module" src="app.js?v=5"></script>
+</body>
+</html>
