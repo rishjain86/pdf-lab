@@ -35,7 +35,7 @@ function showCustomAlert(message) {
     alertBox.children[0].style.transform = 'translateY(0)';
 }
 
-// SMART ERROR HANDLER FOR ENCRYPTED FILES
+// SMART ERROR HANDLER
 function handleError(error) {
     const msg = error.message.toLowerCase();
     const activeViewElement = document.querySelector('.view-section.active');
@@ -850,7 +850,7 @@ if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner 
 }
 
 // ==========================================
-//    EDIT PDF - FULL LOGIC (PHASES 1 & 2)
+//    EDIT PDF - DRAG & DROP ENABLED
 // ==========================================
 
 let editPdfDoc = null;
@@ -870,10 +870,13 @@ let isDrawing = false;
 let startX = 0;
 let startY = 0;
 
-// Har page ki editing save karne ke liye
+// DRAG & DROP STATE
+let activeDragIndex = -1;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
 let pageEdits = {}; 
 
-// 1. File Upload Logic
 document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
@@ -885,7 +888,7 @@ document.getElementById('edit-pdf-input')?.addEventListener('change', function(e
             pdfjsLib.getDocument(originalPdfBytes).promise.then(pdf => {
                 editPdfDoc = pdf;
                 editPageNum = 1;
-                pageEdits = {}; // Purani drawing clear kardo
+                pageEdits = {}; 
                 document.getElementById('page-count').textContent = pdf.numPages;
                 
                 document.getElementById('edit-upload-section').style.display = 'none';
@@ -901,14 +904,12 @@ document.getElementById('edit-pdf-input')?.addEventListener('change', function(e
     }
 });
 
-// 2. Page Render & Overlay Sync Logic
 function renderEditPage(num) {
     if (!editPdfDoc) return;
 
     editPdfDoc.getPage(num).then(page => {
         const viewport = page.getViewport({ scale: editScale });
         
-        // Dono canvas ka size barabar rakho
         renderCanvas.height = viewport.height;
         renderCanvas.width = viewport.width;
         overlayCanvas.height = viewport.height;
@@ -918,7 +919,7 @@ function renderEditPage(num) {
         page.render(renderContext);
         document.getElementById('page-num').textContent = num;
         
-        drawOverlay(); // Agar is page par pehle se kuch likha hai, toh dikhao
+        drawOverlay(); 
     });
 }
 
@@ -931,8 +932,7 @@ function drawOverlay() {
         if (edit.type === 'whiteout') {
             overlayCtx.fillStyle = 'white';
             overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
-            // User ko samjh aaye isliye ek halka border
-            overlayCtx.strokeStyle = 'rgba(0,0,0,0.1)';
+            overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)';
             overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
         } else if (edit.type === 'text') {
             overlayCtx.font = "20px Arial";
@@ -942,7 +942,6 @@ function drawOverlay() {
     });
 }
 
-// 3. Touch aur Mouse interaction Logic (Drawings ke liye)
 function getCursorPos(e) {
     const rect = overlayCanvas.getBoundingClientRect();
     const scaleX = overlayCanvas.width / rect.width;
@@ -962,9 +961,49 @@ function getCursorPos(e) {
 }
 
 function startAction(e) {
-    if (currentTool === 'none') return;
     e.preventDefault();
     const pos = getCursorPos(e);
+    const edits = pageEdits[editPageNum] || [];
+    
+    // 1. Pehle check karo ki kya hum kisi purane text/box par click kar rahe hain (Drag & Drop Logic)
+    for (let i = edits.length - 1; i >= 0; i--) {
+        const edit = edits[i];
+        let isHit = false;
+        
+        if (edit.type === 'whiteout') {
+            const minX = Math.min(edit.x, edit.x + edit.w);
+            const maxX = Math.max(edit.x, edit.x + edit.w);
+            const minY = Math.min(edit.y, edit.y + edit.h);
+            const maxY = Math.max(edit.y, edit.y + edit.h);
+            
+            if (pos.x >= minX && pos.x <= maxX && pos.y >= minY && pos.y <= maxY) {
+                isHit = true;
+            }
+        } else if (edit.type === 'text') {
+            overlayCtx.font = "20px Arial";
+            const textWidth = overlayCtx.measureText(edit.text).width;
+            // Text ka click area thoda bada rakhte hain taaki mobile par touch karna aasan ho
+            if (pos.x >= edit.x - 5 && pos.x <= edit.x + textWidth + 5 && pos.y >= edit.y - 25 && pos.y <= edit.y + 10) {
+                isHit = true;
+            }
+        }
+        
+        if (isHit) {
+            activeDragIndex = i;
+            dragOffsetX = pos.x - edit.x;
+            dragOffsetY = pos.y - edit.y;
+            
+            // Jo element pakda hai use top par le aao taaki wo doosro ke upar dikhe
+            const item = edits.splice(i, 1)[0];
+            edits.push(item);
+            activeDragIndex = edits.length - 1;
+            
+            return; // Agar drag shuru ho gaya toh naya text ya box mat banao
+        }
+    }
+
+    // 2. Agar drag nahi ho raha, tab naya tool chalega
+    if (currentTool === 'none') return;
     
     if (currentTool === 'text') {
         const text = prompt("Enter text to add:");
@@ -981,12 +1020,22 @@ function startAction(e) {
 }
 
 function moveAction(e) {
-    if (!isDrawing || currentTool !== 'whiteout') return;
     e.preventDefault();
     const pos = getCursorPos(e);
-    drawOverlay(); // Purana draw karo
     
-    // Live drag hota hua white box dikhao
+    // Dragging Logic
+    if (activeDragIndex !== -1) {
+        const edit = pageEdits[editPageNum][activeDragIndex];
+        edit.x = pos.x - dragOffsetX;
+        edit.y = pos.y - dragOffsetY;
+        drawOverlay();
+        return;
+    }
+    
+    // Drawing Box Logic
+    if (!isDrawing || currentTool !== 'whiteout') return;
+    
+    drawOverlay(); 
     overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     overlayCtx.fillRect(startX, startY, pos.x - startX, pos.y - startY);
     overlayCtx.strokeStyle = 'red';
@@ -994,8 +1043,16 @@ function moveAction(e) {
 }
 
 function endAction(e) {
-    if (!isDrawing || currentTool !== 'whiteout') return;
     e.preventDefault();
+    
+    // Dragging Stop Logic
+    if (activeDragIndex !== -1) {
+        activeDragIndex = -1;
+        return;
+    }
+    
+    // Drawing Box Stop Logic
+    if (!isDrawing || currentTool !== 'whiteout') return;
     isDrawing = false;
     
     let clientX = e.clientX;
@@ -1014,7 +1071,6 @@ function endAction(e) {
     const w = endX - startX;
     const h = endY - startY;
     
-    // Sirf tab save karo jab actual mein thoda drag hua ho (accidental click na ho)
     if (Math.abs(w) > 5 && Math.abs(h) > 5) {
         if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
         pageEdits[editPageNum].push({ 
@@ -1038,12 +1094,12 @@ overlayCanvas?.addEventListener('touchend', endAction);
 // 4. Toolbar Buttons Logic
 document.getElementById('btn-edit-text')?.addEventListener('click', () => {
     currentTool = 'text';
-    showCustomAlert("Text Tool Active: PDF par jahan text likhna hai wahan click karein.");
+    showCustomAlert("Text Tool Active: PDF par jahan text likhna hai wahan click karein.<br><br>Tip: Aap kisi bhi likhe hue text ko pakad kar move (drag) bhi kar sakte hain!");
 });
 
 document.getElementById('btn-edit-whiteout')?.addEventListener('click', () => {
     currentTool = 'whiteout';
-    showCustomAlert("Eraser Active: PDF par white box banane ke liye ungli/mouse drag karein.");
+    showCustomAlert("Eraser Active: PDF par white box banane ke liye ungli/mouse drag karein.<br><br>Tip: Aap banaye hue white box ko pakad kar idhar-udhar khiska bhi sakte hain.");
 });
 
 document.getElementById('btn-edit-clear')?.addEventListener('click', () => {
@@ -1064,7 +1120,7 @@ document.getElementById('next-page')?.addEventListener('click', () => {
     renderEditPage(editPageNum);
 });
 
-// 5. Final Save Logic (Canvas drawing ko PDF mein embed karna)
+// 5. Final Save Logic
 document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
     if (!originalPdfBytes) return;
     
@@ -1076,16 +1132,14 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
         const pdfDoc = await PDFDocument.load(originalPdfBytes);
         const pages = pdfDoc.getPages();
         
-        // Saari editing array ko check karo
         for (const [pageNumStr, edits] of Object.entries(pageEdits)) {
             const pageNum = parseInt(pageNumStr);
-            const page = pages[pageNum - 1]; // Array index starts from 0
+            const page = pages[pageNum - 1]; 
             const { width, height } = page.getSize();
             
             for (const edit of edits) {
-                // Canvas coordinates ko real PDF coordinates mein convert karo
                 const pdfX = edit.x / editScale;
-                const pdfY = height - (edit.y / editScale); // PDF starts Y from bottom
+                const pdfY = height - (edit.y / editScale); 
                 
                 if (edit.type === 'whiteout') {
                     const pdfW = edit.w / editScale;
@@ -1114,7 +1168,6 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
         const savedBytes = await pdfDoc.save();
         const outputName = getBaseName(editOriginalFileName) + '_Edited.pdf';
         
-        // Aapka pehle se bana hua smart download/history function call
         await processAndDownload(savedBytes, outputName, 'application/pdf');
         showCustomAlert("Success! Edited PDF save ho gayi hai.");
         
