@@ -849,9 +849,8 @@ if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner 
     AdManager.showBanner();
 }
 
-
 // ==========================================
-//    EDIT PDF - PHASE 3 (ADVANCED TOOLS)
+//    EDIT PDF - FULL PRODUCTION READY 🚀
 // ==========================================
 
 let editPdfDoc = null;
@@ -873,19 +872,21 @@ let editSize = 20;
 let isDrawing = false;
 let startX = 0;
 let startY = 0;
-let currentPath = null; // For Freehand Drawing
+let currentPath = null; 
 
 let activeDragIndex = -1;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
+let hasMovedDuringClick = false; // Issue 2 fix: Track if it was a drag or just a tap
 
-let pageEdits = {}; // { 1: [ {type: 'text'...}, {type: 'draw'...} ] }
+let pageEdits = {}; 
 
 // --- UI Toggle Helper ---
 function setToolActive(btnId, toolName) {
     document.querySelectorAll('.edit-toolbar-btn').forEach(b => b.classList.remove('edit-tool-active'));
     if(btnId) document.getElementById(btnId).classList.add('edit-tool-active');
     currentTool = toolName;
+    drawOverlay(); // Tool change hone par box border hide/show karne ke liye
 }
 
 document.getElementById('edit-color-picker')?.addEventListener('input', (e) => editColor = e.target.value);
@@ -915,9 +916,7 @@ document.getElementById('edit-image-input')?.addEventListener('change', function
             const dataUrl = event.target.result;
             const img = new Image();
             img.onload = function() {
-                // Add to edits array in center of screen
                 if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
-                // Scale image to fit decently
                 let w = img.width;
                 let h = img.height;
                 const maxDim = 200;
@@ -927,24 +926,17 @@ document.getElementById('edit-image-input')?.addEventListener('change', function
                     h = h * ratio;
                 }
                 pageEdits[editPageNum].push({ 
-                    type: 'image', 
-                    x: overlayCanvas.width/2 - w/2, 
-                    y: overlayCanvas.height/2 - h/2, 
-                    w: w, 
-                    h: h, 
-                    dataUrl: dataUrl,
-                    imgType: file.type,
-                    imgObj: img // caching for fast rendering
+                    type: 'image', x: overlayCanvas.width/2 - w/2, y: overlayCanvas.height/2 - h/2, 
+                    w: w, h: h, dataUrl: dataUrl, imgType: file.type, imgObj: img 
                 });
                 drawOverlay();
-                document.getElementById('edit-image-input').value = ""; // Reset input
+                document.getElementById('edit-image-input').value = ""; 
             }
             img.src = dataUrl;
         }
         reader.readAsDataURL(file);
     }
 });
-
 
 // --- PDF Load ---
 document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) {
@@ -991,9 +983,15 @@ function drawOverlay() {
         if (edit.type === 'whiteout') {
             overlayCtx.fillStyle = 'white';
             overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
-            overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)';
-            overlayCtx.lineWidth = 1;
-            overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
+            
+            // Issue 6 Fix: Outline ONLY visible when eraser tool is active so user can find and drag it
+            if (currentTool === 'whiteout') {
+                overlayCtx.strokeStyle = 'rgba(0,0,0,0.1)';
+                overlayCtx.lineWidth = 1;
+                overlayCtx.setLineDash([4, 4]); // Dashed line for clarity
+                overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
+                overlayCtx.setLineDash([]); // Reset dash
+            }
         } else if (edit.type === 'text') {
             overlayCtx.font = `${edit.size}px Arial`;
             overlayCtx.fillStyle = edit.color;
@@ -1013,9 +1011,11 @@ function drawOverlay() {
             }
         } else if (edit.type === 'image' && edit.imgObj) {
             overlayCtx.drawImage(edit.imgObj, edit.x, edit.y, edit.w, edit.h);
-            overlayCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; // Blue border for visibility
-            overlayCtx.lineWidth = 2;
-            overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
+            if (currentTool === 'image') {
+                overlayCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
+                overlayCtx.lineWidth = 2;
+                overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
+            }
         }
     });
 }
@@ -1038,8 +1038,8 @@ function startAction(e) {
     e.preventDefault();
     const pos = getCursorPos(e);
     const edits = pageEdits[editPageNum] || [];
+    hasMovedDuringClick = false; // Reset drag tracker on new click
     
-    // Check Dragging logic FIRST (For Text, Whiteout, Images)
     for (let i = edits.length - 1; i >= 0; i--) {
         const edit = edits[i];
         let isHit = false;
@@ -1054,7 +1054,7 @@ function startAction(e) {
             if (pos.x >= edit.x - 5 && pos.x <= edit.x + textWidth + 5 && pos.y >= edit.y - edit.size && pos.y <= edit.y + 10) isHit = true;
         }
         
-        if (isHit && currentTool !== 'draw') { // Drawing tool overrides dragging so you can draw over images
+        if (isHit && currentTool !== 'draw') { 
             activeDragIndex = i;
             dragOffsetX = pos.x - edit.x;
             dragOffsetY = pos.y - edit.y;
@@ -1065,7 +1065,6 @@ function startAction(e) {
         }
     }
 
-    // Apply New Tool
     if (currentTool === 'text') {
         const text = prompt("Enter text to add:");
         if (text) {
@@ -1092,6 +1091,7 @@ function moveAction(e) {
     
     // Dragging
     if (activeDragIndex !== -1) {
+        hasMovedDuringClick = true; // Mark as dragged, not clicked
         const edit = pageEdits[editPageNum][activeDragIndex];
         edit.x = pos.x - dragOffsetX;
         edit.y = pos.y - dragOffsetY;
@@ -1107,6 +1107,7 @@ function moveAction(e) {
         overlayCtx.fillRect(startX, startY, pos.x - startX, pos.y - startY);
         overlayCtx.strokeStyle = 'red';
         overlayCtx.lineWidth = 1;
+        overlayCtx.setLineDash([]);
         overlayCtx.strokeRect(startX, startY, pos.x - startX, pos.y - startY);
     } else if (currentTool === 'draw') {
         currentPath.points.push({x: pos.x, y: pos.y});
@@ -1116,8 +1117,22 @@ function moveAction(e) {
 
 function endAction(e) {
     e.preventDefault();
+    
     if (activeDragIndex !== -1) {
+        // Issue 2 Fix: If item wasn't moved, it means user just tapped on it. Prompt to edit!
+        if (!hasMovedDuringClick) {
+            const edit = pageEdits[editPageNum][activeDragIndex];
+            if (edit.type === 'text' && currentTool === 'text') {
+                const newText = prompt("Edit your text:", edit.text);
+                if (newText !== null && newText.trim() !== "") {
+                    edit.text = newText;
+                    edit.color = editColor; // Update with latest color
+                    edit.size = editSize;   // Update with latest size
+                }
+            }
+        }
         activeDragIndex = -1;
+        drawOverlay();
         return;
     }
     
@@ -1126,7 +1141,7 @@ function endAction(e) {
     currentPath = null;
     
     if (currentTool === 'whiteout') {
-        const pos = getCursorPos(e); // final pos fallback
+        const pos = getCursorPos(e); 
         let clientX = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : 0);
         let clientY = e.clientY || (e.changedTouches ? e.changedTouches[0].clientY : 0);
         const rect = overlayCanvas.getBoundingClientRect();
@@ -1155,7 +1170,6 @@ overlayCanvas?.addEventListener('touchend', endAction);
 document.getElementById('prev-page')?.addEventListener('click', () => { if (editPageNum > 1) { editPageNum--; renderEditPage(editPageNum); } });
 document.getElementById('next-page')?.addEventListener('click', () => { if (editPageNum < editPdfDoc?.numPages) { editPageNum++; renderEditPage(editPageNum); } });
 
-// Hex to RGB converter for PDF-lib
 function hexToRgbPdf(hex) {
     let r = 0, g = 0, b = 0;
     if (hex.length === 7) {
@@ -1166,7 +1180,7 @@ function hexToRgbPdf(hex) {
     return rgb(r, g, b);
 }
 
-// 5. Final Save Logic (Handles Text, Whiteout, Drawings, and Images)
+// 5. Final Save Logic
 document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
     if (!originalPdfBytes) return;
     const btn = document.getElementById('btn-edit-save');
@@ -1212,7 +1226,6 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                         });
                     }
                 } else if (edit.type === 'image') {
-                    // Fetch binary data from DataUrl
                     const res = await fetch(edit.dataUrl);
                     const imageBytes = await res.arrayBuffer();
                     
