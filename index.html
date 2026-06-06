@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- PDF.js Library for Rendering PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -40,6 +41,13 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
+            overscroll-behavior-y: none; /* Stops pull-to-refresh on mobile */
+        }
+
+        /* Lock body completely when editor is open */
+        body.is-editing {
+            overflow: hidden !important;
+            touch-action: none;
         }
 
         /* --- SIDEBAR --- */
@@ -271,10 +279,10 @@
 
         /* Canvas Touch Fixes for Zoom & Pan */
         #pdf-overlay-canvas {
-            touch-action: none; 
+            touch-action: none; /* Stops canvas from pulling/scrolling natively */
         }
         .canvas-container {
-            touch-action: pinch-zoom; 
+            touch-action: pan-x pan-y pinch-zoom; 
             flex: 1; 
             width: 100%; 
             overflow: auto; 
@@ -283,6 +291,7 @@
             display: flex; 
             justify-content: center; 
             align-items: flex-start;
+            -webkit-overflow-scrolling: touch;
         }
 
         @media (max-width: 768px) {
@@ -525,6 +534,7 @@
             <div id="history-list"></div>
         </div>
 
+        <!-- FULL-SCREEN EDIT PDF SECTION (Universal Engine) -->
         <div id="view-edit" class="view-section">
             <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
             
@@ -544,7 +554,7 @@
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--surface-color); border-bottom: 1px solid var(--glass-border);">
                     <div id="workspace-title" style="color: white; font-weight: 600; font-size: 1.1rem;"><i class="fas fa-edit" style="color: var(--accent);"></i> Pro PDF Editor</div>
-                    <button id="btn-close-editor" onclick="document.getElementById('edit-workspace').style.display='none'; document.getElementById('edit-upload-section').style.display='block'; window.switchView('dashboard');" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 500;"><i class="fas fa-times"></i> Exit Editor</button>
+                    <button id="btn-close-editor" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 500;"><i class="fas fa-times"></i> Exit Editor</button>
                 </div>
 
                 <div id="edit-toolbar" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; background: rgba(0,0,0,0.2); padding: 10px; width: 100%; align-items: center; border-bottom: 1px solid var(--glass-border);">
@@ -562,6 +572,7 @@
                         </div>
                     </div>
 
+                    <!-- Visual Tools Dynamic Header Text -->
                     <div id="visual-tool-header" style="display:none; color: #f59e0b; font-weight: 600;">Draw a box on the PDF</div>
 
                     <div style="display: flex; gap: 10px; align-items: center; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
@@ -583,6 +594,7 @@
             </div>
         </div>
 
+        <!-- NEW ADVANCED TEXT MODAL (With Bold, Italic, Align, Bg Color, Opacity) -->
         <div id="custom-text-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
             <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 350px; max-width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                 <h3 style="color: white; margin-bottom: 15px;" id="text-modal-title">Text Editor</h3>
@@ -624,6 +636,7 @@
             <i class="fas fa-trash-alt" style="font-size: 1.3rem;"></i> Drop here to delete
         </div>
 
+        <!-- Tool Containers -->
         <div id="view-merge" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="merge-ui-container"></div></div>
         <div id="view-split" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="split-ui-container"></div></div>
         <div id="view-compress" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="compress-ui-container"></div></div>
@@ -653,6 +666,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=16"></script>
+    <script type="module" src="app.js?v=17"></script>
 </body>
 </html>
