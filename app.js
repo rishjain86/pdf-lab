@@ -830,7 +830,6 @@ if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner 
     AdManager.showBanner();
 }
 
-
 // ==========================================
 //    EDIT PDF - CANVA LEVEL PRO EDITOR 🚀
 // ==========================================
@@ -893,7 +892,6 @@ function openProTextModal(initialText = "", actionData) {
         activeTextState = { ...edit };
     }
     
-    // Sync UI with state
     document.getElementById('btn-style-bold').style.background = activeTextState.bold ? 'var(--accent)' : '#334155';
     document.getElementById('btn-style-italic').style.background = activeTextState.italic ? 'var(--accent)' : '#334155';
     document.getElementById('btn-style-underline').style.background = activeTextState.underline ? 'var(--accent)' : '#334155';
@@ -906,7 +904,7 @@ function openProTextModal(initialText = "", actionData) {
     input.focus();
 }
 
-// Format Buttons Listeners
+// FORMAT BUTTON LISTENERS
 document.getElementById('btn-style-bold')?.addEventListener('click', (e) => {
     activeTextState.bold = !activeTextState.bold;
     e.currentTarget.style.background = activeTextState.bold ? 'var(--accent)' : '#334155';
@@ -918,6 +916,11 @@ document.getElementById('btn-style-italic')?.addEventListener('click', (e) => {
 document.getElementById('btn-style-underline')?.addEventListener('click', (e) => {
     activeTextState.underline = !activeTextState.underline;
     e.currentTarget.style.background = activeTextState.underline ? 'var(--accent)' : '#334155';
+});
+
+// BUG FIX: Update BG color actively when picker changes
+document.getElementById('pro-bg-picker')?.addEventListener('input', (e) => {
+    activeTextState.bgColor = e.target.value;
 });
 document.getElementById('btn-bg-clear')?.addEventListener('click', () => {
     activeTextState.bgColor = 'transparent';
@@ -931,9 +934,6 @@ document.getElementById('btn-text-cancel')?.addEventListener('click', () => {
 document.getElementById('btn-text-save')?.addEventListener('click', () => {
     const val = document.getElementById('pro-text-input').value;
     activeTextState.color = document.getElementById('pro-color-picker').value;
-    if(activeTextState.bgColor !== 'transparent') {
-        activeTextState.bgColor = document.getElementById('pro-bg-picker').value;
-    }
     activeTextState.size = parseInt(document.getElementById('pro-size-picker').value) || 24;
     activeTextState.opacity = parseFloat(document.getElementById('pro-opacity-slider').value) || 1;
 
@@ -963,7 +963,6 @@ function setToolActive(btnId, toolName) {
     drawOverlay(); 
 }
 
-// Global draw vars
 let globalDrawColor = '#000000';
 let globalDrawSize = 5;
 document.getElementById('edit-color-picker')?.addEventListener('input', (e) => globalDrawColor = e.target.value);
@@ -1097,17 +1096,15 @@ function drawOverlay() {
             const textMetrics = overlayCtx.measureText(edit.text);
             const tWidth = textMetrics.width;
             
-            // BG Color
+            // BG Draw fix: Wraps the text safely
             if(edit.bgColor && edit.bgColor !== 'transparent') {
                 overlayCtx.fillStyle = edit.bgColor;
-                overlayCtx.fillRect(edit.x - 2, edit.y - edit.size + 2, tWidth + 4, edit.size + 4);
+                overlayCtx.fillRect(edit.x - 4, edit.y - edit.size, tWidth + 8, edit.size * 1.2);
             }
 
-            // Text
             overlayCtx.fillStyle = edit.color;
             overlayCtx.fillText(edit.text, edit.x, edit.y);
 
-            // Underline
             if(edit.underline) {
                 overlayCtx.strokeStyle = edit.color;
                 overlayCtx.lineWidth = Math.max(1, edit.size/15);
@@ -1120,7 +1117,7 @@ function drawOverlay() {
             if (i === selectedEditIndex) {
                 overlayCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
                 overlayCtx.lineWidth = 1;
-                overlayCtx.strokeRect(edit.x - 5, edit.y - edit.size - 2, tWidth + 10, edit.size + 10);
+                overlayCtx.strokeRect(edit.x - 6, edit.y - edit.size - 2, tWidth + 12, edit.size * 1.2 + 4);
             }
         } else if (edit.type === 'draw') {
             overlayCtx.strokeStyle = edit.color;
@@ -1444,17 +1441,18 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                     const pdfFontSize = edit.size / editScale;
                     const textWidth = helveticaFont.widthOfTextAtSize(edit.text, pdfFontSize);
                     
-                    // BG Draw
+                    // BG Draw fix for PDF save
                     if(edit.bgColor && edit.bgColor !== 'transparent') {
                         page.drawRectangle({
-                            x: pdfX - 2, y: pdfY - pdfFontSize + 2,
-                            width: textWidth + 4, height: pdfFontSize + 4,
+                            x: pdfX - 4, 
+                            y: pdfY - (pdfFontSize * 0.2) - 2,
+                            width: textWidth + 8, 
+                            height: pdfFontSize * 1.2,
                             color: hexToRgbPdf(edit.bgColor),
                             opacity: edit.opacity || 1
                         });
                     }
 
-                    // Text Draw
                     page.drawText(edit.text, {
                         x: pdfX, y: pdfY,
                         size: pdfFontSize,
@@ -1463,7 +1461,6 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                         opacity: edit.opacity || 1
                     });
 
-                    // Underline Draw
                     if(edit.underline) {
                         page.drawLine({
                             start: { x: pdfX, y: pdfY - 2 },
