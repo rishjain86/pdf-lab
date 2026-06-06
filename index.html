@@ -41,10 +41,9 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
-            overscroll-behavior-y: none; /* Stops pull-to-refresh on mobile */
+            overscroll-behavior-y: none;
         }
 
-        /* Lock body completely when editor is open */
         body.is-editing {
             overflow: hidden !important;
             touch-action: none;
@@ -274,12 +273,11 @@
             background: var(--accent) !important;
         }
 
-        /* Search Bar Desktop Visibility */
         .desktop-search-container { display: block; }
 
-        /* Canvas Touch Fixes for Zoom & Pan */
+        /* Mobile & PC Safe Canvas Container */
         #pdf-overlay-canvas {
-            touch-action: none; /* Stops canvas from pulling/scrolling natively */
+            touch-action: none; 
         }
         .canvas-container {
             touch-action: pan-x pan-y pinch-zoom; 
@@ -289,8 +287,8 @@
             background: #cbd5e1; 
             padding: 20px; 
             display: flex; 
-            justify-content: center; 
-            align-items: flex-start;
+            flex-direction: column;
+            align-items: center; /* Locks canvas horizontally */
             -webkit-overflow-scrolling: touch;
         }
 
@@ -550,14 +548,17 @@
                 </button>
             </div>
 
-            <div id="edit-workspace" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: var(--bg-color); flex-direction: column;">
+            <!-- WORKSPACE FIX: Strict Height & Overflow lock to prevent Native Browser scroll -->
+            <div id="edit-workspace" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100%; z-index: 9999; background: var(--bg-color); flex-direction: column; overflow: hidden;">
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--surface-color); border-bottom: 1px solid var(--glass-border);">
+                <!-- Fixed Header -->
+                <div style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--surface-color); border-bottom: 1px solid var(--glass-border);">
                     <div id="workspace-title" style="color: white; font-weight: 600; font-size: 1.1rem;"><i class="fas fa-edit" style="color: var(--accent);"></i> Pro PDF Editor</div>
-                    <button id="btn-close-editor" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 500;"><i class="fas fa-times"></i> Exit Editor</button>
+                    <button id="btn-close-editor" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 500;"><i class="fas fa-times"></i> Exit</button>
                 </div>
 
-                <div id="edit-toolbar" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; background: rgba(0,0,0,0.2); padding: 10px; width: 100%; align-items: center; border-bottom: 1px solid var(--glass-border);">
+                <!-- Fixed Toolbar -->
+                <div id="edit-toolbar" style="flex-shrink: 0; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; background: rgba(0,0,0,0.2); padding: 10px; width: 100%; align-items: center; border-bottom: 1px solid var(--glass-border);">
                     <button class="edit-toolbar-btn" id="btn-edit-text" style="background: #3b82f6; color: white;"><i class="fas fa-font"></i> Text</button>
                     <button class="edit-toolbar-btn" id="btn-edit-draw" style="background: #f59e0b; color: white;"><i class="fas fa-pen"></i> Draw</button>
                     <button class="edit-toolbar-btn" id="btn-edit-whiteout" style="background: #f8fafc; color: #0f172a;"><i class="fas fa-eraser"></i> Eraser</button>
@@ -585,8 +586,9 @@
                     <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white;"><i class="fas fa-save"></i> Save PDF</button>
                 </div>
 
+                <!-- Scrollable Canvas Zone -->
                 <div class="canvas-container">
-                    <div style="position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.5); background: white;">
+                    <div style="position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.5); background: white; margin: 0 auto;">
                         <canvas id="pdf-render-canvas" style="display: block;"></canvas>
                         <canvas id="pdf-overlay-canvas" style="position: absolute; top: 0; left: 0; z-index: 10; cursor: crosshair;"></canvas>
                     </div>
@@ -666,6 +668,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=17"></script>
+    <script type="module" src="app.js?v=18"></script>
 </body>
 </html>
