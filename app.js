@@ -704,7 +704,9 @@ let editPdfDoc = null;
 let currentEditFile = null; 
 let editOriginalFileName = "";
 let editPageNum = 1;
-const editScale = 1.5;
+
+// DYNAMIC SCALE INSTEAD OF CONSTANT
+let editScale = 1.5;
 
 const renderCanvas = document.getElementById('pdf-render-canvas');
 const renderCtx = renderCanvas ? renderCanvas.getContext('2d') : null;
@@ -864,7 +866,7 @@ function openVisualWorkspace(file, mode) {
     const btnClear = document.getElementById('btn-edit-clear');
 
     headerHelp.style.display = 'none';
-    document.body.classList.add('is-editing'); // Mobile scroll lock
+    document.body.classList.add('is-editing'); 
 
     if (mode === 'edit') {
         title.innerHTML = '<i class="fas fa-edit"></i> Pro PDF Editor';
@@ -899,13 +901,6 @@ function openVisualWorkspace(file, mode) {
     fileReader.readAsArrayBuffer(file);
 }
 
-document.getElementById('btn-close-editor')?.addEventListener('click', () => {
-    document.body.classList.remove('is-editing');
-    document.getElementById('edit-workspace').style.display='none'; 
-    document.getElementById('edit-upload-section').style.display='block'; 
-    window.switchView('dashboard');
-});
-
 document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) {
     if (e.target.files[0]) openVisualWorkspace(e.target.files[0], 'edit');
 });
@@ -913,11 +908,22 @@ document.getElementById('edit-pdf-input')?.addEventListener('change', function(e
 function renderEditPage(num) {
     if (!editPdfDoc) return;
     editPdfDoc.getPage(num).then(page => {
+        // DYNAMIC SCALE CALCULATION TO FIT ANY SCREEN
+        const baseViewport = page.getViewport({ scale: 1 });
+        const containerWidth = document.querySelector('.canvas-container').clientWidth;
+        const padding = window.innerWidth > 768 ? 60 : 20; 
+        let calcScale = (containerWidth - padding) / baseViewport.width;
+        
+        editScale = Math.min(calcScale, 1.5); 
+
         const viewport = page.getViewport({ scale: editScale });
-        renderCanvas.height = viewport.height; renderCanvas.width = viewport.width;
-        overlayCanvas.height = viewport.height; overlayCanvas.width = viewport.width;
+        renderCanvas.height = viewport.height; 
+        renderCanvas.width = viewport.width;
+        overlayCanvas.height = viewport.height; 
+        overlayCanvas.width = viewport.width;
         page.render({ canvasContext: renderCtx, viewport: viewport });
-        document.getElementById('page-num').textContent = num; drawOverlay(); 
+        document.getElementById('page-num').textContent = num; 
+        drawOverlay(); 
     });
 }
 
@@ -1002,13 +1008,15 @@ function normalizeBox(box) {
     return { x: box.w < 0 ? box.x + box.w : box.x, y: box.h < 0 ? box.y + box.h : box.y, w: Math.abs(box.w), h: Math.abs(box.h) };
 }
 
-// Mobile Scroll Fix: Prevent native scroll when drawing/dragging with 1 finger
-overlayCanvas?.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 1 && (currentTool !== 'none' || currentVisualMode === 'pagenumbers')) e.preventDefault();
-}, {passive: false});
+document.getElementById('btn-close-editor')?.addEventListener('click', () => {
+    document.body.classList.remove('is-editing');
+    document.getElementById('edit-workspace').style.display='none'; 
+    document.getElementById('edit-upload-section').style.display='block'; 
+    window.switchView('dashboard');
+});
 
 overlayCanvas?.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'touch' && e.isPrimary === false) return; // Allow pinch zoom
+    if (e.pointerType === 'touch' && e.isPrimary === false) return; 
     if (currentTool === 'none' && currentVisualMode !== 'pagenumbers') return;
     if (e.target.closest('#custom-text-modal')) return;
     
@@ -1063,8 +1071,8 @@ overlayCanvas?.addEventListener('pointerdown', (e) => {
 window.addEventListener('pointermove', (e) => {
     if (activeDragIndex === -1 && !activeResizeHandle && !isDrawing) return;
     if (e.pointerType === 'touch') {
-        if (!e.isPrimary) return; // Allow pinch
-        e.preventDefault(); // Stop mobile native scrolling while dragging/drawing
+        if (!e.isPrimary) return; 
+        e.preventDefault(); 
     }
     
     const pos = getCursorPos(e);
