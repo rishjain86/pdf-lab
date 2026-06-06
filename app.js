@@ -845,7 +845,7 @@ const handleSearch = (e) => {
     });
 };
 document.getElementById('mobile-search')?.addEventListener('input', handleSearch);
-document.getElementById('desktop-search')?.addEventListener('input', handleSearch); // Fix 3 applied
+document.getElementById('desktop-search')?.addEventListener('input', handleSearch);
 
 if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner === 'function') {
     AdManager.showBanner();
@@ -1206,6 +1206,7 @@ function startAction(e) {
 }
 
 function moveAction(e) {
+    if (activeDragIndex === -1 && !activeResizeHandle && !isDrawing) return;
     if (e.touches && e.touches.length > 1) return; // Allow Zoom
     if (currentTool === 'none') return;
     e.preventDefault();
@@ -1288,6 +1289,8 @@ function moveAction(e) {
 }
 
 function endAction(e) {
+    if (activeDragIndex === -1 && !activeResizeHandle && !isDrawing) return;
+
     // End Resize
     if (activeResizeHandle) {
         activeResizeHandle = null;
@@ -1339,11 +1342,11 @@ function endAction(e) {
 }
 
 overlayCanvas?.addEventListener('mousedown', startAction);
-overlayCanvas?.addEventListener('mousemove', moveAction);
-overlayCanvas?.addEventListener('mouseup', endAction);
+window.addEventListener('mousemove', moveAction, {passive: false});
+window.addEventListener('mouseup', endAction);
 overlayCanvas?.addEventListener('touchstart', startAction, {passive: false});
-overlayCanvas?.addEventListener('touchmove', moveAction, {passive: false});
-overlayCanvas?.addEventListener('touchend', endAction);
+window.addEventListener('touchmove', moveAction, {passive: false});
+window.addEventListener('touchend', endAction);
 
 document.getElementById('prev-page')?.addEventListener('click', () => { if (editPageNum > 1) { editPageNum--; selectedEditIndex = -1; renderEditPage(editPageNum); } });
 document.getElementById('next-page')?.addEventListener('click', () => { if (editPageNum < editPdfDoc?.numPages) { editPageNum++; selectedEditIndex = -1; renderEditPage(editPageNum); } });
