@@ -864,6 +864,7 @@ function openVisualWorkspace(file, mode) {
     const btnClear = document.getElementById('btn-edit-clear');
 
     headerHelp.style.display = 'none';
+    document.body.classList.add('is-editing'); // Mobile scroll lock
 
     if (mode === 'edit') {
         title.innerHTML = '<i class="fas fa-edit"></i> Pro PDF Editor';
@@ -893,10 +894,17 @@ function openVisualWorkspace(file, mode) {
             editPdfDoc = pdf; editPageNum = 1; document.getElementById('page-count').textContent = pdf.numPages;
             window.switchView('edit'); document.getElementById('edit-upload-section').style.display = 'none'; document.getElementById('edit-workspace').style.display = 'flex';
             renderEditPage(editPageNum);
-        }).catch(error => { showCustomAlert("Error loading PDF."); });
+        }).catch(error => { showCustomAlert("Error loading PDF."); document.body.classList.remove('is-editing'); });
     };
     fileReader.readAsArrayBuffer(file);
 }
+
+document.getElementById('btn-close-editor')?.addEventListener('click', () => {
+    document.body.classList.remove('is-editing');
+    document.getElementById('edit-workspace').style.display='none'; 
+    document.getElementById('edit-upload-section').style.display='block'; 
+    window.switchView('dashboard');
+});
 
 document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) {
     if (e.target.files[0]) openVisualWorkspace(e.target.files[0], 'edit');
@@ -994,12 +1002,17 @@ function normalizeBox(box) {
     return { x: box.w < 0 ? box.x + box.w : box.x, y: box.h < 0 ? box.y + box.h : box.y, w: Math.abs(box.w), h: Math.abs(box.h) };
 }
 
+// Mobile Scroll Fix: Prevent native scroll when drawing/dragging with 1 finger
+overlayCanvas?.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1 && (currentTool !== 'none' || currentVisualMode === 'pagenumbers')) e.preventDefault();
+}, {passive: false});
+
 overlayCanvas?.addEventListener('pointerdown', (e) => {
-    if (e.touches && e.touches.length > 1) return; 
+    if (e.pointerType === 'touch' && e.isPrimary === false) return; // Allow pinch zoom
     if (currentTool === 'none' && currentVisualMode !== 'pagenumbers') return;
     if (e.target.closest('#custom-text-modal')) return;
     
-    e.preventDefault(); const pos = getCursorPos(e); const edits = pageEdits[editPageNum] || []; hasMovedDuringClick = false; 
+    const pos = getCursorPos(e); const edits = pageEdits[editPageNum] || []; hasMovedDuringClick = false; 
     
     if (selectedEditIndex !== -1 && edits[selectedEditIndex]?.type === 'image') {
         const edit = edits[selectedEditIndex]; const rects = getHandleRects(edit);
@@ -1049,8 +1062,12 @@ overlayCanvas?.addEventListener('pointerdown', (e) => {
 
 window.addEventListener('pointermove', (e) => {
     if (activeDragIndex === -1 && !activeResizeHandle && !isDrawing) return;
-    if (e.touches && e.touches.length > 1) return;
-    e.preventDefault(); const pos = getCursorPos(e);
+    if (e.pointerType === 'touch') {
+        if (!e.isPrimary) return; // Allow pinch
+        e.preventDefault(); // Stop mobile native scrolling while dragging/drawing
+    }
+    
+    const pos = getCursorPos(e);
     
     if (activeResizeHandle) {
         hasMovedDuringClick = true; const edit = pageEdits[editPageNum][selectedEditIndex]; const dx = pos.x - dragOffsetX; const dy = pos.y - dragOffsetY; const orig = originalEditState;
@@ -1176,7 +1193,7 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
 
         } else if (currentVisualMode === 'crop') {
             const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
-            if(!boxData) return showCustomAlert("Draw a crop box first!");
+            if(!boxData) { showCustomAlert("Draw a crop box first!"); btn.innerHTML = oldText; return; }
             const nBox = normalizeBox(boxData);
             const pdfDoc = await PDFDocument.load(freshBuffer);
             const pages = pdfDoc.getPages();
@@ -1188,7 +1205,7 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
 
         } else if (currentVisualMode === 'addmargins') {
             const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
-            if(!boxData) return showCustomAlert("Draw a content box first!");
+            if(!boxData) { showCustomAlert("Draw a content box first!"); btn.innerHTML = oldText; return; }
             const nBox = normalizeBox(boxData);
             const pdfDoc = await PDFDocument.load(freshBuffer);
             const pages = pdfDoc.getPages();
@@ -1199,7 +1216,7 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
 
         } else if (currentVisualMode === 'extract') {
             const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
-            if(!boxData) return showCustomAlert("Draw a selection box first!");
+            if(!boxData) { showCustomAlert("Draw a selection box first!"); btn.innerHTML = oldText; return; }
             const nBox = normalizeBox(boxData);
             const pdf = await pdfjsLib.getDocument(freshBuffer).promise;
             let fullText = "";
@@ -1215,7 +1232,7 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
 
         } else if (currentVisualMode === 'pagenumbers') {
             const dummy = pageEdits[1]?.find(e => e.type === 'pagenum-dummy');
-            if(!dummy) return showCustomAlert("Position the number first.");
+            if(!dummy) { showCustomAlert("Position the number first."); btn.innerHTML = oldText; return; }
             const pdfDoc = await PDFDocument.load(freshBuffer);
             const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
             const pages = pdfDoc.getPages();
@@ -1228,7 +1245,8 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
             });
             await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Numbered.pdf', 'application/pdf');
         }
+        document.body.classList.remove('is-editing');
         if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
-    } catch (error) { handleError(error); } 
+    } catch (error) { handleError(error); document.body.classList.remove('is-editing'); } 
     finally { btn.innerHTML = oldText; }
 });
