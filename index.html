@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- PDF.js Library for Rendering PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -348,7 +347,6 @@
             <div class="page-header">
                 <h1>Every tool you need to work with PDFs</h1>
                 <p>100% FREE, Fast, and Secure.</p>
-                <!-- DESKTOP SEARCH FIX -->
                 <div class="desktop-search-container" style="max-width: 500px; margin: 20px auto 0;">
                     <input type="text" id="desktop-search" placeholder="Search tools..." style="width: 100%; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--glass-border); background: var(--surface-color); color: white; outline: none; font-size: 1rem;">
                 </div>
@@ -510,7 +508,6 @@
             <div id="history-list"></div>
         </div>
 
-        <!-- FULL-SCREEN EDIT PDF SECTION -->
         <div id="view-edit" class="view-section">
             <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
             
@@ -559,7 +556,6 @@
                 </div>
 
                 <div style="flex: 1; width: 100%; overflow: auto; background: #cbd5e1; padding: 20px; display: flex; justify-content: center; align-items: flex-start;">
-                    <!-- touch-action: pinch-zoom ADDED FOR FIX 4 -->
                     <div style="position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.5); background: white;">
                         <canvas id="pdf-render-canvas" style="display: block;"></canvas>
                         <canvas id="pdf-overlay-canvas" style="position: absolute; top: 0; left: 0; z-index: 10; touch-action: pinch-zoom; cursor: crosshair;"></canvas>
@@ -568,7 +564,6 @@
             </div>
         </div>
 
-        <!-- NEW: THEMED CUSTOM TEXT MODAL -->
         <div id="custom-text-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
             <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 320px; max-width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                 <h3 style="color: white; margin-bottom: 15px;" id="text-modal-title">Enter Text</h3>
@@ -580,8 +575,7 @@
             </div>
         </div>
 
-        <!-- NEW: DRAG & DROP TRASH ZONE -->
-        <div id="drag-trash-zone" style="display: none; position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(239, 68, 68, 0.95); color: white; padding: 15px 30px; border-radius: 50px; z-index: 99999; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.6); align-items: center; gap: 10px; font-weight: 600; font-size: 1.1rem; transition: 0.2s;">
+        <div id="drag-trash-zone" style="display: none; position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(239, 68, 68, 0.95); color: white; padding: 15px 30px; border-radius: 50px; z-index: 99999; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.6); align-items: center; gap: 10px; font-weight: 600; font-size: 1.1rem; transition: 0.2s; pointer-events: none;">
             <i class="fas fa-trash-alt" style="font-size: 1.3rem;"></i> Drop here to delete
         </div>
 
@@ -614,6 +608,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=11"></script>
+    <script type="module" src="app.js?v=12"></script>
 </body>
 </html>
