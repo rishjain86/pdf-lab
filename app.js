@@ -633,6 +633,7 @@ if (ui.htmltopdf) {
     });
 }
 
+// SECURE MERGE LIST FUNCTION
 let mergeFiles = [];
 if (ui.merge) {
     const mergeInput = document.getElementById('merge-file-input');
@@ -656,6 +657,7 @@ if (ui.merge) {
     });
 }
 
+// SECURE JPG TO PDF LIST FUNCTION
 let imageFiles = [];
 if (ui.jpgtopdf) {
     const imgInput = document.getElementById('jpgtopdf-file-input');
@@ -733,25 +735,78 @@ const trashZone = document.getElementById('drag-trash-zone');
 
 let pageEdits = {}; 
 
+// --- ADVANCED TEXT MODAL LOGIC ---
 let pendingTextAction = null; 
+let tmState = { bold: false, italic: false, underline: false, align: 'left' };
+
 function openTextModal(initialText = "", actionData) {
     pendingTextAction = actionData;
     const modal = document.getElementById('custom-text-modal');
     const input = document.getElementById('custom-text-input');
     document.getElementById('text-modal-title').innerText = actionData.type === 'new' ? "Add New Text" : "Edit Text";
-    input.value = initialText; modal.style.display = 'flex'; input.focus();
+    input.value = initialText; 
+
+    if (actionData.type === 'edit') {
+        const edit = pageEdits[editPageNum][actionData.index];
+        tmState.bold = edit.bold || false;
+        tmState.italic = edit.italic || false;
+        tmState.underline = edit.underline || false;
+        tmState.align = edit.align || 'left';
+        document.getElementById('tm-color').value = edit.color || '#000000';
+        document.getElementById('tm-bg-color').value = edit.bgColor || '#ffffff';
+        document.getElementById('tm-bg-transparent').checked = (edit.bgColor === 'transparent');
+        document.getElementById('tm-opacity').value = edit.opacity || 1;
+    } else {
+        tmState = { bold: false, italic: false, underline: false, align: 'left' };
+        document.getElementById('tm-color').value = editColor;
+        document.getElementById('tm-bg-color').value = '#ffffff';
+        document.getElementById('tm-bg-transparent').checked = true;
+        document.getElementById('tm-opacity').value = 1;
+    }
+    
+    updateTmUI();
+    modal.style.display = 'flex'; input.focus();
+}
+
+['bold', 'italic', 'underline'].forEach(prop => {
+    document.getElementById(`tm-${prop}`)?.addEventListener('click', () => { tmState[prop] = !tmState[prop]; updateTmUI(); });
+});
+['left', 'center', 'right'].forEach(align => {
+    document.getElementById(`tm-align-${align}`)?.addEventListener('click', () => { tmState.align = align; updateTmUI(); });
+});
+
+function updateTmUI() {
+    ['bold', 'italic', 'underline'].forEach(prop => {
+        const btn = document.getElementById(`tm-${prop}`);
+        if (tmState[prop]) btn.classList.add('edit-tool-active'); else btn.classList.remove('edit-tool-active');
+    });
+    ['left', 'center', 'right'].forEach(align => {
+        const btn = document.getElementById(`tm-align-${align}`);
+        if (tmState.align === align) btn.classList.add('edit-tool-active'); else btn.classList.remove('edit-tool-active');
+    });
 }
 
 document.getElementById('btn-text-cancel')?.addEventListener('click', () => { document.getElementById('custom-text-modal').style.display = 'none'; pendingTextAction = null; });
 document.getElementById('btn-text-save')?.addEventListener('click', () => {
     const val = document.getElementById('custom-text-input').value;
+    const color = document.getElementById('tm-color').value;
+    const bgColor = document.getElementById('tm-bg-transparent').checked ? 'transparent' : document.getElementById('tm-bg-color').value;
+    const opacity = parseFloat(document.getElementById('tm-opacity').value);
+
     if(val && val.trim() !== '' && pendingTextAction) {
         if(pendingTextAction.type === 'new') {
             if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
-            pageEdits[editPageNum].push({ type: 'text', x: pendingTextAction.pos.x, y: pendingTextAction.pos.y, text: val, color: editColor, size: editSize });
+            pageEdits[editPageNum].push({ 
+                type: 'text', x: pendingTextAction.pos.x, y: pendingTextAction.pos.y, 
+                text: val, color: color, size: editSize,
+                bold: tmState.bold, italic: tmState.italic, underline: tmState.underline, align: tmState.align,
+                bgColor: bgColor, opacity: opacity
+            });
         } else if(pendingTextAction.type === 'edit') {
             const edit = pageEdits[editPageNum][pendingTextAction.index];
-            edit.text = val; edit.color = editColor; edit.size = editSize;
+            edit.text = val; edit.color = color; edit.size = editSize;
+            edit.bold = tmState.bold; edit.italic = tmState.italic; edit.underline = tmState.underline;
+            edit.align = tmState.align; edit.bgColor = bgColor; edit.opacity = opacity;
         }
         drawOverlay();
     }
@@ -876,8 +931,39 @@ function drawOverlay() {
             overlayCtx.fillStyle = 'white'; overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
             if (currentTool === 'whiteout') { overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)'; overlayCtx.lineWidth = 1; overlayCtx.setLineDash([4, 4]); overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h); overlayCtx.setLineDash([]); }
         } else if (edit.type === 'text') {
-            overlayCtx.font = `${edit.size}px Arial`; overlayCtx.fillStyle = edit.color; overlayCtx.fillText(edit.text, edit.x, edit.y);
-            if (i === selectedEditIndex) { const textWidth = overlayCtx.measureText(edit.text).width; overlayCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; overlayCtx.lineWidth = 1; overlayCtx.strokeRect(edit.x - 5, edit.y - edit.size, textWidth + 10, edit.size + 10); }
+            overlayCtx.save();
+            overlayCtx.globalAlpha = edit.opacity || 1;
+            const fontStyle = `${edit.italic ? 'italic ' : ''}${edit.bold ? 'bold ' : ''}${edit.size}px Arial`;
+            overlayCtx.font = fontStyle;
+            const textWidth = overlayCtx.measureText(edit.text).width;
+            
+            let drawX = edit.x;
+            if (edit.align === 'center') drawX = edit.x - textWidth/2;
+            if (edit.align === 'right') drawX = edit.x - textWidth;
+
+            if (edit.bgColor && edit.bgColor !== 'transparent') {
+                overlayCtx.fillStyle = edit.bgColor;
+                overlayCtx.fillRect(drawX - 5, edit.y - edit.size, textWidth + 10, edit.size + 10);
+            }
+
+            overlayCtx.fillStyle = edit.color;
+            overlayCtx.fillText(edit.text, drawX, edit.y);
+
+            if (edit.underline) {
+                overlayCtx.beginPath();
+                overlayCtx.moveTo(drawX, edit.y + 2);
+                overlayCtx.lineTo(drawX + textWidth, edit.y + 2);
+                overlayCtx.strokeStyle = edit.color;
+                overlayCtx.lineWidth = Math.max(1, edit.size/15);
+                overlayCtx.stroke();
+            }
+
+            if (i === selectedEditIndex) { 
+                overlayCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; overlayCtx.lineWidth = 1; 
+                overlayCtx.strokeRect(drawX - 5, edit.y - edit.size, textWidth + 10, edit.size + 10); 
+            }
+            overlayCtx.restore();
+
         } else if (edit.type === 'draw') {
             overlayCtx.strokeStyle = edit.color; overlayCtx.lineWidth = edit.size; overlayCtx.lineCap = 'round'; overlayCtx.lineJoin = 'round'; overlayCtx.beginPath();
             if(edit.points.length > 0) { overlayCtx.moveTo(edit.points[0].x, edit.points[0].y); for(let k=1; k<edit.points.length; k++) { overlayCtx.lineTo(edit.points[k].x, edit.points[k].y); } overlayCtx.stroke(); }
@@ -929,8 +1015,12 @@ overlayCanvas?.addEventListener('pointerdown', (e) => {
             const nBox = normalizeBox(edit);
             if (pos.x >= nBox.x && pos.x <= nBox.x + nBox.w && pos.y >= nBox.y && pos.y <= nBox.y + nBox.h) isHit = true;
         } else if (edit.type === 'text' || edit.type === 'pagenum-dummy') {
-            overlayCtx.font = `${edit.size}px Arial`; const textWidth = overlayCtx.measureText(edit.text).width;
-            if (pos.x >= edit.x - 5 && pos.x <= edit.x + textWidth + 5 && pos.y >= edit.y - edit.size && pos.y <= edit.y + 10) isHit = true;
+            overlayCtx.font = `${edit.italic ? 'italic ' : ''}${edit.bold ? 'bold ' : ''}${edit.size}px Arial`; 
+            const textWidth = overlayCtx.measureText(edit.text).width;
+            let drawX = edit.x;
+            if(edit.align === 'center') drawX = edit.x - textWidth/2;
+            if(edit.align === 'right') drawX = edit.x - textWidth;
+            if (pos.x >= drawX - 5 && pos.x <= drawX + textWidth + 5 && pos.y >= edit.y - edit.size && pos.y <= edit.y + 10) isHit = true;
         } else if (edit.type === 'draw') {
             let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
             edit.points.forEach(p => { if(p.x < minX) minX = p.x; if(p.x > maxX) maxX = p.x; if(p.y < minY) minY = p.y; if(p.y > maxY) maxY = p.y; });
@@ -1023,7 +1113,7 @@ document.getElementById('prev-page')?.addEventListener('click', () => { if (edit
 document.getElementById('next-page')?.addEventListener('click', () => { if (editPageNum < editPdfDoc?.numPages) { editPageNum++; selectedEditIndex = -1; renderEditPage(editPageNum); } });
 
 // ==========================================
-// UNIVERSAL SAVE ENGINE
+// UNIVERSAL SAVE ENGINE (Handles Bold, Italic, Color, BG, Opacity)
 // ==========================================
 document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
     if (!currentEditFile) return;
@@ -1040,10 +1130,46 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 const pageNum = parseInt(pageNumStr); const page = pages[pageNum - 1]; const { width, height } = page.getSize();
                 for (const edit of edits) {
                     const pdfX = edit.x / editScale; const pdfY = height - (edit.y / editScale); 
-                    if (edit.type === 'whiteout') { page.drawRectangle({ x: pdfX, y: pdfY - (edit.h / editScale), width: edit.w / editScale, height: edit.h / editScale, color: rgb(1, 1, 1) }); } 
-                    else if (edit.type === 'text') { const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica); page.drawText(edit.text, { x: pdfX, y: pdfY, size: edit.size / editScale, font: helveticaFont, color: hexToRgbPdf(edit.color) }); } 
-                    else if (edit.type === 'draw') { for(let k=0; k < edit.points.length - 1; k++) { const p1 = edit.points[k]; const p2 = edit.points[k+1]; page.drawLine({ start: { x: p1.x / editScale, y: height - (p1.y / editScale) }, end: { x: p2.x / editScale, y: height - (p2.y / editScale) }, thickness: edit.size / editScale, color: hexToRgbPdf(edit.color) }); } } 
-                    else if (edit.type === 'image') { const res = await fetch(edit.dataUrl); const imageBytes = await res.arrayBuffer(); let pdfImage = edit.imgType === 'image/png' ? await pdfDoc.embedPng(imageBytes) : await pdfDoc.embedJpg(imageBytes); const pdfW = edit.w / editScale; const pdfH = edit.h / editScale; page.drawImage(pdfImage, { x: pdfX, y: pdfY - pdfH, width: pdfW, height: pdfH }); }
+                    if (edit.type === 'whiteout') { 
+                        page.drawRectangle({ x: pdfX, y: pdfY - (edit.h / editScale), width: edit.w / editScale, height: edit.h / editScale, color: rgb(1, 1, 1) }); 
+                    } 
+                    else if (edit.type === 'text') { 
+                        let font;
+                        if (edit.bold && edit.italic) font = await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique);
+                        else if (edit.bold) font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+                        else if (edit.italic) font = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+                        else font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+                        
+                        const fontSize = edit.size / editScale;
+                        const textWidth = font.widthOfTextAtSize(edit.text, fontSize);
+                        let drawX = pdfX;
+                        if (edit.align === 'center') drawX = pdfX - textWidth/2;
+                        if (edit.align === 'right') drawX = pdfX - textWidth;
+
+                        if (edit.bgColor && edit.bgColor !== 'transparent') {
+                            page.drawRectangle({
+                                x: drawX - 5, y: pdfY - fontSize, width: textWidth + 10, height: fontSize + 10,
+                                color: hexToRgbPdf(edit.bgColor), opacity: edit.opacity || 1
+                            });
+                        }
+
+                        page.drawText(edit.text, { 
+                            x: drawX, y: pdfY, size: fontSize, font: font, color: hexToRgbPdf(edit.color), opacity: edit.opacity || 1 
+                        }); 
+
+                        if (edit.underline) {
+                            page.drawLine({
+                                start: {x: drawX, y: pdfY - 2}, end: {x: drawX + textWidth, y: pdfY - 2},
+                                thickness: Math.max(1, fontSize/15), color: hexToRgbPdf(edit.color), opacity: edit.opacity || 1
+                            });
+                        }
+                    } 
+                    else if (edit.type === 'draw') { 
+                        for(let k=0; k < edit.points.length - 1; k++) { const p1 = edit.points[k]; const p2 = edit.points[k+1]; page.drawLine({ start: { x: p1.x / editScale, y: height - (p1.y / editScale) }, end: { x: p2.x / editScale, y: height - (p2.y / editScale) }, thickness: edit.size / editScale, color: hexToRgbPdf(edit.color) }); } 
+                    } 
+                    else if (edit.type === 'image') { 
+                        const res = await fetch(edit.dataUrl); const imageBytes = await res.arrayBuffer(); let pdfImage = edit.imgType === 'image/png' ? await pdfDoc.embedPng(imageBytes) : await pdfDoc.embedJpg(imageBytes); const pdfW = edit.w / editScale; const pdfH = edit.h / editScale; page.drawImage(pdfImage, { x: pdfX, y: pdfY - pdfH, width: pdfW, height: pdfH }); 
+                    }
                 }
             }
             await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Edited.pdf', 'application/pdf');
