@@ -856,7 +856,7 @@ if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner 
 // ==========================================
 
 let editPdfDoc = null;
-let currentEditFile = null; // Fix 1: Store actual file reference safely
+let currentEditFile = null; 
 let editOriginalFileName = "";
 let editPageNum = 1;
 const editScale = 1.5;
@@ -880,6 +880,11 @@ let activeDragIndex = -1;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 let hasMovedDuringClick = false; 
+
+// Image Resize Variables
+let selectedEditIndex = -1;
+let activeResizeHandle = null;
+let originalEditState = null;
 
 // Trash Zone Logic Variables
 let isHoveringTrash = false;
@@ -929,6 +934,7 @@ function setToolActive(btnId, toolName) {
     document.querySelectorAll('.edit-toolbar-btn').forEach(b => b.classList.remove('edit-tool-active'));
     if(btnId) document.getElementById(btnId).classList.add('edit-tool-active');
     currentTool = toolName;
+    selectedEditIndex = -1; // Deselect on tool change
     drawOverlay(); 
 }
 
@@ -941,6 +947,7 @@ document.getElementById('btn-edit-whiteout')?.addEventListener('click', () => se
 document.getElementById('btn-edit-draw')?.addEventListener('click', () => setToolActive('btn-edit-draw', 'draw'));
 document.getElementById('btn-edit-clear')?.addEventListener('click', () => {
     pageEdits[editPageNum] = [];
+    selectedEditIndex = -1;
     drawOverlay();
     showCustomAlert("Page cleared!");
 });
@@ -972,6 +979,7 @@ document.getElementById('edit-image-input')?.addEventListener('change', function
                     type: 'image', x: overlayCanvas.width/2 - w/2, y: overlayCanvas.height/2 - h/2, 
                     w: w, h: h, dataUrl: dataUrl, imgType: file.type, imgObj: img 
                 });
+                selectedEditIndex = pageEdits[editPageNum].length - 1; // Auto-select new image
                 drawOverlay();
                 document.getElementById('edit-image-input').value = ""; 
             }
@@ -981,11 +989,11 @@ document.getElementById('edit-image-input')?.addEventListener('change', function
     }
 });
 
-// --- PDF Load Fix (Store File reference safely) ---
+// --- PDF Load Fix ---
 document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
-        currentEditFile = file; // Fix 1: Store pure File object for Save phase
+        currentEditFile = file; 
         editOriginalFileName = file.name;
         const fileReader = new FileReader();
         fileReader.onload = function() {
@@ -994,6 +1002,7 @@ document.getElementById('edit-pdf-input')?.addEventListener('change', function(e
                 editPdfDoc = pdf;
                 editPageNum = 1;
                 pageEdits = {}; 
+                selectedEditIndex = -1;
                 document.getElementById('page-count').textContent = pdf.numPages;
                 document.getElementById('edit-upload-section').style.display = 'none';
                 document.getElementById('edit-workspace').style.display = 'flex';
@@ -1018,20 +1027,50 @@ function renderEditPage(num) {
     });
 }
 
+function getHandleRects(edit) {
+    const hs = 16; 
+    const half = hs / 2;
+    const {x, y, w, h} = edit;
+    return {
+        nw: {x: x - half, y: y - half, w: hs, h: hs},
+        ne: {x: x + w - half, y: y - half, w: hs, h: hs},
+        se: {x: x + w - half, y: y + h - half, w: hs, h: hs},
+        sw: {x: x - half, y: y + h - half, w: hs, h: hs},
+        n:  {x: x + w/2 - half, y: y - half, w: hs, h: hs},
+        s:  {x: x + w/2 - half, y: y + h - half, w: hs, h: hs},
+        e:  {x: x + w - half, y: y + h/2 - half, w: hs, h: hs},
+        w:  {x: x - half, y: y + h/2 - half, w: hs, h: hs}
+    };
+}
+
 function drawOverlay() {
     if (!overlayCtx) return;
     overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
     const edits = pageEdits[editPageNum] || [];
     
-    edits.forEach(edit => {
+    edits.forEach((edit, i) => {
         if (edit.type === 'whiteout') {
             overlayCtx.fillStyle = 'white';
             overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
-            // Fix 2: NO border drawn ever for whiteout items so it blends perfectly
+            
+            if (currentTool === 'whiteout') {
+                overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)';
+                overlayCtx.lineWidth = 1;
+                overlayCtx.setLineDash([4, 4]); 
+                overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
+                overlayCtx.setLineDash([]); 
+            }
         } else if (edit.type === 'text') {
             overlayCtx.font = `${edit.size}px Arial`;
             overlayCtx.fillStyle = edit.color;
             overlayCtx.fillText(edit.text, edit.x, edit.y);
+            
+            if (i === selectedEditIndex) {
+                const textWidth = overlayCtx.measureText(edit.text).width;
+                overlayCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
+                overlayCtx.lineWidth = 1;
+                overlayCtx.strokeRect(edit.x - 5, edit.y - edit.size, textWidth + 10, edit.size + 10);
+            }
         } else if (edit.type === 'draw') {
             overlayCtx.strokeStyle = edit.color;
             overlayCtx.lineWidth = edit.size;
@@ -1040,17 +1079,26 @@ function drawOverlay() {
             overlayCtx.beginPath();
             if(edit.points.length > 0) {
                 overlayCtx.moveTo(edit.points[0].x, edit.points[0].y);
-                for(let i=1; i<edit.points.length; i++) {
-                    overlayCtx.lineTo(edit.points[i].x, edit.points[i].y);
+                for(let k=1; k<edit.points.length; k++) {
+                    overlayCtx.lineTo(edit.points[k].x, edit.points[k].y);
                 }
                 overlayCtx.stroke();
             }
         } else if (edit.type === 'image' && edit.imgObj) {
             overlayCtx.drawImage(edit.imgObj, edit.x, edit.y, edit.w, edit.h);
-            if (currentTool === 'image') {
-                overlayCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
+            
+            if (i === selectedEditIndex) {
+                overlayCtx.strokeStyle = '#3b82f6';
                 overlayCtx.lineWidth = 2;
                 overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
+                
+                overlayCtx.fillStyle = 'white';
+                const rects = getHandleRects(edit);
+                for (let key in rects) {
+                    const r = rects[key];
+                    overlayCtx.fillRect(r.x, r.y, r.w, r.h);
+                    overlayCtx.strokeRect(r.x, r.y, r.w, r.h);
+                }
             }
         }
     });
@@ -1070,9 +1118,7 @@ function getCursorPos(e) {
 }
 
 function startAction(e) {
-    // Fix 4: Allow multi-touch for zoom!
-    if (e.touches && e.touches.length > 1) return;
-
+    if (e.touches && e.touches.length > 1) return; // Allow Zoom
     if (currentTool === 'none') return;
     if (e.target === document.getElementById('custom-text-input') || e.target.closest('#custom-text-modal')) return;
     
@@ -1081,7 +1127,23 @@ function startAction(e) {
     const edits = pageEdits[editPageNum] || [];
     hasMovedDuringClick = false; 
     
-    // Check Dragging hit logic
+    // 1. Check if clicking on active Resize Handles first
+    if (selectedEditIndex !== -1 && edits[selectedEditIndex]?.type === 'image') {
+        const edit = edits[selectedEditIndex];
+        const rects = getHandleRects(edit);
+        for (let key in rects) {
+            const r = rects[key];
+            if (pos.x >= r.x && pos.x <= r.x + r.w && pos.y >= r.y && pos.y <= r.y + r.h) {
+                activeResizeHandle = key;
+                dragOffsetX = pos.x; 
+                dragOffsetY = pos.y; 
+                originalEditState = { ...edit };
+                return; // Stop here, we are resizing
+            }
+        }
+    }
+    
+    // 2. Check Dragging/Selection logic
     for (let i = edits.length - 1; i >= 0; i--) {
         const edit = edits[i];
         let isHit = false;
@@ -1117,11 +1179,17 @@ function startAction(e) {
             const item = edits.splice(i, 1)[0];
             edits.push(item);
             activeDragIndex = edits.length - 1;
+            selectedEditIndex = activeDragIndex; // Update Selection
             
             trashZone.style.display = 'flex';
+            drawOverlay(); // Highlight selection
             return; 
         }
     }
+
+    // 3. No hit -> Deselect and Apply New Tool
+    selectedEditIndex = -1;
+    drawOverlay();
 
     if (currentTool === 'text') {
         openTextModal("", { type: 'new', pos: { x: pos.x, y: pos.y } });
@@ -1138,13 +1206,34 @@ function startAction(e) {
 }
 
 function moveAction(e) {
-    // Fix 4: Allow multi-touch for zoom
-    if (e.touches && e.touches.length > 1) return;
-
+    if (e.touches && e.touches.length > 1) return; // Allow Zoom
     if (currentTool === 'none') return;
     e.preventDefault();
     const pos = getCursorPos(e);
     
+    // Resizing Logic
+    if (activeResizeHandle) {
+        hasMovedDuringClick = true;
+        const edit = pageEdits[editPageNum][selectedEditIndex];
+        const dx = pos.x - dragOffsetX;
+        const dy = pos.y - dragOffsetY;
+        const orig = originalEditState;
+        
+        let newX = orig.x, newY = orig.y, newW = orig.w, newH = orig.h;
+        
+        if (activeResizeHandle.includes('e')) newW = orig.w + dx;
+        if (activeResizeHandle.includes('s')) newH = orig.h + dy;
+        if (activeResizeHandle.includes('w')) { newX = orig.x + dx; newW = orig.w - dx; }
+        if (activeResizeHandle.includes('n')) { newY = orig.y + dy; newH = orig.h - dy; }
+        
+        const minSize = 20; // limit too small
+        if (newW >= minSize) { edit.x = newX; edit.w = newW; }
+        if (newH >= minSize) { edit.y = newY; edit.h = newH; }
+        
+        drawOverlay();
+        return;
+    }
+
     // Dragging Logic
     if (activeDragIndex !== -1) {
         hasMovedDuringClick = true; 
@@ -1161,9 +1250,13 @@ function moveAction(e) {
             edit.y = pos.y - dragOffsetY;
         }
         
-        // Trash Highlight Logic
+        // PC Fix 1: Exact Bounds Trash Highlight Logic
+        const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
         const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-        if (clientY > window.innerHeight - 100) {
+        const tRect = trashZone.getBoundingClientRect();
+        
+        if (clientX >= tRect.left - 20 && clientX <= tRect.right + 20 &&
+            clientY >= tRect.top - 20 && clientY <= tRect.bottom + 20) {
             isHoveringTrash = true;
             trashZone.style.transform = 'translateX(-50%) scale(1.1)';
             trashZone.style.background = 'rgba(220, 38, 38, 1)';
@@ -1177,6 +1270,7 @@ function moveAction(e) {
         return;
     }
     
+    // Drawing Logic
     if (!isDrawing) return;
 
     if (currentTool === 'whiteout') {
@@ -1194,12 +1288,19 @@ function moveAction(e) {
 }
 
 function endAction(e) {
+    // End Resize
+    if (activeResizeHandle) {
+        activeResizeHandle = null;
+        return;
+    }
+
     if (activeDragIndex !== -1) {
         trashZone.style.display = 'none';
         
         if (isHoveringTrash) {
             pageEdits[editPageNum].splice(activeDragIndex, 1);
             isHoveringTrash = false;
+            selectedEditIndex = -1;
             showCustomAlert("Element deleted successfully.");
         } else if (!hasMovedDuringClick) {
             const edit = pageEdits[editPageNum][activeDragIndex];
@@ -1244,8 +1345,8 @@ overlayCanvas?.addEventListener('touchstart', startAction, {passive: false});
 overlayCanvas?.addEventListener('touchmove', moveAction, {passive: false});
 overlayCanvas?.addEventListener('touchend', endAction);
 
-document.getElementById('prev-page')?.addEventListener('click', () => { if (editPageNum > 1) { editPageNum--; renderEditPage(editPageNum); } });
-document.getElementById('next-page')?.addEventListener('click', () => { if (editPageNum < editPdfDoc?.numPages) { editPageNum++; renderEditPage(editPageNum); } });
+document.getElementById('prev-page')?.addEventListener('click', () => { if (editPageNum > 1) { editPageNum--; selectedEditIndex = -1; renderEditPage(editPageNum); } });
+document.getElementById('next-page')?.addEventListener('click', () => { if (editPageNum < editPdfDoc?.numPages) { editPageNum++; selectedEditIndex = -1; renderEditPage(editPageNum); } });
 
 function hexToRgbPdf(hex) {
     let r = 0, g = 0, b = 0;
@@ -1257,7 +1358,7 @@ function hexToRgbPdf(hex) {
     return rgb(r, g, b);
 }
 
-// 5. Final Save Logic (Fix 1 applied using clean ArrayBuffer)
+// 5. Final Save Logic
 document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
     if (!currentEditFile) return;
     const btn = document.getElementById('btn-edit-save');
@@ -1265,7 +1366,6 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
     
     try {
-        // Read fresh arraybuffer directly from file to prevent parsing issues
         const freshBuffer = await currentEditFile.arrayBuffer();
         const pdfDoc = await PDFDocument.load(freshBuffer);
         const pages = pdfDoc.getPages();
