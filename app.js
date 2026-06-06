@@ -35,7 +35,6 @@ function showCustomAlert(message) {
     alertBox.children[0].style.transform = 'translateY(0)';
 }
 
-// SMART ERROR HANDLER
 function handleError(error) {
     const msg = error.message.toLowerCase();
     const activeViewElement = document.querySelector('.view-section.active');
@@ -52,7 +51,6 @@ function handleError(error) {
     }
 }
 
-// --- HARDWARE BACK BUTTON LOGIC ---
 let lastBackPress = 0;
 if (window.Capacitor && window.Capacitor.isNativePlatform()) {
     App.addListener('backButton', () => {
@@ -67,7 +65,6 @@ if (window.Capacitor && window.Capacitor.isNativePlatform()) {
     });
 }
 
-// --- GLOBAL ROUTING ---
 window.switchView = (viewId) => {
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     const activeBtn = Array.from(document.querySelectorAll('.nav-btn')).find(btn => btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(viewId));
@@ -81,7 +78,6 @@ window.switchView = (viewId) => {
     if(viewId === 'history') window.renderHistory();
 };
 
-// --- DYNAMIC UI INJECTION ---
 const views = [
     'merge', 'split', 'delete', 'compress', 'rotate', 'pdftojpg', 'pagenumbers', 
     'jpgtopdf', 'extract', 'watermark', 'sign', 'protect', 'unlock', 'flatten', 
@@ -137,12 +133,10 @@ if (ui.merge) ui.merge.innerHTML = brandHeaderHtml + `<div id="merge-drop-zone" 
 if (ui.jpgtopdf) ui.jpgtopdf.innerHTML = brandHeaderHtml + `<div id="jpgtopdf-drop-zone" style="${dropZoneStyle.replace('var(--accent)', '#eab308')}"><i class="fas fa-images" style="font-size: 3rem; color: #eab308; margin-bottom: 15px;"></i><h3>Drag & Drop Images</h3><input type="file" id="jpgtopdf-file-input" multiple accept="image/*" style="display: none;"></div><div id="jpgtopdf-file-list" style="${fileListStyle}"></div><button id="btn-jpgtopdf-action" style="${btnStyle.replace('var(--accent)', '#eab308')}; display: none;"><i class="fas fa-file-pdf"></i> Convert to PDF</button>`;
 if (ui.htmltopdf) ui.htmltopdf.innerHTML = brandHeaderHtml + `<div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border);"><label style="color: var(--text-secondary);">Paste your HTML Code here:</label><textarea id="html-input" rows="10" style="${inputStyle}" placeholder="<h1>Hello</h1>"></textarea><button id="btn-htmltopdf-action" style="${btnStyle.replace('var(--accent)', '#f97316')}"><i class="fas fa-code"></i> Convert to PDF</button></div>`;
 
-// BATCH ENABLED UIs
 if (ui.protect) ui.protect.innerHTML = generateMultipleFileUI('protect', 'fa-lock', '#8b5cf6', 'Protect', 'Encrypt Files', `<input type="password" id="protect-password" placeholder="Set Password for all files" style="${inputStyle}">`);
 if (ui.unlock) ui.unlock.innerHTML = generateMultipleFileUI('unlock', 'fa-unlock', '#06b6d4', 'Unlock', 'Unlock Files', `<input type="password" id="unlock-password" placeholder="Current Password (applied to all)" style="${inputStyle}">`);
 if (ui.compress) ui.compress.innerHTML = generateMultipleFileUI('compress', 'fa-compress-arrows-alt', '#10b981', 'Compress', 'Compress Files');
 
-// SINGLE FILE UIs
 if (ui.split) ui.split.innerHTML = generateSingleFileUI('split', 'fa-cut', '#f59e0b', 'Split', 'Split & Download', `<input type="text" id="split-ranges" placeholder="e.g. 1-3" style="${inputStyle}">`);
 if (ui.delete) ui.delete.innerHTML = generateSingleFileUI('delete', 'fa-trash-alt', '#ef4444', 'Delete Pages', 'Remove Pages', `<input type="text" id="delete-ranges" placeholder="e.g. 2, 4-6" style="${inputStyle}">`);
 if (ui.reorder) ui.reorder.innerHTML = generateSingleFileUI('reorder', 'fa-sort-amount-up', '#8b5cf6', 'Reorder Pages', 'Apply New Order', `<input type="text" id="reorder-input" placeholder="e.g. 3, 1, 2" style="${inputStyle}">`);
@@ -173,10 +167,8 @@ if (ui.imagewatermark) ui.imagewatermark.innerHTML = generateSingleFileUI('image
     <input type="file" id="imagewatermark-overlay-input" accept="image/png, image/jpeg" style="${inputStyle}">
 `);
 
-// --- UTILS ---
 const getBaseName = (filename) => filename.substring(0, filename.lastIndexOf('.')) || filename;
 
-// --- ROBUST HISTORY & DOWNLOAD LOGIC ---
 const DB_NAME = 'AmazingPDFHistory';
 const STORE_NAME = 'files';
 
@@ -213,7 +205,6 @@ window.deleteHistory = async (id) => {
     return new Promise(resolve => tx.oncomplete = resolve);
 };
 
-// TEXT ELLIPSIS IN HISTORY LIST
 window.renderHistory = async () => {
     const list = document.getElementById('history-list');
     if (!list) return;
@@ -249,7 +240,6 @@ function bytesToBase64(bytes) {
     return window.btoa(binary);
 }
 
-// SMART SAVE + SHARE FUNCTION
 async function processAndDownload(bytes, filename, type, saveToDb = true) {
     if(saveToDb) {
         try { await saveToHistory(bytes, filename, type); } catch(e) { console.error("History Save Error", e); }
@@ -263,11 +253,7 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
                 data: base64, 
                 directory: Directory.Documents 
             });
-            await Share.share({ 
-                title: filename, 
-                text: 'Here is your processed file from Amazing PDF',
-                url: savedFile.uri 
-            });
+            await Share.share({ title: filename, text: 'Processed file from Amazing PDF', url: savedFile.uri });
         } catch (e) {
             showCustomAlert("File saved securely to your Documents and History tab!");
         }
@@ -291,7 +277,6 @@ function parseRange(rangeStr) {
     return [...new Set(pages)].sort((a, b) => a - b);
 }
 
-// --- CORE ACTION HANDLERS ---
 function setupSingleFileLogic(id, actionCallback) {
     const dropZone = document.getElementById(`${id}-drop-zone`);
     const input = document.getElementById(`${id}-file-input`);
@@ -409,8 +394,6 @@ function setupMultipleFileLogic(id, actionCallback) {
         }
     });
 }
-
-// --- FEATURES IMPLEMENTATIONS LOGIC ---
 
 setupSingleFileLogic('split', async (file) => {
     const pagesToExtract = parseRange(document.getElementById('split-ranges').value);
@@ -613,7 +596,6 @@ setupSingleFileLogic('imagewatermark', async (file) => {
     return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_ImgWatermark.pdf`, type: 'application/pdf' };
 });
 
-// MULTIPLE FILES BATCH IMPLEMENTATIONS
 setupMultipleFileLogic('compress', async (files) => {
     if (files.length === 1) {
         const file = files[0];
@@ -733,7 +715,6 @@ if (ui.htmltopdf) {
     });
 }
 
-// SECURE MERGE LIST FUNCTION
 let mergeFiles = [];
 if (ui.merge) {
     const mergeInput = document.getElementById('merge-file-input');
@@ -784,7 +765,6 @@ if (ui.merge) {
     });
 }
 
-// SECURE JPG TO PDF LIST FUNCTION
 let imageFiles = [];
 if (ui.jpgtopdf) {
     const imgInput = document.getElementById('jpgtopdf-file-input');
@@ -836,7 +816,6 @@ if (ui.jpgtopdf) {
     });
 }
 
-// --- SEARCH FILTERING LOGIC ---
 const handleSearch = (e) => {
     const searchTerm = e.target.value.toLowerCase();
     document.querySelectorAll('.tool-card').forEach(card => {
@@ -851,8 +830,9 @@ if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner 
     AdManager.showBanner();
 }
 
+
 // ==========================================
-//    EDIT PDF - FULL PRODUCTION READY 🚀
+//    EDIT PDF - CANVA LEVEL PRO EDITOR 🚀
 // ==========================================
 
 let editPdfDoc = null;
@@ -868,9 +848,6 @@ const overlayCanvas = document.getElementById('pdf-overlay-canvas');
 const overlayCtx = overlayCanvas ? overlayCanvas.getContext('2d') : null;
 
 let currentTool = 'none'; 
-let editColor = '#000000';
-let editSize = 20;
-
 let isDrawing = false;
 let startX = 0;
 let startY = 0;
@@ -881,67 +858,117 @@ let dragOffsetX = 0;
 let dragOffsetY = 0;
 let hasMovedDuringClick = false; 
 
-// Image Resize Variables
 let selectedEditIndex = -1;
 let activeResizeHandle = null;
 let originalEditState = null;
 
-// Trash Zone Logic Variables
 let isHoveringTrash = false;
 const trashZone = document.getElementById('drag-trash-zone');
 
 let pageEdits = {}; 
 
-// --- Custom Text Modal Logic ---
+// PRO TEXT STATE
+let activeTextState = {
+    bold: false,
+    italic: false,
+    underline: false,
+    color: '#000000',
+    bgColor: 'transparent',
+    size: 24,
+    opacity: 1
+};
+
 let pendingTextAction = null; 
 
-function openTextModal(initialText = "", actionData) {
+function openProTextModal(initialText = "", actionData) {
     pendingTextAction = actionData;
-    const modal = document.getElementById('custom-text-modal');
-    const input = document.getElementById('custom-text-input');
+    const modal = document.getElementById('pro-text-modal');
+    const input = document.getElementById('pro-text-input');
     
     document.getElementById('text-modal-title').innerText = actionData.type === 'new' ? "Add New Text" : "Edit Text";
     input.value = initialText;
+    
+    if(actionData.type === 'edit') {
+        const edit = pageEdits[editPageNum][actionData.index];
+        activeTextState = { ...edit };
+    }
+    
+    // Sync UI with state
+    document.getElementById('btn-style-bold').style.background = activeTextState.bold ? 'var(--accent)' : '#334155';
+    document.getElementById('btn-style-italic').style.background = activeTextState.italic ? 'var(--accent)' : '#334155';
+    document.getElementById('btn-style-underline').style.background = activeTextState.underline ? 'var(--accent)' : '#334155';
+    document.getElementById('pro-color-picker').value = activeTextState.color;
+    document.getElementById('pro-bg-picker').value = activeTextState.bgColor === 'transparent' ? '#ffffff' : activeTextState.bgColor;
+    document.getElementById('pro-size-picker').value = activeTextState.size;
+    document.getElementById('pro-opacity-slider').value = activeTextState.opacity;
+
     modal.style.display = 'flex';
     input.focus();
 }
 
+// Format Buttons Listeners
+document.getElementById('btn-style-bold')?.addEventListener('click', (e) => {
+    activeTextState.bold = !activeTextState.bold;
+    e.currentTarget.style.background = activeTextState.bold ? 'var(--accent)' : '#334155';
+});
+document.getElementById('btn-style-italic')?.addEventListener('click', (e) => {
+    activeTextState.italic = !activeTextState.italic;
+    e.currentTarget.style.background = activeTextState.italic ? 'var(--accent)' : '#334155';
+});
+document.getElementById('btn-style-underline')?.addEventListener('click', (e) => {
+    activeTextState.underline = !activeTextState.underline;
+    e.currentTarget.style.background = activeTextState.underline ? 'var(--accent)' : '#334155';
+});
+document.getElementById('btn-bg-clear')?.addEventListener('click', () => {
+    activeTextState.bgColor = 'transparent';
+});
+
 document.getElementById('btn-text-cancel')?.addEventListener('click', () => {
-    document.getElementById('custom-text-modal').style.display = 'none';
+    document.getElementById('pro-text-modal').style.display = 'none';
     pendingTextAction = null;
 });
 
 document.getElementById('btn-text-save')?.addEventListener('click', () => {
-    const val = document.getElementById('custom-text-input').value;
+    const val = document.getElementById('pro-text-input').value;
+    activeTextState.color = document.getElementById('pro-color-picker').value;
+    if(activeTextState.bgColor !== 'transparent') {
+        activeTextState.bgColor = document.getElementById('pro-bg-picker').value;
+    }
+    activeTextState.size = parseInt(document.getElementById('pro-size-picker').value) || 24;
+    activeTextState.opacity = parseFloat(document.getElementById('pro-opacity-slider').value) || 1;
+
     if(val && val.trim() !== '' && pendingTextAction) {
         if(pendingTextAction.type === 'new') {
             if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
-            pageEdits[editPageNum].push({ type: 'text', x: pendingTextAction.pos.x, y: pendingTextAction.pos.y, text: val, color: editColor, size: editSize });
+            pageEdits[editPageNum].push({ 
+                type: 'text', x: pendingTextAction.pos.x, y: pendingTextAction.pos.y, text: val, 
+                ...activeTextState 
+            });
         } else if(pendingTextAction.type === 'edit') {
             const edit = pageEdits[editPageNum][pendingTextAction.index];
             edit.text = val;
-            edit.color = editColor;
-            edit.size = editSize;
+            Object.assign(edit, activeTextState);
         }
         drawOverlay();
     }
-    document.getElementById('custom-text-modal').style.display = 'none';
+    document.getElementById('pro-text-modal').style.display = 'none';
     pendingTextAction = null;
 });
 
-// --- UI Toggle Helper ---
 function setToolActive(btnId, toolName) {
     document.querySelectorAll('.edit-toolbar-btn').forEach(b => b.classList.remove('edit-tool-active'));
     if(btnId) document.getElementById(btnId).classList.add('edit-tool-active');
     currentTool = toolName;
-    selectedEditIndex = -1; // Deselect on tool change
+    selectedEditIndex = -1; 
     drawOverlay(); 
 }
 
-document.getElementById('edit-color-picker')?.addEventListener('input', (e) => editColor = e.target.value);
-document.getElementById('edit-size-picker')?.addEventListener('input', (e) => editSize = parseInt(e.target.value) || 20);
+// Global draw vars
+let globalDrawColor = '#000000';
+let globalDrawSize = 5;
+document.getElementById('edit-color-picker')?.addEventListener('input', (e) => globalDrawColor = e.target.value);
+document.getElementById('edit-size-picker')?.addEventListener('input', (e) => globalDrawSize = parseInt(e.target.value) || 5);
 
-// --- Toolbar Listeners ---
 document.getElementById('btn-edit-text')?.addEventListener('click', () => setToolActive('btn-edit-text', 'text'));
 document.getElementById('btn-edit-whiteout')?.addEventListener('click', () => setToolActive('btn-edit-whiteout', 'whiteout'));
 document.getElementById('btn-edit-draw')?.addEventListener('click', () => setToolActive('btn-edit-draw', 'draw'));
@@ -952,7 +979,6 @@ document.getElementById('btn-edit-clear')?.addEventListener('click', () => {
     showCustomAlert("Page cleared!");
 });
 
-// Image Insert Tool
 document.getElementById('btn-edit-image')?.addEventListener('click', () => {
     setToolActive('btn-edit-image', 'image');
     document.getElementById('edit-image-input').click();
@@ -979,7 +1005,7 @@ document.getElementById('edit-image-input')?.addEventListener('change', function
                     type: 'image', x: overlayCanvas.width/2 - w/2, y: overlayCanvas.height/2 - h/2, 
                     w: w, h: h, dataUrl: dataUrl, imgType: file.type, imgObj: img 
                 });
-                selectedEditIndex = pageEdits[editPageNum].length - 1; // Auto-select new image
+                selectedEditIndex = pageEdits[editPageNum].length - 1; 
                 drawOverlay();
                 document.getElementById('edit-image-input').value = ""; 
             }
@@ -989,7 +1015,6 @@ document.getElementById('edit-image-input')?.addEventListener('change', function
     }
 });
 
-// --- PDF Load Fix ---
 document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
@@ -1049,6 +1074,8 @@ function drawOverlay() {
     const edits = pageEdits[editPageNum] || [];
     
     edits.forEach((edit, i) => {
+        overlayCtx.save();
+        
         if (edit.type === 'whiteout') {
             overlayCtx.fillStyle = 'white';
             overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
@@ -1058,18 +1085,42 @@ function drawOverlay() {
                 overlayCtx.lineWidth = 1;
                 overlayCtx.setLineDash([4, 4]); 
                 overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
-                overlayCtx.setLineDash([]); 
             }
         } else if (edit.type === 'text') {
-            overlayCtx.font = `${edit.size}px Arial`;
+            overlayCtx.globalAlpha = edit.opacity || 1;
+            let fontStr = "";
+            if(edit.italic) fontStr += "italic ";
+            if(edit.bold) fontStr += "bold ";
+            fontStr += `${edit.size}px Arial`;
+            overlayCtx.font = fontStr;
+            
+            const textMetrics = overlayCtx.measureText(edit.text);
+            const tWidth = textMetrics.width;
+            
+            // BG Color
+            if(edit.bgColor && edit.bgColor !== 'transparent') {
+                overlayCtx.fillStyle = edit.bgColor;
+                overlayCtx.fillRect(edit.x - 2, edit.y - edit.size + 2, tWidth + 4, edit.size + 4);
+            }
+
+            // Text
             overlayCtx.fillStyle = edit.color;
             overlayCtx.fillText(edit.text, edit.x, edit.y);
+
+            // Underline
+            if(edit.underline) {
+                overlayCtx.strokeStyle = edit.color;
+                overlayCtx.lineWidth = Math.max(1, edit.size/15);
+                overlayCtx.beginPath();
+                overlayCtx.moveTo(edit.x, edit.y + 3);
+                overlayCtx.lineTo(edit.x + tWidth, edit.y + 3);
+                overlayCtx.stroke();
+            }
             
             if (i === selectedEditIndex) {
-                const textWidth = overlayCtx.measureText(edit.text).width;
                 overlayCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
                 overlayCtx.lineWidth = 1;
-                overlayCtx.strokeRect(edit.x - 5, edit.y - edit.size, textWidth + 10, edit.size + 10);
+                overlayCtx.strokeRect(edit.x - 5, edit.y - edit.size - 2, tWidth + 10, edit.size + 10);
             }
         } else if (edit.type === 'draw') {
             overlayCtx.strokeStyle = edit.color;
@@ -1101,6 +1152,7 @@ function drawOverlay() {
                 }
             }
         }
+        overlayCtx.restore();
     });
 }
 
@@ -1118,16 +1170,15 @@ function getCursorPos(e) {
 }
 
 function startAction(e) {
-    if (e.touches && e.touches.length > 1) return; // Allow Zoom
+    if (e.touches && e.touches.length > 1) return; 
     if (currentTool === 'none') return;
-    if (e.target === document.getElementById('custom-text-input') || e.target.closest('#custom-text-modal')) return;
+    if (e.target === document.getElementById('pro-text-input') || e.target.closest('#pro-text-modal')) return;
     
     e.preventDefault();
     const pos = getCursorPos(e);
     const edits = pageEdits[editPageNum] || [];
     hasMovedDuringClick = false; 
     
-    // 1. Check if clicking on active Resize Handles first
     if (selectedEditIndex !== -1 && edits[selectedEditIndex]?.type === 'image') {
         const edit = edits[selectedEditIndex];
         const rects = getHandleRects(edit);
@@ -1138,12 +1189,11 @@ function startAction(e) {
                 dragOffsetX = pos.x; 
                 dragOffsetY = pos.y; 
                 originalEditState = { ...edit };
-                return; // Stop here, we are resizing
+                return; 
             }
         }
     }
     
-    // 2. Check Dragging/Selection logic
     for (let i = edits.length - 1; i >= 0; i--) {
         const edit = edits[i];
         let isHit = false;
@@ -1179,20 +1229,19 @@ function startAction(e) {
             const item = edits.splice(i, 1)[0];
             edits.push(item);
             activeDragIndex = edits.length - 1;
-            selectedEditIndex = activeDragIndex; // Update Selection
+            selectedEditIndex = activeDragIndex; 
             
             trashZone.style.display = 'flex';
-            drawOverlay(); // Highlight selection
+            drawOverlay(); 
             return; 
         }
     }
 
-    // 3. No hit -> Deselect and Apply New Tool
     selectedEditIndex = -1;
     drawOverlay();
 
     if (currentTool === 'text') {
-        openTextModal("", { type: 'new', pos: { x: pos.x, y: pos.y } });
+        openProTextModal("", { type: 'new', pos: { x: pos.x, y: pos.y } });
     } else if (currentTool === 'whiteout') {
         isDrawing = true;
         startX = pos.x;
@@ -1200,19 +1249,18 @@ function startAction(e) {
     } else if (currentTool === 'draw') {
         isDrawing = true;
         if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
-        currentPath = { type: 'draw', color: editColor, size: editSize, points: [ {x: pos.x, y: pos.y} ] };
+        currentPath = { type: 'draw', color: globalDrawColor, size: globalDrawSize, points: [ {x: pos.x, y: pos.y} ] };
         pageEdits[editPageNum].push(currentPath);
     }
 }
 
 function moveAction(e) {
     if (activeDragIndex === -1 && !activeResizeHandle && !isDrawing) return;
-    if (e.touches && e.touches.length > 1) return; // Allow Zoom
+    if (e.touches && e.touches.length > 1) return; 
     if (currentTool === 'none') return;
     e.preventDefault();
     const pos = getCursorPos(e);
     
-    // Resizing Logic
     if (activeResizeHandle) {
         hasMovedDuringClick = true;
         const edit = pageEdits[editPageNum][selectedEditIndex];
@@ -1227,7 +1275,7 @@ function moveAction(e) {
         if (activeResizeHandle.includes('w')) { newX = orig.x + dx; newW = orig.w - dx; }
         if (activeResizeHandle.includes('n')) { newY = orig.y + dy; newH = orig.h - dy; }
         
-        const minSize = 20; // limit too small
+        const minSize = 20; 
         if (newW >= minSize) { edit.x = newX; edit.w = newW; }
         if (newH >= minSize) { edit.y = newY; edit.h = newH; }
         
@@ -1235,7 +1283,6 @@ function moveAction(e) {
         return;
     }
 
-    // Dragging Logic
     if (activeDragIndex !== -1) {
         hasMovedDuringClick = true; 
         const edit = pageEdits[editPageNum][activeDragIndex];
@@ -1251,7 +1298,6 @@ function moveAction(e) {
             edit.y = pos.y - dragOffsetY;
         }
         
-        // PC Fix 1: Exact Bounds Trash Highlight Logic
         const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
         const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
         const tRect = trashZone.getBoundingClientRect();
@@ -1271,7 +1317,6 @@ function moveAction(e) {
         return;
     }
     
-    // Drawing Logic
     if (!isDrawing) return;
 
     if (currentTool === 'whiteout') {
@@ -1291,7 +1336,6 @@ function moveAction(e) {
 function endAction(e) {
     if (activeDragIndex === -1 && !activeResizeHandle && !isDrawing) return;
 
-    // End Resize
     if (activeResizeHandle) {
         activeResizeHandle = null;
         return;
@@ -1308,7 +1352,7 @@ function endAction(e) {
         } else if (!hasMovedDuringClick) {
             const edit = pageEdits[editPageNum][activeDragIndex];
             if (edit.type === 'text' && currentTool === 'text') {
-                openTextModal(edit.text, { type: 'edit', index: activeDragIndex });
+                openProTextModal(edit.text, { type: 'edit', index: activeDragIndex });
             }
         }
         
@@ -1352,6 +1396,7 @@ document.getElementById('prev-page')?.addEventListener('click', () => { if (edit
 document.getElementById('next-page')?.addEventListener('click', () => { if (editPageNum < editPdfDoc?.numPages) { editPageNum++; selectedEditIndex = -1; renderEditPage(editPageNum); } });
 
 function hexToRgbPdf(hex) {
+    if(hex === 'transparent') return null;
     let r = 0, g = 0, b = 0;
     if (hex.length === 7) {
         r = parseInt(hex.substring(1, 3), 16) / 255;
@@ -1361,7 +1406,7 @@ function hexToRgbPdf(hex) {
     return rgb(r, g, b);
 }
 
-// 5. Final Save Logic
+// 5. Final Save Logic (Handles Pro Text Styling)
 document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
     if (!currentEditFile) return;
     const btn = document.getElementById('btn-edit-save');
@@ -1389,13 +1434,46 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                         color: rgb(1, 1, 1),
                     });
                 } else if (edit.type === 'text') {
-                    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+                    
+                    let fontToUse = StandardFonts.Helvetica;
+                    if(edit.bold && edit.italic) fontToUse = StandardFonts.HelveticaBoldOblique;
+                    else if(edit.bold) fontToUse = StandardFonts.HelveticaBold;
+                    else if(edit.italic) fontToUse = StandardFonts.HelveticaOblique;
+
+                    const helveticaFont = await pdfDoc.embedFont(fontToUse);
+                    const pdfFontSize = edit.size / editScale;
+                    const textWidth = helveticaFont.widthOfTextAtSize(edit.text, pdfFontSize);
+                    
+                    // BG Draw
+                    if(edit.bgColor && edit.bgColor !== 'transparent') {
+                        page.drawRectangle({
+                            x: pdfX - 2, y: pdfY - pdfFontSize + 2,
+                            width: textWidth + 4, height: pdfFontSize + 4,
+                            color: hexToRgbPdf(edit.bgColor),
+                            opacity: edit.opacity || 1
+                        });
+                    }
+
+                    // Text Draw
                     page.drawText(edit.text, {
                         x: pdfX, y: pdfY,
-                        size: edit.size / editScale,
+                        size: pdfFontSize,
                         font: helveticaFont,
                         color: hexToRgbPdf(edit.color),
+                        opacity: edit.opacity || 1
                     });
+
+                    // Underline Draw
+                    if(edit.underline) {
+                        page.drawLine({
+                            start: { x: pdfX, y: pdfY - 2 },
+                            end: { x: pdfX + textWidth, y: pdfY - 2 },
+                            thickness: Math.max(1, pdfFontSize / 15),
+                            color: hexToRgbPdf(edit.color),
+                            opacity: edit.opacity || 1
+                        });
+                    }
+                    
                 } else if (edit.type === 'draw') {
                     for(let k=0; k < edit.points.length - 1; k++) {
                         const p1 = edit.points[k];
