@@ -538,10 +538,10 @@
                     <input type="file" id="edit-image-input" accept="image/png, image/jpeg" style="display: none;">
 
                     <div class="tool-settings" style="display: flex; gap: 8px; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 10px;">
-                        <input type="color" id="edit-color-picker" value="#000000" style="width: 30px; height: 30px; border: none; cursor: pointer; background: transparent; padding: 0;" title="Select Color">
+                        <input type="color" id="edit-color-picker" value="#000000" style="width: 30px; height: 30px; border: none; cursor: pointer; background: transparent; padding: 0;" title="Brush Color">
                         <div style="display: flex; align-items: center; background: var(--surface-color); border: 1px solid var(--glass-border); border-radius: 4px; padding: 2px 5px;">
                             <i class="fas fa-text-height" style="color: var(--text-secondary); font-size: 0.8rem; margin-right: 5px;"></i>
-                            <input type="number" id="edit-size-picker" value="20" min="5" max="150" style="width: 45px; border: none; background: transparent; color: white; outline: none; font-size: 0.9rem;" title="Size (Text/Brush)">
+                            <input type="number" id="edit-size-picker" value="5" min="1" max="150" style="width: 45px; border: none; background: transparent; color: white; outline: none; font-size: 0.9rem;" title="Brush Size">
                         </div>
                     </div>
 
@@ -564,13 +564,43 @@
             </div>
         </div>
 
-        <div id="custom-text-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-            <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 320px; max-width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                <h3 style="color: white; margin-bottom: 15px;" id="text-modal-title">Enter Text</h3>
-                <input type="text" id="custom-text-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; margin-bottom: 20px; outline: none; font-size: 1rem;" placeholder="Type something...">
+        <div id="pro-text-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+            <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 380px; max-width: 95%; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <h3 style="color: white; margin-bottom: 15px; text-align: center;" id="text-modal-title">Text Editor</h3>
+                
+                <input type="text" id="pro-text-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; margin-bottom: 15px; outline: none; font-size: 1rem;" placeholder="Type something...">
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
+                    <button id="btn-style-bold" class="edit-toolbar-btn" style="background: #334155; color: white;"><i class="fas fa-bold"></i></button>
+                    <button id="btn-style-italic" class="edit-toolbar-btn" style="background: #334155; color: white;"><i class="fas fa-italic"></i></button>
+                    <button id="btn-style-underline" class="edit-toolbar-btn" style="background: #334155; color: white;"><i class="fas fa-underline"></i></button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; color: var(--text-secondary); font-size: 0.9rem;">
+                    <div>
+                        <label>Text Color</label>
+                        <input type="color" id="pro-color-picker" value="#000000" style="width: 100%; height: 35px; border: none; cursor: pointer; background: transparent; padding: 0;">
+                    </div>
+                    <div>
+                        <label>Font Size</label>
+                        <input type="number" id="pro-size-picker" value="24" min="5" max="150" style="width: 100%; height: 35px; padding: 5px; border-radius: 6px; border: 1px solid var(--glass-border); background: #0f172a; color: white;">
+                    </div>
+                    <div>
+                        <label>Background</label>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="color" id="pro-bg-picker" value="#ffffff" style="width: 60%; height: 35px; border: none; cursor: pointer; background: transparent; padding: 0;">
+                            <button id="btn-bg-clear" style="width: 40%; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Clear</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label>Opacity</label>
+                        <input type="range" id="pro-opacity-slider" min="0.1" max="1" step="0.1" value="1" style="width: 100%; height: 35px;">
+                    </div>
+                </div>
+
                 <div style="display: flex; gap: 10px;">
-                    <button id="btn-text-cancel" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #ef4444; color: white; font-weight: 600; font-size: 1rem;">Cancel</button>
-                    <button id="btn-text-save" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #10b981; color: white; font-weight: 600; font-size: 1rem;">Save</button>
+                    <button id="btn-text-cancel" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #334155; color: white; font-weight: 600; font-size: 1rem;">Cancel</button>
+                    <button id="btn-text-save" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #10b981; color: white; font-weight: 600; font-size: 1rem;">Apply</button>
                 </div>
             </div>
         </div>
@@ -608,6 +638,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=12"></script>
+    <script type="module" src="app.js?v=13"></script>
 </body>
 </html>
