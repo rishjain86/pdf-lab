@@ -7,7 +7,6 @@ import { Filesystem, Directory } from 'https://cdn.jsdelivr.net/npm/@capacitor/f
 import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@6.0.0/+esm';
 import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.0/+esm';
 
-// --- CUSTOM STYLISH ALERT POPUP ---
 function showCustomAlert(message) {
     let alertBox = document.getElementById('custom-alert-box');
     if (!alertBox) {
@@ -41,11 +40,8 @@ function handleError(error) {
     const activeView = activeViewElement ? activeViewElement.id : '';
 
     if (msg.includes('encrypted') || msg.includes('password') || msg.includes('decrypt')) {
-        if (activeView === 'view-unlock') {
-            showCustomAlert("Unlock Failed ❌<br><br>Incorrect password, or API server issue.");
-        } else {
-            showCustomAlert("This PDF is password protected 🔒.<br><br>Please use the <b>'Unlock PDF'</b> tool first to remove the password before using this feature.");
-        }
+        if (activeView === 'view-unlock') showCustomAlert("Unlock Failed ❌<br><br>Incorrect password, or API server issue.");
+        else showCustomAlert("This PDF is password protected 🔒.<br><br>Please use the <b>'Unlock PDF'</b> tool first to remove the password before using this feature.");
     } else {
         showCustomAlert(`Error: ${error.message}`);
     }
@@ -55,9 +51,8 @@ let lastBackPress = 0;
 if (window.Capacitor && window.Capacitor.isNativePlatform()) {
     App.addListener('backButton', () => {
         const activeView = document.querySelector('.view-section.active').id;
-        if (activeView !== 'view-dashboard') {
-            window.switchView('dashboard');
-        } else {
+        if (activeView !== 'view-dashboard') window.switchView('dashboard');
+        else {
             const now = new Date().getTime();
             if (now - lastBackPress < 2000) App.exitApp();
             else lastBackPress = now;
@@ -71,7 +66,6 @@ window.switchView = (viewId) => {
     if(activeBtn) activeBtn.classList.add('active');
 
     document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
-    
     const targetView = document.getElementById(`view-${viewId}`);
     if(targetView) targetView.classList.add('active');
 
@@ -142,31 +136,53 @@ if (ui.delete) ui.delete.innerHTML = generateSingleFileUI('delete', 'fa-trash-al
 if (ui.reorder) ui.reorder.innerHTML = generateSingleFileUI('reorder', 'fa-sort-amount-up', '#8b5cf6', 'Reorder Pages', 'Apply New Order', `<input type="text" id="reorder-input" placeholder="e.g. 3, 1, 2" style="${inputStyle}">`);
 if (ui.rotate) ui.rotate.innerHTML = generateSingleFileUI('rotate', 'fa-sync-alt', '#3b82f6', 'Rotate', 'Rotate & Download', `<select id="rotate-angle" style="${inputStyle}"><option value="90">Right 90°</option><option value="180">Upside Down 180°</option><option value="-90">Left -90°</option></select>`);
 if (ui.pdftojpg) ui.pdftojpg.innerHTML = generateSingleFileUI('pdftojpg', 'fa-file-archive', '#eab308', 'Convert to JPG', 'Download ZIP of Images');
-if (ui.extract) ui.extract.innerHTML = generateSingleFileUI('extract', 'fa-file-alt', '#14b8a6', 'Extract Text', 'Extract & Download TXT');
-if (ui.watermark) ui.watermark.innerHTML = generateSingleFileUI('watermark', 'fa-stamp', '#ec4899', 'Watermark', 'Add Watermark', `<input type="text" id="watermark-text" placeholder="Enter Watermark Text" style="${inputStyle}">`);
-if (ui.sign) ui.sign.innerHTML = generateSingleFileUI('sign', 'fa-signature', '#8b5cf6', 'Sign', 'Sign Document', `<input type="text" id="sign-text" placeholder="Type your Full Name to sign" style="${inputStyle}">`);
 if (ui.flatten) ui.flatten.innerHTML = generateSingleFileUI('flatten', 'fa-layer-group', '#64748b', 'Flatten', 'Flatten Document');
-if (ui.crop) ui.crop.innerHTML = generateSingleFileUI('crop', 'fa-crop', '#3b82f6', 'Crop PDF', 'Crop Pages', `<input type="number" id="crop-margin" placeholder="e.g. 20" style="${inputStyle}">`);
 if (ui.metadata) ui.metadata.innerHTML = generateSingleFileUI('metadata', 'fa-info-circle', '#eab308', 'Edit Metadata', 'Update Metadata', `<input type="text" id="meta-title" placeholder="New Document Title" style="${inputStyle}"><input type="text" id="meta-author" placeholder="New Author Name" style="${inputStyle}">`);
 if (ui.repair) ui.repair.innerHTML = generateSingleFileUI('repair', 'fa-tools', '#10b981', 'Repair PDF', 'Attempt Repair');
 if (ui.addtext) ui.addtext.innerHTML = generateSingleFileUI('addtext', 'fa-font', '#6366f1', 'Add Text', 'Embed Text', `<input type="text" id="addtext-string" placeholder="Text" style="${inputStyle}"><input type="number" id="addtext-page" placeholder="Page Num" value="1" style="${inputStyle}"><input type="number" id="addtext-x" placeholder="X" value="50" style="${inputStyle}"><input type="number" id="addtext-y" placeholder="Y" value="50" style="${inputStyle}">`);
 if (ui.addblank) ui.addblank.innerHTML = generateSingleFileUI('addblank', 'fa-file-medical', '#10b981', 'Insert Blank Page', 'Insert & Download', `<select id="addblank-position" style="${inputStyle}"><option value="start">At the very beginning</option><option value="end">At the very end</option></select>`);
 if (ui.resizepdf) ui.resizepdf.innerHTML = generateSingleFileUI('resizepdf', 'fa-expand-arrows-alt', '#14b8a6', 'Resize Pages', 'Scale Document', `<select id="resize-profile" style="${inputStyle}"><option value="A4">A4 Profile</option><option value="Letter">Letter Profile</option><option value="Legal">Legal Profile</option></select>`);
 if (ui.splitevenodd) ui.splitevenodd.innerHTML = generateSingleFileUI('splitevenodd', 'fa-columns', '#6366f1', 'Split Even/Odd', 'Split & Download ZIP');
-if (ui.addmargins) ui.addmargins.innerHTML = generateSingleFileUI('addmargins', 'fa-border-all', '#3b82f6', 'Add Margins', 'Add Margins', `<input type="number" id="margin-size" placeholder="Margin size (points)" value="30" style="${inputStyle}">`);
 if (ui.removeannots) ui.removeannots.innerHTML = generateSingleFileUI('removeannots', 'fa-eraser', '#8b5cf6', 'Clean Annotations', 'Remove All');
-
-if (ui.pagenumbers) ui.pagenumbers.innerHTML = generateSingleFileUI('pagenumbers', 'fa-sort-numeric-down', '#6366f1', 'Add Numbers', 'Add Numbers', `
-    <label style="color:var(--text-secondary);">Select Position:</label>
-    <select id="pagenumbers-position" style="${inputStyle}"><option value="bottom-center">Bottom Center</option><option value="bottom-right">Bottom Right</option><option value="top-center">Top Center</option><option value="top-right">Top Right</option></select>
-    <label style="color:var(--text-secondary);">Format:</label>
-    <select id="pagenumbers-format" style="${inputStyle}"><option value="1">1, 2, 3...</option><option value="Page 1">Page 1, Page 2...</option><option value="Page 1 of 10">Page 1 of 10...</option></select>
-`);
 if (ui.imagewatermark) ui.imagewatermark.innerHTML = generateSingleFileUI('imagewatermark', 'fa-images', '#ec4899', 'Add Image Overlay', 'Stamp Image', `
     <label style="color: var(--text-secondary);">Select Logo/Image (PNG/JPG):</label>
     <input type="file" id="imagewatermark-overlay-input" accept="image/png, image/jpeg" style="${inputStyle}">
 `);
 
+// --- NEW/UPGRADED UIs ---
+if (ui.sign) ui.sign.innerHTML = generateSingleFileUI('sign', 'fa-signature', '#8b5cf6', 'Sign', 'Sign Document', `
+    <input type="text" id="sign-text" placeholder="Type your Full Name to sign" style="${inputStyle}">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; border:1px solid var(--glass-border);">
+        <label style="color:var(--text-secondary); font-size:0.9rem;">Signature Color:</label>
+        <input type="color" id="sign-color" value="#000000" style="width:40px; height:30px; border:none; background:transparent; cursor:pointer;">
+    </div>
+`);
+
+if (ui.watermark) ui.watermark.innerHTML = generateSingleFileUI('watermark', 'fa-stamp', '#ec4899', 'Watermark', 'Add Watermark', `
+    <input type="text" id="watermark-text" placeholder="Enter Watermark Text" style="${inputStyle}">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; border:1px solid var(--glass-border);">
+        <label style="display:flex; align-items:center; gap:8px; color:white; font-size:0.9rem;"><input type="checkbox" id="wm-bold"> <b>Bold</b></label>
+        <label style="display:flex; align-items:center; gap:8px; color:white; font-size:0.9rem;"><input type="checkbox" id="wm-italic"> <i>Italic</i></label>
+        <label style="display:flex; align-items:center; gap:8px; color:white; font-size:0.9rem;"><input type="checkbox" id="wm-underline"> <u>Underline</u></label>
+        <div style="display:flex; align-items:center; gap:8px; color:white; font-size:0.9rem;"><input type="color" id="wm-color" value="#aaaaaa" style="width:25px; height:25px; border:none; background:transparent; cursor:pointer;"> Color</div>
+        <select id="wm-align" style="${inputStyle} grid-column: span 2; margin-bottom:0;"><option value="center">Center Diagonal</option><option value="top">Top Horizontal</option><option value="bottom">Bottom Horizontal</option><option value="center-straight">Center Horizontal</option></select>
+    </div>
+`);
+
+if (ui.extract) ui.extract.innerHTML = generateSingleFileUI('extract', 'fa-file-alt', '#14b8a6', 'Extract Text', 'Continue', `
+    <select id="extract-mode" style="${inputStyle}"><option value="full">Extract Full PDF Text</option><option value="visual">Select Text Area Visually</option></select>
+`);
+
+// Visual Crop & Margin
+if (ui.crop) ui.crop.innerHTML = generateSingleFileUI('crop', 'fa-crop', '#3b82f6', 'Crop PDF', 'Open Visual Cropper');
+if (ui.addmargins) ui.addmargins.innerHTML = generateSingleFileUI('addmargins', 'fa-border-all', '#3b82f6', 'Add Margins', 'Open Visual Margin Tool');
+
+if (ui.pagenumbers) ui.pagenumbers.innerHTML = generateSingleFileUI('pagenumbers', 'fa-sort-numeric-down', '#6366f1', 'Add Numbers', 'Place Visually', `
+    <label style="color:var(--text-secondary); font-size:0.9rem;">Format:</label>
+    <select id="pagenumbers-format" style="${inputStyle}"><option value="1">1, 2, 3...</option><option value="Page 1">Page 1, Page 2...</option><option value="Page 1 of 10">Page 1 of 10...</option></select>
+`);
+
+// --- UTILS ---
 const getBaseName = (filename) => filename.substring(0, filename.lastIndexOf('.')) || filename;
 
 const DB_NAME = 'AmazingPDFHistory';
@@ -213,16 +229,7 @@ window.renderHistory = async () => {
     if (!items.length) return list.innerHTML = '<p style="color:var(--text-secondary);">No downloads history found.</p>';
     list.innerHTML = '';
     items.forEach(item => {
-        list.innerHTML += `<div style="${fileItemStyle}">
-            <div class="text-container">
-                <b class="text-ellipsis">${item.filename}</b>
-                <small style="color:var(--text-secondary);">${new Date(item.date).toLocaleString()}</small>
-            </div>
-            <div style="display:flex; gap:10px; flex-shrink: 0;">
-                <button onclick="triggerHistoryDownload(${item.id})" style="background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:6px;"><i class="fas fa-share-alt"></i></button>
-                <button onclick="removeHistoryItem(${item.id})" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px;"><i class="fas fa-trash"></i></button>
-            </div>
-        </div>`;
+        list.innerHTML += `<div style="${fileItemStyle}"><div class="text-container"><b class="text-ellipsis">${item.filename}</b><small style="color:var(--text-secondary);">${new Date(item.date).toLocaleString()}</small></div><div style="display:flex; gap:10px; flex-shrink: 0;"><button onclick="triggerHistoryDownload(${item.id})" style="background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:6px;"><i class="fas fa-share-alt"></i></button><button onclick="removeHistoryItem(${item.id})" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px;"><i class="fas fa-trash"></i></button></div></div>`;
     });
 };
 
@@ -241,22 +248,13 @@ function bytesToBase64(bytes) {
 }
 
 async function processAndDownload(bytes, filename, type, saveToDb = true) {
-    if(saveToDb) {
-        try { await saveToHistory(bytes, filename, type); } catch(e) { console.error("History Save Error", e); }
-    }
-    
+    if(saveToDb) { try { await saveToHistory(bytes, filename, type); } catch(e) {} }
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
             const base64 = bytesToBase64(bytes);
-            const savedFile = await Filesystem.writeFile({ 
-                path: filename, 
-                data: base64, 
-                directory: Directory.Documents 
-            });
-            await Share.share({ title: filename, text: 'Processed file from Amazing PDF', url: savedFile.uri });
-        } catch (e) {
-            showCustomAlert("File saved securely to your Documents and History tab!");
-        }
+            const savedFile = await Filesystem.writeFile({ path: filename, data: base64, directory: Directory.Documents });
+            await Share.share({ title: filename, text: 'Processed via Amazing PDF', url: savedFile.uri });
+        } catch (e) { showCustomAlert("Saved to Documents & History!"); }
     } else {
         const blob = new Blob([bytes], { type });
         const url = URL.createObjectURL(blob);
@@ -277,6 +275,7 @@ function parseRange(rangeStr) {
     return [...new Set(pages)].sort((a, b) => a - b);
 }
 
+// Visual Workspace Orchestrator
 function setupSingleFileLogic(id, actionCallback) {
     const dropZone = document.getElementById(`${id}-drop-zone`);
     const input = document.getElementById(`${id}-file-input`);
@@ -293,13 +292,7 @@ function setupSingleFileLogic(id, actionCallback) {
         if (file && file.type === 'application/pdf') {
             currentFile = file;
             dropZone.style.display = 'none';
-            info.innerHTML = `<div style="${fileItemStyle}">
-                <div class="text-container" style="display:flex; align-items:center; gap:15px; min-width:0;">
-                    <i class="fas fa-file-pdf" style="color:#ef4444; font-size:1.5rem; flex-shrink:0;"></i>
-                    <b class="text-ellipsis">${file.name}</b>
-                </div>
-                <button id="reset-${id}" style="background:var(--glass-border); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; flex-shrink:0;"><i class="fas fa-times"></i></button>
-            </div>`;
+            info.innerHTML = `<div style="${fileItemStyle}"><div class="text-container" style="display:flex; align-items:center; gap:15px; min-width:0;"><i class="fas fa-file-pdf" style="color:#ef4444; font-size:1.5rem; flex-shrink:0;"></i><b class="text-ellipsis">${file.name}</b></div><button id="reset-${id}" style="background:var(--glass-border); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; flex-shrink:0;"><i class="fas fa-times"></i></button></div>`;
             controls.style.display = 'block';
             document.getElementById(`reset-${id}`).addEventListener('click', () => {
                 currentFile = null; input.value = '';
@@ -310,6 +303,19 @@ function setupSingleFileLogic(id, actionCallback) {
 
     btn.addEventListener('click', async () => {
         if (!currentFile) return;
+        
+        // CHECK IF TOOL NEEDS VISUAL ENGINE
+        if (id === 'crop' || id === 'addmargins' || id === 'pagenumbers') {
+            openVisualWorkspace(currentFile, id);
+            document.getElementById(`reset-${id}`).click();
+            return;
+        }
+        if (id === 'extract' && document.getElementById('extract-mode').value === 'visual') {
+            openVisualWorkspace(currentFile, id);
+            document.getElementById(`reset-${id}`).click();
+            return;
+        }
+
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
         try {
@@ -317,11 +323,8 @@ function setupSingleFileLogic(id, actionCallback) {
             document.getElementById(`reset-${id}`).click();
             await processAndDownload(result.bytes, result.filename, result.type);
             if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
-        } catch (error) {
-            handleError(error);
-        } finally {
-            btn.innerHTML = originalText;
-        }
+        } catch (error) { handleError(error); } 
+        finally { btn.innerHTML = originalText; }
     });
 }
 
@@ -334,7 +337,6 @@ function setupMultipleFileLogic(id, actionCallback) {
     let currentFiles = [];
 
     if (!dropZone || !input || !btn) return;
-
     dropZone.addEventListener('click', () => input.click());
     
     function renderList() {
@@ -347,61 +349,51 @@ function setupMultipleFileLogic(id, actionCallback) {
         });
 
         listContainer.querySelectorAll('.remove-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const idx = parseInt(e.currentTarget.getAttribute('data-index'));
-                currentFiles.splice(idx, 1);
-                renderList();
-            });
+            button.addEventListener('click', (e) => { const idx = parseInt(e.currentTarget.getAttribute('data-index')); currentFiles.splice(idx, 1); renderList(); });
         });
 
         if(currentFiles.length > 0) {
-            controls.style.display = 'block';
-            dropZone.style.display = 'none';
+            controls.style.display = 'block'; dropZone.style.display = 'none';
             if(!document.getElementById(`add-more-${id}`)) {
                const addMoreBtn = document.createElement('button');
-               addMoreBtn.id = `add-more-${id}`;
-               addMoreBtn.innerHTML = '<i class="fas fa-plus"></i> Add More PDFs';
+               addMoreBtn.id = `add-more-${id}`; addMoreBtn.innerHTML = '<i class="fas fa-plus"></i> Add More PDFs';
                addMoreBtn.style = `background:var(--surface-color); color:var(--text-main); border:1px dashed var(--glass-border); padding:10px; width:100%; border-radius:8px; margin-bottom:15px; cursor:pointer; font-weight:600;`;
                addMoreBtn.addEventListener('click', () => input.click());
                listContainer.appendChild(addMoreBtn);
             }
-        } else {
-            controls.style.display = 'none';
-            dropZone.style.display = 'block';
-        }
+        } else { controls.style.display = 'none'; dropZone.style.display = 'block'; }
     }
 
     input.addEventListener('change', (e) => {
         const files = Array.from(e.target.files).filter(f => f.type === 'application/pdf');
-        currentFiles = [...currentFiles, ...files];
-        renderList();
-        input.value = ''; 
+        currentFiles = [...currentFiles, ...files]; renderList(); input.value = ''; 
     });
 
     btn.addEventListener('click', async () => {
         if (!currentFiles.length) return;
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        const originalText = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
         try {
             const result = await actionCallback(currentFiles);
             currentFiles = []; renderList(); 
             await processAndDownload(result.bytes, result.filename, result.type);
             if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
-        } catch (error) {
-            handleError(error);
-        } finally {
-            btn.innerHTML = originalText;
-        }
+        } catch (error) { handleError(error); } 
+        finally { btn.innerHTML = originalText; }
     });
 }
 
+function hexToRgbPdf(hex) {
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 7) { r = parseInt(hex.substring(1, 3), 16) / 255; g = parseInt(hex.substring(3, 5), 16) / 255; b = parseInt(hex.substring(5, 7), 16) / 255; }
+    return rgb(r, g, b);
+}
+
+// --- STANDARD ACTIONS ---
 setupSingleFileLogic('split', async (file) => {
     const pagesToExtract = parseRange(document.getElementById('split-ranges').value);
     if (!pagesToExtract.length) throw new Error("Range required");
-    const sourcePdf = await PDFDocument.load(await file.arrayBuffer());
-    const newPdf = await PDFDocument.create();
-    const copiedPages = await newPdf.copyPages(sourcePdf, pagesToExtract);
-    copiedPages.forEach(p => newPdf.addPage(p));
+    const sourcePdf = await PDFDocument.load(await file.arrayBuffer()); const newPdf = await PDFDocument.create();
+    const copiedPages = await newPdf.copyPages(sourcePdf, pagesToExtract); copiedPages.forEach(p => newPdf.addPage(p));
     return { bytes: await newPdf.save(), filename: `${getBaseName(file.name)}_Split.pdf`, type: 'application/pdf' };
 });
 
@@ -425,19 +417,8 @@ setupSingleFileLogic('flatten', async (file) => {
     return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_Flattened.pdf`, type: 'application/pdf' };
 });
 
-setupSingleFileLogic('crop', async (file) => {
-    const margin = parseInt(document.getElementById('crop-margin').value) || 20;
-    const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
-    pdfDoc.getPages().forEach(page => {
-        const { x, y, width, height } = page.getCropBox() || page.getMediaBox();
-        page.setCropBox(x + margin, y + margin, width - (margin * 2), height - (margin * 2));
-    });
-    return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_Cropped.pdf`, type: 'application/pdf' };
-});
-
 setupSingleFileLogic('metadata', async (file) => {
-    const title = document.getElementById('meta-title').value;
-    const author = document.getElementById('meta-author').value;
+    const title = document.getElementById('meta-title').value; const author = document.getElementById('meta-author').value;
     const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
     if(title) pdfDoc.setTitle(title); if(author) pdfDoc.setAuthor(author);
     return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_Metadata.pdf`, type: 'application/pdf' };
@@ -448,21 +429,21 @@ setupSingleFileLogic('repair', async (file) => {
     return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_Repaired.pdf`, type: 'application/pdf' };
 });
 
+// UPGRADED SIGN
 setupSingleFileLogic('sign', async (file) => {
     const name = document.getElementById('sign-text').value;
+    const colorHex = document.getElementById('sign-color').value;
     if (!name) throw new Error("Name required.");
     const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
     const font = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
     const page = pdfDoc.getPages()[0];
-    page.drawText(`Signed by: ${name}`, { x: page.getSize().width - 200, y: 50, size: 18, font, color: rgb(0, 0, 0.8) });
+    page.drawText(`Signed by: ${name}`, { x: page.getSize().width - 200, y: 50, size: 18, font, color: hexToRgbPdf(colorHex) });
     return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_Signed.pdf`, type: 'application/pdf' };
 });
 
 setupSingleFileLogic('addtext', async (file) => {
-    const text = document.getElementById('addtext-string').value;
-    const pageIdx = parseInt(document.getElementById('addtext-page').value) - 1;
-    const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const text = document.getElementById('addtext-string').value; const pageIdx = parseInt(document.getElementById('addtext-page').value) - 1;
+    const pdfDoc = await PDFDocument.load(await file.arrayBuffer()); const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     pdfDoc.getPages()[pageIdx].drawText(text, { x: 50, y: 50, size: 14, font, color: rgb(0,0,0) });
     return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_TextAdded.pdf`, type: 'application/pdf' };
 });
@@ -482,22 +463,9 @@ setupSingleFileLogic('resizepdf', async (file) => {
 
 setupSingleFileLogic('reorder', async (file) => {
     const indices = document.getElementById('reorder-input').value.split(',').map(n => parseInt(n.trim()) - 1);
-    const srcDoc = await PDFDocument.load(await file.arrayBuffer());
-    const newPdf = await PDFDocument.create();
-    const copied = await newPdf.copyPages(srcDoc, indices);
-    copied.forEach(p => newPdf.addPage(p));
+    const srcDoc = await PDFDocument.load(await file.arrayBuffer()); const newPdf = await PDFDocument.create();
+    const copied = await newPdf.copyPages(srcDoc, indices); copied.forEach(p => newPdf.addPage(p));
     return { bytes: await newPdf.save(), filename: `${getBaseName(file.name)}_Reordered.pdf`, type: 'application/pdf' };
-});
-
-setupSingleFileLogic('addmargins', async (file) => {
-    const margin = parseInt(document.getElementById('margin-size').value) || 30;
-    const doc = await PDFDocument.load(await file.arrayBuffer());
-    doc.getPages().forEach(page => {
-        const { width, height } = page.getSize();
-        page.setSize(width + (margin * 2), height + (margin * 2));
-        page.translateContent(margin, margin);
-    });
-    return { bytes: await doc.save(), filename: `${getBaseName(file.name)}_Margined.pdf`, type: 'application/pdf' };
 });
 
 setupSingleFileLogic('removeannots', async (file) => {
@@ -506,13 +474,43 @@ setupSingleFileLogic('removeannots', async (file) => {
     return { bytes: await doc.save(), filename: `${getBaseName(file.name)}_Cleaned.pdf`, type: 'application/pdf' };
 });
 
+// UPGRADED WATERMARK
 setupSingleFileLogic('watermark', async (file) => {
     const text = document.getElementById('watermark-text').value || "CONFIDENTIAL";
+    const isBold = document.getElementById('wm-bold').checked;
+    const isItalic = document.getElementById('wm-italic').checked;
+    const isUnderline = document.getElementById('wm-underline').checked;
+    const colorHex = document.getElementById('wm-color').value;
+    const align = document.getElementById('wm-align').value;
+
     const doc = await PDFDocument.load(await file.arrayBuffer());
-    const font = await doc.embedFont(StandardFonts.HelveticaBold);
+    
+    let font;
+    if(isBold && isItalic) font = await doc.embedFont(StandardFonts.HelveticaBoldOblique);
+    else if(isBold) font = await doc.embedFont(StandardFonts.HelveticaBold);
+    else if(isItalic) font = await doc.embedFont(StandardFonts.HelveticaOblique);
+    else font = await doc.embedFont(StandardFonts.Helvetica);
+
+    const colorRgb = hexToRgbPdf(colorHex);
+
     doc.getPages().forEach(page => {
         const { width, height } = page.getSize();
-        page.drawText(text, { x: width/2 - (font.widthOfTextAtSize(text,60)/2), y: height/2, size: 60, font, color: rgb(0.75,0.75,0.75), opacity: 0.5, rotate: degrees(45) });
+        const fontSize = 60;
+        const textWidth = font.widthOfTextAtSize(text, fontSize);
+        
+        let x = width/2 - textWidth/2;
+        let y = height/2;
+        let rotate = degrees(45);
+
+        if(align === 'top') { y = height - 100; rotate = degrees(0); }
+        if(align === 'bottom') { y = 100; rotate = degrees(0); }
+        if(align === 'center-straight') { rotate = degrees(0); }
+
+        page.drawText(text, { x, y, size: fontSize, font, color: colorRgb, opacity: 0.5, rotate });
+        
+        if(isUnderline) {
+            page.drawLine({ start: {x, y: y - 10}, end: {x: x + textWidth, y: y - 10}, thickness: 4, color: colorRgb, opacity: 0.5 });
+        }
     });
     return { bytes: await doc.save(), filename: `${getBaseName(file.name)}_Watermark.pdf`, type: 'application/pdf' };
 });
@@ -553,42 +551,12 @@ setupSingleFileLogic('extract', async (file) => {
     return { bytes: new TextEncoder().encode(fullText), filename: `${getBaseName(file.name)}_Extracted.txt`, type: 'text/plain' };
 });
 
-setupSingleFileLogic('pagenumbers', async (file) => {
-    const position = document.getElementById('pagenumbers-position').value;
-    const format = document.getElementById('pagenumbers-format').value;
-    const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
-    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const pages = pdfDoc.getPages();
-    const totalPages = pages.length;
-
-    pages.forEach((page, index) => {
-        const { width, height } = page.getSize();
-        const pageNum = index + 1;
-        let text = `${pageNum}`;
-        if (format === 'Page 1') text = `Page ${pageNum}`;
-        if (format === 'Page 1 of 10') text = `Page ${pageNum} of ${totalPages}`;
-
-        const textWidth = helveticaFont.widthOfTextAtSize(text, 12);
-        let x = width / 2 - textWidth / 2;
-        let y = 30;
-
-        if (position === 'bottom-right') x = width - textWidth - 30;
-        if (position === 'top-center') y = height - 30;
-        if (position === 'top-right') { x = width - textWidth - 30; y = height - 30; }
-
-        page.drawText(text, { x, y, size: 12, font: helveticaFont, color: rgb(0,0,0) });
-    });
-    return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_Numbered.pdf`, type: 'application/pdf' };
-});
-
 setupSingleFileLogic('imagewatermark', async (file) => {
     const imgInput = document.getElementById('imagewatermark-overlay-input');
     if (!imgInput.files.length) throw new Error("Please select an image file first.");
-    const imgFile = imgInput.files[0];
-    const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
+    const imgFile = imgInput.files[0]; const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
     let pdfImg = imgFile.type === 'image/png' ? await pdfDoc.embedPng(await imgFile.arrayBuffer()) : await pdfDoc.embedJpg(await imgFile.arrayBuffer());
     const dims = pdfImg.scale(0.5);
-
     pdfDoc.getPages().forEach(page => {
         const { width, height } = page.getSize();
         page.drawImage(pdfImg, { x: width / 2 - dims.width / 2, y: height / 2 - dims.height / 2, width: dims.width, height: dims.height, opacity: 0.4 });
@@ -598,19 +566,14 @@ setupSingleFileLogic('imagewatermark', async (file) => {
 
 setupMultipleFileLogic('compress', async (files) => {
     if (files.length === 1) {
-        const file = files[0];
-        const pdfDoc = await PDFDocument.load(await file.arrayBuffer(), { updateMetadata: false });
-        const newPdf = await PDFDocument.create();
-        const copiedPages = await newPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
-        copiedPages.forEach(p => newPdf.addPage(p));
-        return { bytes: await newPdf.save({ useObjectStreams: true }), filename: `${getBaseName(file.name)}_Compressed.pdf`, type: 'application/pdf' };
+        const pdfDoc = await PDFDocument.load(await files[0].arrayBuffer(), { updateMetadata: false }); const newPdf = await PDFDocument.create();
+        const copiedPages = await newPdf.copyPages(pdfDoc, pdfDoc.getPageIndices()); copiedPages.forEach(p => newPdf.addPage(p));
+        return { bytes: await newPdf.save({ useObjectStreams: true }), filename: `${getBaseName(files[0].name)}_Compressed.pdf`, type: 'application/pdf' };
     } else {
         const zip = new JSZip();
         for (const file of files) {
-            const pdfDoc = await PDFDocument.load(await file.arrayBuffer(), { updateMetadata: false });
-            const newPdf = await PDFDocument.create();
-            const copiedPages = await newPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
-            copiedPages.forEach(p => newPdf.addPage(p));
+            const pdfDoc = await PDFDocument.load(await file.arrayBuffer(), { updateMetadata: false }); const newPdf = await PDFDocument.create();
+            const copiedPages = await newPdf.copyPages(pdfDoc, pdfDoc.getPageIndices()); copiedPages.forEach(p => newPdf.addPage(p));
             zip.file(`${getBaseName(file.name)}_Compressed.pdf`, await newPdf.save({ useObjectStreams: true }));
         }
         return { bytes: await zip.generateAsync({type: 'uint8array'}), filename: `${getBaseName(files[0].name)}_Batch_Compressed.zip`, type: 'application/zip' };
@@ -619,99 +582,54 @@ setupMultipleFileLogic('compress', async (files) => {
 
 setupMultipleFileLogic('unlock', async (files) => {
     const password = document.getElementById('unlock-password').value;
-    if (!password) {
-        throw new Error("Please enter a password to unlock the file.");
-    }
-
+    if (!password) throw new Error("Please enter a password to unlock the file.");
     const unlockSingleFile = async (file, pwd) => {
-        try {
-            const pdfDoc = await PDFDocument.load(await file.arrayBuffer(), { password: pwd });
-            return await pdfDoc.save();
-        } catch (err) {
-            if (!navigator.onLine) {
-                throw new Error("This PDF uses advanced encryption. Please turn on your internet to unlock it via Cloud.");
-            }
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('password', pwd);
+        try { const pdfDoc = await PDFDocument.load(await file.arrayBuffer(), { password: pwd }); return await pdfDoc.save(); } 
+        catch (err) {
+            if (!navigator.onLine) throw new Error("Please turn on internet to unlock via Cloud.");
+            const formData = new FormData(); formData.append('file', file); formData.append('password', pwd);
             const response = await fetch("https://amazing-pdf-tool.vercel.app/api/unlock", { method: 'POST', body: formData });
-            if (!response.ok) {
-                throw new Error("Unlock Failed ❌ Incorrect password or server error.");
-            }
-            return new Uint8Array(await (await response.blob()).arrayBuffer());
+            if (!response.ok) throw new Error("Unlock Failed"); return new Uint8Array(await (await response.blob()).arrayBuffer());
         }
     };
-
-    if (files.length === 1) {
-        const bytes = await unlockSingleFile(files[0], password);
-        return { bytes, filename: `${getBaseName(files[0].name)}_Unlocked.pdf`, type: 'application/pdf' };
-    } else {
-        const zip = new JSZip();
-        let successCount = 0;
-        for (const file of files) {
-            try {
-                const bytes = await unlockSingleFile(file, password);
-                zip.file(`${getBaseName(file.name)}_Unlocked.pdf`, bytes);
-                successCount++;
-            } catch (e) { 
-                console.warn(`Failed to unlock ${file.name}`); 
-            }
-        }
-        if (successCount === 0) {
-            throw new Error("Failed to unlock any files. Please check if the password is correct.");
-        }
-        return { bytes: await zip.generateAsync({type: 'uint8array'}), filename: `${getBaseName(files[0].name)}_Batch_Unlocked.zip`, type: 'application/zip' };
+    if (files.length === 1) { const bytes = await unlockSingleFile(files[0], password); return { bytes, filename: `${getBaseName(files[0].name)}_Unlocked.pdf`, type: 'application/pdf' }; } 
+    else {
+        const zip = new JSZip(); let successCount = 0;
+        for (const file of files) { try { const bytes = await unlockSingleFile(file, password); zip.file(`${getBaseName(file.name)}_Unlocked.pdf`, bytes); successCount++; } catch (e) { } }
+        if (successCount === 0) throw new Error("Failed to unlock.");
+        return { bytes: await zip.generateAsync({type: 'uint8array'}), filename: `Batch_Unlocked.zip`, type: 'application/zip' };
     }
 });
 
 setupMultipleFileLogic('protect', async (files) => {
     const password = document.getElementById('protect-password').value;
-    if (!password) throw new Error("Password required");
-    if (!navigator.onLine) throw new Error("You must be online to use the Secure Cloud Protect feature.");
-
+    if (!password) throw new Error("Password required"); if (!navigator.onLine) throw new Error("Online required for Secure Cloud Protect.");
     const VERCEL_API_URL = "https://amazing-pdf-tool.vercel.app/api/protect"; 
-    
     if (files.length === 1) {
-        const formData = new FormData();
-        formData.append('file', files[0]);
-        formData.append('password', password);
+        const formData = new FormData(); formData.append('file', files[0]); formData.append('password', password);
         const response = await fetch(VERCEL_API_URL, { method: 'POST', body: formData });
-        if (!response.ok) throw new Error("Server error while protecting file.");
-        const bytes = new Uint8Array(await (await response.blob()).arrayBuffer());
+        if (!response.ok) throw new Error("Server error."); const bytes = new Uint8Array(await (await response.blob()).arrayBuffer());
         return { bytes, filename: `${getBaseName(files[0].name)}_Protected.pdf`, type: 'application/pdf' };
     } else {
         const zip = new JSZip();
         for (const file of files) {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('password', password);
+            const formData = new FormData(); formData.append('file', file); formData.append('password', password);
             const response = await fetch(VERCEL_API_URL, { method: 'POST', body: formData });
-            if (response.ok) {
-                const bytes = new Uint8Array(await (await response.blob()).arrayBuffer());
-                zip.file(`${getBaseName(file.name)}_Protected.pdf`, bytes);
-            }
+            if (response.ok) { const bytes = new Uint8Array(await (await response.blob()).arrayBuffer()); zip.file(`${getBaseName(file.name)}_Protected.pdf`, bytes); }
         }
-        return { bytes: await zip.generateAsync({type: 'uint8array'}), filename: `${getBaseName(files[0].name)}_Batch_Protected.zip`, type: 'application/zip' };
+        return { bytes: await zip.generateAsync({type: 'uint8array'}), filename: `Batch_Protected.zip`, type: 'application/zip' };
     }
 });
 
 if (ui.htmltopdf) {
     document.getElementById('btn-htmltopdf-action')?.addEventListener('click', async () => {
-        const htmlContent = document.getElementById('html-input').value;
-        if (!htmlContent) {
-            showCustomAlert("Please enter HTML code first.");
-            return;
-        }
-        const btn = document.getElementById('btn-htmltopdf-action');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Converting...';
+        const htmlContent = document.getElementById('html-input').value; if (!htmlContent) return showCustomAlert("Enter HTML first.");
+        const btn = document.getElementById('btn-htmltopdf-action'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Converting...';
         try {
             const blob = await html2pdf().set({ margin: 1, jsPDF: { format: 'letter' } }).from(htmlContent).output('blob');
-            const bytes = new Uint8Array(await blob.arrayBuffer());
-            document.getElementById('html-input').value = '';
-            await processAndDownload(bytes, 'HTML_Converted.pdf', 'application/pdf');
-            if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
-        } catch(e) { handleError(e); }
-        finally { btn.innerHTML = '<i class="fas fa-code"></i> Convert to PDF'; }
+            const bytes = new Uint8Array(await blob.arrayBuffer()); document.getElementById('html-input').value = '';
+            await processAndDownload(bytes, 'HTML_Converted.pdf', 'application/pdf'); if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
+        } catch(e) { handleError(e); } finally { btn.innerHTML = '<i class="fas fa-code"></i> Convert to PDF'; }
     });
 }
 
@@ -719,49 +637,22 @@ let mergeFiles = [];
 if (ui.merge) {
     const mergeInput = document.getElementById('merge-file-input');
     document.getElementById('merge-drop-zone')?.addEventListener('click', () => mergeInput.click());
-    
     function renderMergeList() {
-        const list = document.getElementById('merge-file-list'); 
-        list.innerHTML = '';
-        mergeFiles.forEach((f, i) => {
-            const itemDiv = document.createElement('div');
-            itemDiv.style = fileItemStyle;
-            itemDiv.innerHTML = `<div class="text-container"><b class="text-ellipsis">${f.name}</b></div><button class="remove-merge" data-index="${i}" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; flex-shrink:0;"><i class="fas fa-times"></i></button>`;
-            list.appendChild(itemDiv);
-        });
-
-        list.querySelectorAll('.remove-merge').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const idx = parseInt(e.currentTarget.getAttribute('data-index'));
-                mergeFiles.splice(idx, 1);
-                renderMergeList();
-            });
-        });
+        const list = document.getElementById('merge-file-list'); list.innerHTML = '';
+        mergeFiles.forEach((f, i) => { list.innerHTML += `<div style="${fileItemStyle}"><div class="text-container"><b class="text-ellipsis">${f.name}</b></div><button class="remove-merge" data-index="${i}" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;"><i class="fas fa-times"></i></button></div>`; });
+        list.querySelectorAll('.remove-merge').forEach(btn => btn.addEventListener('click', (e) => { mergeFiles.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1); renderMergeList(); }));
         document.getElementById('btn-merge-action').style.display = mergeFiles.length > 1 ? 'block' : 'none';
     }
-
-    mergeInput?.addEventListener('change', (e) => { 
-        mergeFiles = [...mergeFiles, ...Array.from(e.target.files).filter(f => f.type === 'application/pdf')]; 
-        renderMergeList(); 
-        mergeInput.value = '';
-    });
-    
+    mergeInput?.addEventListener('change', (e) => { mergeFiles = [...mergeFiles, ...Array.from(e.target.files).filter(f => f.type === 'application/pdf')]; renderMergeList(); mergeInput.value = ''; });
     document.getElementById('btn-merge-action')?.addEventListener('click', async () => {
         const btn = document.getElementById('btn-merge-action'); btn.innerHTML = 'Processing...';
         try {
             const mergedPdf = await PDFDocument.create();
-            for (const file of mergeFiles) {
-                const pdf = await PDFDocument.load(await file.arrayBuffer());
-                const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                copiedPages.forEach(p => mergedPdf.addPage(p));
-            }
-            const bytes = await mergedPdf.save();
-            const outputName = mergeFiles.length > 0 ? `${getBaseName(mergeFiles[0].name)}_Merged.pdf` : 'Amazing_Merged.pdf';
-            mergeFiles = []; renderMergeList();
-            await processAndDownload(bytes, outputName, 'application/pdf');
+            for (const file of mergeFiles) { const pdf = await PDFDocument.load(await file.arrayBuffer()); const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices()); copiedPages.forEach(p => mergedPdf.addPage(p)); }
+            const bytes = await mergedPdf.save(); const outputName = mergeFiles.length > 0 ? `${getBaseName(mergeFiles[0].name)}_Merged.pdf` : 'Amazing_Merged.pdf';
+            mergeFiles = []; renderMergeList(); await processAndDownload(bytes, outputName, 'application/pdf');
             if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
-        } catch (e) { handleError(e); }
-        finally { btn.innerHTML = 'Merge Files Now'; }
+        } catch (e) { handleError(e); } finally { btn.innerHTML = 'Merge Files Now'; }
     });
 }
 
@@ -769,50 +660,25 @@ let imageFiles = [];
 if (ui.jpgtopdf) {
     const imgInput = document.getElementById('jpgtopdf-file-input');
     document.getElementById('jpgtopdf-drop-zone')?.addEventListener('click', () => imgInput.click());
-    
     function renderImgList() {
-        const list = document.getElementById('jpgtopdf-file-list'); 
-        list.innerHTML = '';
-        imageFiles.forEach((f, i) => {
-            const itemDiv = document.createElement('div');
-            itemDiv.style = fileItemStyle;
-            itemDiv.innerHTML = `<div class="text-container"><b class="text-ellipsis">${f.name}</b></div><button class="remove-img" data-index="${i}" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; flex-shrink:0;"><i class="fas fa-times"></i></button>`;
-            list.appendChild(itemDiv);
-        });
-
-        list.querySelectorAll('.remove-img').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const idx = parseInt(e.currentTarget.getAttribute('data-index'));
-                imageFiles.splice(idx, 1);
-                renderImgList();
-            });
-        });
+        const list = document.getElementById('jpgtopdf-file-list'); list.innerHTML = '';
+        imageFiles.forEach((f, i) => { list.innerHTML += `<div style="${fileItemStyle}"><div class="text-container"><b class="text-ellipsis">${f.name}</b></div><button class="remove-img" data-index="${i}" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;"><i class="fas fa-times"></i></button></div>`; });
+        list.querySelectorAll('.remove-img').forEach(btn => btn.addEventListener('click', (e) => { imageFiles.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1); renderImgList(); }));
         document.getElementById('btn-jpgtopdf-action').style.display = imageFiles.length > 0 ? 'block' : 'none';
     }
-
-    imgInput?.addEventListener('change', (e) => { 
-        imageFiles = [...imageFiles, ...Array.from(e.target.files).filter(f => f.type.startsWith('image/'))]; 
-        renderImgList(); 
-        imgInput.value = '';
-    });
-    
+    imgInput?.addEventListener('change', (e) => { imageFiles = [...imageFiles, ...Array.from(e.target.files).filter(f => f.type.startsWith('image/'))]; renderImgList(); imgInput.value = ''; });
     document.getElementById('btn-jpgtopdf-action')?.addEventListener('click', async () => {
         const btn = document.getElementById('btn-jpgtopdf-action'); btn.innerHTML = 'Converting...';
         try {
             const pdfDoc = await PDFDocument.create();
             for (const file of imageFiles) {
                 let pdfImage = file.type === 'image/png' ? await pdfDoc.embedPng(await file.arrayBuffer()) : await pdfDoc.embedJpg(await file.arrayBuffer());
-                const dims = pdfImage.scale(1);
-                const page = pdfDoc.addPage([dims.width, dims.height]);
-                page.drawImage(pdfImage, { x: 0, y: 0, width: dims.width, height: dims.height });
+                const dims = pdfImage.scale(1); const page = pdfDoc.addPage([dims.width, dims.height]); page.drawImage(pdfImage, { x: 0, y: 0, width: dims.width, height: dims.height });
             }
-            const bytes = await pdfDoc.save();
-            const outputName = imageFiles.length > 0 ? `${getBaseName(imageFiles[0].name)}_Images.pdf` : 'Amazing_Images.pdf';
-            imageFiles = []; renderImgList();
-            await processAndDownload(bytes, outputName, 'application/pdf');
+            const bytes = await pdfDoc.save(); const outputName = imageFiles.length > 0 ? `${getBaseName(imageFiles[0].name)}_Images.pdf` : 'Amazing_Images.pdf';
+            imageFiles = []; renderImgList(); await processAndDownload(bytes, outputName, 'application/pdf');
             if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
-        } catch (e) { handleError(e); }
-        finally { btn.innerHTML = 'Convert to PDF'; }
+        } catch (e) { handleError(e); } finally { btn.innerHTML = 'Convert to PDF'; }
     });
 }
 
@@ -826,12 +692,10 @@ const handleSearch = (e) => {
 document.getElementById('mobile-search')?.addEventListener('input', handleSearch);
 document.getElementById('desktop-search')?.addEventListener('input', handleSearch);
 
-if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner === 'function') {
-    AdManager.showBanner();
-}
+if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner === 'function') AdManager.showBanner();
 
 // ==========================================
-//    EDIT PDF - CANVA LEVEL PRO EDITOR 🚀
+//    UNIVERSAL PRO ENGINE (Edit, Crop, Margin, Extract, PageNumbers)
 // ==========================================
 
 let editPdfDoc = null;
@@ -842,19 +706,22 @@ const editScale = 1.5;
 
 const renderCanvas = document.getElementById('pdf-render-canvas');
 const renderCtx = renderCanvas ? renderCanvas.getContext('2d') : null;
-
 const overlayCanvas = document.getElementById('pdf-overlay-canvas');
 const overlayCtx = overlayCanvas ? overlayCanvas.getContext('2d') : null;
 
 let currentTool = 'none'; 
+let currentVisualMode = 'edit';
+let visualData = {};
+
+let editColor = '#000000';
+let editSize = 20;
+
 let isDrawing = false;
-let startX = 0;
-let startY = 0;
+let startX = 0; let startY = 0;
 let currentPath = null; 
 
 let activeDragIndex = -1;
-let dragOffsetX = 0;
-let dragOffsetY = 0;
+let dragOffsetX = 0; let dragOffsetY = 0;
 let hasMovedDuringClick = false; 
 
 let selectedEditIndex = -1;
@@ -866,167 +733,58 @@ const trashZone = document.getElementById('drag-trash-zone');
 
 let pageEdits = {}; 
 
-// PRO TEXT STATE
-let activeTextState = {
-    bold: false,
-    italic: false,
-    underline: false,
-    color: '#000000',
-    bgColor: 'transparent',
-    size: 24,
-    opacity: 1
-};
-
 let pendingTextAction = null; 
-
-function openProTextModal(initialText = "", actionData) {
+function openTextModal(initialText = "", actionData) {
     pendingTextAction = actionData;
-    const modal = document.getElementById('pro-text-modal');
-    const input = document.getElementById('pro-text-input');
-    
+    const modal = document.getElementById('custom-text-modal');
+    const input = document.getElementById('custom-text-input');
     document.getElementById('text-modal-title').innerText = actionData.type === 'new' ? "Add New Text" : "Edit Text";
-    input.value = initialText;
-    
-    if(actionData.type === 'edit') {
-        const edit = pageEdits[editPageNum][actionData.index];
-        activeTextState = { ...edit };
-    } else {
-        // Reset defaults for new text
-        activeTextState = { bold: false, italic: false, underline: false, color: '#000000', bgColor: 'transparent', size: 24, opacity: 1 };
-    }
-    
-    document.getElementById('btn-style-bold').style.background = activeTextState.bold ? 'var(--accent)' : '#334155';
-    document.getElementById('btn-style-italic').style.background = activeTextState.italic ? 'var(--accent)' : '#334155';
-    document.getElementById('btn-style-underline').style.background = activeTextState.underline ? 'var(--accent)' : '#334155';
-    document.getElementById('pro-color-picker').value = activeTextState.color;
-    document.getElementById('pro-size-picker').value = activeTextState.size;
-    document.getElementById('pro-opacity-slider').value = activeTextState.opacity;
-
-    // Smart BG State UI Update
-    const bgPicker = document.getElementById('pro-bg-picker');
-    if (activeTextState.bgColor === 'transparent') {
-        bgPicker.value = '#ffffff'; // default view
-        bgPicker.style.boxShadow = 'none';
-    } else {
-        bgPicker.value = activeTextState.bgColor;
-        bgPicker.style.boxShadow = '0 0 0 2px var(--accent)';
-    }
-
-    modal.style.display = 'flex';
-    input.focus();
+    input.value = initialText; modal.style.display = 'flex'; input.focus();
 }
 
-// FORMAT BUTTON LISTENERS
-document.getElementById('btn-style-bold')?.addEventListener('click', (e) => {
-    activeTextState.bold = !activeTextState.bold;
-    e.currentTarget.style.background = activeTextState.bold ? 'var(--accent)' : '#334155';
-});
-document.getElementById('btn-style-italic')?.addEventListener('click', (e) => {
-    activeTextState.italic = !activeTextState.italic;
-    e.currentTarget.style.background = activeTextState.italic ? 'var(--accent)' : '#334155';
-});
-document.getElementById('btn-style-underline')?.addEventListener('click', (e) => {
-    activeTextState.underline = !activeTextState.underline;
-    e.currentTarget.style.background = activeTextState.underline ? 'var(--accent)' : '#334155';
-});
-
-// BUG FIX: Smart Background Color Tracking
-const proBgPicker = document.getElementById('pro-bg-picker');
-proBgPicker?.addEventListener('input', (e) => {
-    activeTextState.bgColor = e.target.value;
-    proBgPicker.style.boxShadow = '0 0 0 2px var(--accent)'; // visual cue
-});
-proBgPicker?.addEventListener('change', (e) => {
-    activeTextState.bgColor = e.target.value;
-    proBgPicker.style.boxShadow = '0 0 0 2px var(--accent)'; // backup cue
-});
-
-document.getElementById('btn-bg-clear')?.addEventListener('click', () => {
-    activeTextState.bgColor = 'transparent';
-    proBgPicker.style.boxShadow = 'none';
-});
-
-document.getElementById('btn-text-cancel')?.addEventListener('click', () => {
-    document.getElementById('pro-text-modal').style.display = 'none';
-    pendingTextAction = null;
-});
-
+document.getElementById('btn-text-cancel')?.addEventListener('click', () => { document.getElementById('custom-text-modal').style.display = 'none'; pendingTextAction = null; });
 document.getElementById('btn-text-save')?.addEventListener('click', () => {
-    const val = document.getElementById('pro-text-input').value;
-    activeTextState.color = document.getElementById('pro-color-picker').value;
-    activeTextState.size = parseInt(document.getElementById('pro-size-picker').value) || 24;
-    activeTextState.opacity = parseFloat(document.getElementById('pro-opacity-slider').value) || 1;
-
+    const val = document.getElementById('custom-text-input').value;
     if(val && val.trim() !== '' && pendingTextAction) {
         if(pendingTextAction.type === 'new') {
             if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
-            pageEdits[editPageNum].push({ 
-                type: 'text', x: pendingTextAction.pos.x, y: pendingTextAction.pos.y, text: val, 
-                ...activeTextState 
-            });
+            pageEdits[editPageNum].push({ type: 'text', x: pendingTextAction.pos.x, y: pendingTextAction.pos.y, text: val, color: editColor, size: editSize });
         } else if(pendingTextAction.type === 'edit') {
             const edit = pageEdits[editPageNum][pendingTextAction.index];
-            edit.text = val;
-            Object.assign(edit, activeTextState);
+            edit.text = val; edit.color = editColor; edit.size = editSize;
         }
         drawOverlay();
     }
-    document.getElementById('pro-text-modal').style.display = 'none';
-    pendingTextAction = null;
+    document.getElementById('custom-text-modal').style.display = 'none'; pendingTextAction = null;
 });
 
 function setToolActive(btnId, toolName) {
     document.querySelectorAll('.edit-toolbar-btn').forEach(b => b.classList.remove('edit-tool-active'));
     if(btnId) document.getElementById(btnId).classList.add('edit-tool-active');
-    currentTool = toolName;
-    selectedEditIndex = -1; 
-    drawOverlay(); 
+    currentTool = toolName; selectedEditIndex = -1; drawOverlay(); 
 }
 
-let globalDrawColor = '#000000';
-let globalDrawSize = 5;
-document.getElementById('edit-color-picker')?.addEventListener('input', (e) => globalDrawColor = e.target.value);
-document.getElementById('edit-size-picker')?.addEventListener('input', (e) => globalDrawSize = parseInt(e.target.value) || 5);
+document.getElementById('edit-color-picker')?.addEventListener('input', (e) => editColor = e.target.value);
+document.getElementById('edit-size-picker')?.addEventListener('input', (e) => editSize = parseInt(e.target.value) || 20);
 
 document.getElementById('btn-edit-text')?.addEventListener('click', () => setToolActive('btn-edit-text', 'text'));
 document.getElementById('btn-edit-whiteout')?.addEventListener('click', () => setToolActive('btn-edit-whiteout', 'whiteout'));
 document.getElementById('btn-edit-draw')?.addEventListener('click', () => setToolActive('btn-edit-draw', 'draw'));
-document.getElementById('btn-edit-clear')?.addEventListener('click', () => {
-    pageEdits[editPageNum] = [];
-    selectedEditIndex = -1;
-    drawOverlay();
-    showCustomAlert("Page cleared!");
-});
+document.getElementById('btn-edit-clear')?.addEventListener('click', () => { pageEdits[editPageNum] = []; selectedEditIndex = -1; drawOverlay(); showCustomAlert("Cleared!"); });
 
-document.getElementById('btn-edit-image')?.addEventListener('click', () => {
-    setToolActive('btn-edit-image', 'image');
-    document.getElementById('edit-image-input').click();
-});
-
+document.getElementById('btn-edit-image')?.addEventListener('click', () => { setToolActive('btn-edit-image', 'image'); document.getElementById('edit-image-input').click(); });
 document.getElementById('edit-image-input')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file && (file.type === 'image/png' || file.type === 'image/jpeg')) {
         const reader = new FileReader();
         reader.onload = function(event) {
-            const dataUrl = event.target.result;
-            const img = new Image();
+            const dataUrl = event.target.result; const img = new Image();
             img.onload = function() {
                 if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
-                let w = img.width;
-                let h = img.height;
-                const maxDim = 200;
-                if(w > maxDim || h > maxDim) {
-                    const ratio = Math.min(maxDim/w, maxDim/h);
-                    w = w * ratio;
-                    h = h * ratio;
-                }
-                pageEdits[editPageNum].push({ 
-                    type: 'image', x: overlayCanvas.width/2 - w/2, y: overlayCanvas.height/2 - h/2, 
-                    w: w, h: h, dataUrl: dataUrl, imgType: file.type, imgObj: img 
-                });
-                selectedEditIndex = pageEdits[editPageNum].length - 1; 
-                drawOverlay();
-                document.getElementById('edit-image-input').value = ""; 
+                let w = img.width; let h = img.height; const maxDim = 200;
+                if(w > maxDim || h > maxDim) { const ratio = Math.min(maxDim/w, maxDim/h); w = w * ratio; h = h * ratio; }
+                pageEdits[editPageNum].push({ type: 'image', x: overlayCanvas.width/2 - w/2, y: overlayCanvas.height/2 - h/2, w: w, h: h, dataUrl: dataUrl, imgType: file.type, imgObj: img });
+                selectedEditIndex = pageEdits[editPageNum].length - 1; drawOverlay(); document.getElementById('edit-image-input').value = ""; 
             }
             img.src = dataUrl;
         }
@@ -1034,56 +792,77 @@ document.getElementById('edit-image-input')?.addEventListener('change', function
     }
 });
 
-document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file && file.type === 'application/pdf') {
-        currentEditFile = file; 
-        editOriginalFileName = file.name;
-        const fileReader = new FileReader();
-        fileReader.onload = function() {
-            const tempPdfBytes = new Uint8Array(this.result);
-            pdfjsLib.getDocument(tempPdfBytes).promise.then(pdf => {
-                editPdfDoc = pdf;
-                editPageNum = 1;
-                pageEdits = {}; 
-                selectedEditIndex = -1;
-                document.getElementById('page-count').textContent = pdf.numPages;
-                document.getElementById('edit-upload-section').style.display = 'none';
-                document.getElementById('edit-workspace').style.display = 'flex';
-                renderEditPage(editPageNum);
-            }).catch(error => { showCustomAlert("Error loading PDF."); });
-        };
-        fileReader.readAsArrayBuffer(file);
+function openVisualWorkspace(file, mode) {
+    currentEditFile = file;
+    editOriginalFileName = file.name;
+    currentVisualMode = mode;
+    pageEdits = {};
+    selectedEditIndex = -1;
+
+    const title = document.getElementById('workspace-title');
+    const headerHelp = document.getElementById('visual-tool-header');
+    const btnText = document.getElementById('btn-edit-text');
+    const btnDraw = document.getElementById('btn-edit-draw');
+    const btnErase = document.getElementById('btn-edit-whiteout');
+    const btnImage = document.getElementById('btn-edit-image');
+    const toolSettings = document.querySelector('.tool-settings');
+    const btnClear = document.getElementById('btn-edit-clear');
+
+    headerHelp.style.display = 'none';
+
+    if (mode === 'edit') {
+        title.innerHTML = '<i class="fas fa-edit"></i> Pro PDF Editor';
+        btnText.style.display = 'inline-flex'; btnDraw.style.display = 'inline-flex'; btnErase.style.display = 'inline-flex'; btnImage.style.display = 'inline-flex'; toolSettings.style.display = 'flex'; btnClear.style.display = 'inline-flex';
+        currentTool = 'none';
+    } else {
+        btnText.style.display = 'none'; btnDraw.style.display = 'none'; btnErase.style.display = 'none'; btnImage.style.display = 'none'; toolSettings.style.display = 'none'; btnClear.style.display = 'none';
+        
+        if (mode === 'crop') { title.innerHTML = '<i class="fas fa-crop"></i> Visual Crop'; headerHelp.style.display = 'block'; currentTool = 'visual-box'; }
+        else if (mode === 'addmargins') { title.innerHTML = '<i class="fas fa-border-all"></i> Visual Margin'; headerHelp.style.display = 'block'; headerHelp.innerText = "Draw content area (Margins will be added outside)"; currentTool = 'visual-box'; }
+        else if (mode === 'extract') { title.innerHTML = '<i class="fas fa-file-alt"></i> Select Text Area'; headerHelp.style.display = 'block'; currentTool = 'visual-box'; }
+        else if (mode === 'pagenumbers') {
+            title.innerHTML = '<i class="fas fa-sort-numeric-down"></i> Place Page Number';
+            currentTool = 'none';
+            if (!pageEdits[1]) pageEdits[1] = [];
+            visualData.format = document.getElementById('pagenumbers-format').value;
+            pageEdits[1].push({ type: 'pagenum-dummy', x: 50, y: 50, text: visualData.format.replace('10', 'MAX'), color: '#3b82f6', size: 16 });
+            selectedEditIndex = 0;
+            headerHelp.style.display = 'block'; headerHelp.innerText = "Drag the blue text to position it";
+        }
     }
+
+    const fileReader = new FileReader();
+    fileReader.onload = function() {
+        const tempPdfBytes = new Uint8Array(this.result);
+        pdfjsLib.getDocument(tempPdfBytes).promise.then(pdf => {
+            editPdfDoc = pdf; editPageNum = 1; document.getElementById('page-count').textContent = pdf.numPages;
+            window.switchView('edit'); document.getElementById('edit-upload-section').style.display = 'none'; document.getElementById('edit-workspace').style.display = 'flex';
+            renderEditPage(editPageNum);
+        }).catch(error => { showCustomAlert("Error loading PDF."); });
+    };
+    fileReader.readAsArrayBuffer(file);
+}
+
+document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) {
+    if (e.target.files[0]) openVisualWorkspace(e.target.files[0], 'edit');
 });
 
 function renderEditPage(num) {
     if (!editPdfDoc) return;
     editPdfDoc.getPage(num).then(page => {
         const viewport = page.getViewport({ scale: editScale });
-        renderCanvas.height = viewport.height;
-        renderCanvas.width = viewport.width;
-        overlayCanvas.height = viewport.height;
-        overlayCanvas.width = viewport.width;
+        renderCanvas.height = viewport.height; renderCanvas.width = viewport.width;
+        overlayCanvas.height = viewport.height; overlayCanvas.width = viewport.width;
         page.render({ canvasContext: renderCtx, viewport: viewport });
-        document.getElementById('page-num').textContent = num;
-        drawOverlay(); 
+        document.getElementById('page-num').textContent = num; drawOverlay(); 
     });
 }
 
 function getHandleRects(edit) {
-    const hs = 16; 
-    const half = hs / 2;
-    const {x, y, w, h} = edit;
+    const hs = 16; const half = hs / 2; const {x, y, w, h} = edit;
     return {
-        nw: {x: x - half, y: y - half, w: hs, h: hs},
-        ne: {x: x + w - half, y: y - half, w: hs, h: hs},
-        se: {x: x + w - half, y: y + h - half, w: hs, h: hs},
-        sw: {x: x - half, y: y + h - half, w: hs, h: hs},
-        n:  {x: x + w/2 - half, y: y - half, w: hs, h: hs},
-        s:  {x: x + w/2 - half, y: y + h - half, w: hs, h: hs},
-        e:  {x: x + w - half, y: y + h/2 - half, w: hs, h: hs},
-        w:  {x: x - half, y: y + h/2 - half, w: hs, h: hs}
+        nw: {x: x - half, y: y - half, w: hs, h: hs}, ne: {x: x + w - half, y: y - half, w: hs, h: hs}, se: {x: x + w - half, y: y + h - half, w: hs, h: hs}, sw: {x: x - half, y: y + h - half, w: hs, h: hs},
+        n:  {x: x + w/2 - half, y: y - half, w: hs, h: hs}, s:  {x: x + w/2 - half, y: y + h - half, w: hs, h: hs}, e:  {x: x + w - half, y: y + h/2 - half, w: hs, h: hs}, w:  {x: x - half, y: y + h/2 - half, w: hs, h: hs}
     };
 }
 
@@ -1093,446 +872,237 @@ function drawOverlay() {
     const edits = pageEdits[editPageNum] || [];
     
     edits.forEach((edit, i) => {
-        overlayCtx.save();
-        
         if (edit.type === 'whiteout') {
-            overlayCtx.fillStyle = 'white';
-            overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
-            
-            if (currentTool === 'whiteout') {
-                overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)';
-                overlayCtx.lineWidth = 1;
-                overlayCtx.setLineDash([4, 4]); 
-                overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
-            }
+            overlayCtx.fillStyle = 'white'; overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
+            if (currentTool === 'whiteout') { overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)'; overlayCtx.lineWidth = 1; overlayCtx.setLineDash([4, 4]); overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h); overlayCtx.setLineDash([]); }
         } else if (edit.type === 'text') {
-            overlayCtx.globalAlpha = edit.opacity || 1;
-            let fontStr = "";
-            if(edit.italic) fontStr += "italic ";
-            if(edit.bold) fontStr += "bold ";
-            fontStr += `${edit.size}px Arial`;
-            overlayCtx.font = fontStr;
-            
-            const textMetrics = overlayCtx.measureText(edit.text);
-            const tWidth = textMetrics.width;
-            
-            if(edit.bgColor && edit.bgColor !== 'transparent') {
-                overlayCtx.fillStyle = edit.bgColor;
-                overlayCtx.fillRect(edit.x - 4, edit.y - edit.size, tWidth + 8, edit.size * 1.2);
-            }
-
-            overlayCtx.fillStyle = edit.color;
-            overlayCtx.fillText(edit.text, edit.x, edit.y);
-
-            if(edit.underline) {
-                overlayCtx.strokeStyle = edit.color;
-                overlayCtx.lineWidth = Math.max(1, edit.size/15);
-                overlayCtx.beginPath();
-                overlayCtx.moveTo(edit.x, edit.y + 3);
-                overlayCtx.lineTo(edit.x + tWidth, edit.y + 3);
-                overlayCtx.stroke();
-            }
-            
-            if (i === selectedEditIndex) {
-                overlayCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)';
-                overlayCtx.lineWidth = 1;
-                overlayCtx.strokeRect(edit.x - 6, edit.y - edit.size - 2, tWidth + 12, edit.size * 1.2 + 4);
-            }
+            overlayCtx.font = `${edit.size}px Arial`; overlayCtx.fillStyle = edit.color; overlayCtx.fillText(edit.text, edit.x, edit.y);
+            if (i === selectedEditIndex) { const textWidth = overlayCtx.measureText(edit.text).width; overlayCtx.strokeStyle = 'rgba(59, 130, 246, 0.5)'; overlayCtx.lineWidth = 1; overlayCtx.strokeRect(edit.x - 5, edit.y - edit.size, textWidth + 10, edit.size + 10); }
         } else if (edit.type === 'draw') {
-            overlayCtx.strokeStyle = edit.color;
-            overlayCtx.lineWidth = edit.size;
-            overlayCtx.lineCap = 'round';
-            overlayCtx.lineJoin = 'round';
-            overlayCtx.beginPath();
-            if(edit.points.length > 0) {
-                overlayCtx.moveTo(edit.points[0].x, edit.points[0].y);
-                for(let k=1; k<edit.points.length; k++) {
-                    overlayCtx.lineTo(edit.points[k].x, edit.points[k].y);
-                }
-                overlayCtx.stroke();
-            }
+            overlayCtx.strokeStyle = edit.color; overlayCtx.lineWidth = edit.size; overlayCtx.lineCap = 'round'; overlayCtx.lineJoin = 'round'; overlayCtx.beginPath();
+            if(edit.points.length > 0) { overlayCtx.moveTo(edit.points[0].x, edit.points[0].y); for(let k=1; k<edit.points.length; k++) { overlayCtx.lineTo(edit.points[k].x, edit.points[k].y); } overlayCtx.stroke(); }
         } else if (edit.type === 'image' && edit.imgObj) {
             overlayCtx.drawImage(edit.imgObj, edit.x, edit.y, edit.w, edit.h);
-            
             if (i === selectedEditIndex) {
-                overlayCtx.strokeStyle = '#3b82f6';
-                overlayCtx.lineWidth = 2;
-                overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
-                
-                overlayCtx.fillStyle = 'white';
-                const rects = getHandleRects(edit);
-                for (let key in rects) {
-                    const r = rects[key];
-                    overlayCtx.fillRect(r.x, r.y, r.w, r.h);
-                    overlayCtx.strokeRect(r.x, r.y, r.w, r.h);
-                }
+                overlayCtx.strokeStyle = '#3b82f6'; overlayCtx.lineWidth = 2; overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
+                overlayCtx.fillStyle = 'white'; const rects = getHandleRects(edit); for (let key in rects) { const r = rects[key]; overlayCtx.fillRect(r.x, r.y, r.w, r.h); overlayCtx.strokeRect(r.x, r.y, r.w, r.h); }
             }
+        } else if (edit.type === 'visual-box') {
+            overlayCtx.fillStyle = 'rgba(59, 130, 246, 0.2)'; overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
+            overlayCtx.strokeStyle = '#3b82f6'; overlayCtx.lineWidth = 2; overlayCtx.setLineDash([5, 5]); overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h); overlayCtx.setLineDash([]);
+        } else if (edit.type === 'pagenum-dummy') {
+            overlayCtx.font = `bold ${edit.size}px Arial`; overlayCtx.fillStyle = edit.color; overlayCtx.fillText(edit.text, edit.x, edit.y);
+            if (i === selectedEditIndex) { overlayCtx.strokeStyle = 'blue'; overlayCtx.strokeRect(edit.x - 5, edit.y - edit.size, overlayCtx.measureText(edit.text).width + 10, edit.size + 10); }
         }
-        overlayCtx.restore();
     });
 }
 
 function getCursorPos(e) {
-    const rect = overlayCanvas.getBoundingClientRect();
-    const scaleX = overlayCanvas.width / rect.width;
-    const scaleY = overlayCanvas.height / rect.height;
-    let clientX = e.clientX;
-    let clientY = e.clientY;
-    if(e.touches && e.touches.length > 0) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-    }
+    const rect = overlayCanvas.getBoundingClientRect(); const scaleX = overlayCanvas.width / rect.width; const scaleY = overlayCanvas.height / rect.height;
+    let clientX = e.clientX; let clientY = e.clientY;
+    if(e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
     return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
 }
 
-function startAction(e) {
+function normalizeBox(box) {
+    return { x: box.w < 0 ? box.x + box.w : box.x, y: box.h < 0 ? box.y + box.h : box.y, w: Math.abs(box.w), h: Math.abs(box.h) };
+}
+
+overlayCanvas?.addEventListener('pointerdown', (e) => {
     if (e.touches && e.touches.length > 1) return; 
-    if (currentTool === 'none') return;
-    if (e.target === document.getElementById('pro-text-input') || e.target.closest('#pro-text-modal')) return;
+    if (currentTool === 'none' && currentVisualMode !== 'pagenumbers') return;
+    if (e.target.closest('#custom-text-modal')) return;
     
-    e.preventDefault();
-    const pos = getCursorPos(e);
-    const edits = pageEdits[editPageNum] || [];
-    hasMovedDuringClick = false; 
+    e.preventDefault(); const pos = getCursorPos(e); const edits = pageEdits[editPageNum] || []; hasMovedDuringClick = false; 
     
     if (selectedEditIndex !== -1 && edits[selectedEditIndex]?.type === 'image') {
-        const edit = edits[selectedEditIndex];
-        const rects = getHandleRects(edit);
+        const edit = edits[selectedEditIndex]; const rects = getHandleRects(edit);
         for (let key in rects) {
             const r = rects[key];
-            if (pos.x >= r.x && pos.x <= r.x + r.w && pos.y >= r.y && pos.y <= r.y + r.h) {
-                activeResizeHandle = key;
-                dragOffsetX = pos.x; 
-                dragOffsetY = pos.y; 
-                originalEditState = { ...edit };
-                return; 
-            }
+            if (pos.x >= r.x && pos.x <= r.x + r.w && pos.y >= r.y && pos.y <= r.y + r.h) { activeResizeHandle = key; dragOffsetX = pos.x; dragOffsetY = pos.y; originalEditState = { ...edit }; return; }
         }
     }
     
     for (let i = edits.length - 1; i >= 0; i--) {
-        const edit = edits[i];
-        let isHit = false;
-        
-        if (edit.type === 'whiteout') {
-            if (pos.x >= edit.x && pos.x <= edit.x + edit.w && pos.y >= edit.y && pos.y <= edit.y + edit.h) isHit = true;
-        } else if (edit.type === 'image') {
-            if (pos.x >= edit.x && pos.x <= edit.x + edit.w && pos.y >= edit.y && pos.y <= edit.y + edit.h) isHit = true;
-        } else if (edit.type === 'text') {
-            overlayCtx.font = `${edit.size}px Arial`;
-            const textWidth = overlayCtx.measureText(edit.text).width;
+        const edit = edits[i]; let isHit = false;
+        if (edit.type === 'whiteout' || edit.type === 'image' || edit.type === 'visual-box') {
+            const nBox = normalizeBox(edit);
+            if (pos.x >= nBox.x && pos.x <= nBox.x + nBox.w && pos.y >= nBox.y && pos.y <= nBox.y + nBox.h) isHit = true;
+        } else if (edit.type === 'text' || edit.type === 'pagenum-dummy') {
+            overlayCtx.font = `${edit.size}px Arial`; const textWidth = overlayCtx.measureText(edit.text).width;
             if (pos.x >= edit.x - 5 && pos.x <= edit.x + textWidth + 5 && pos.y >= edit.y - edit.size && pos.y <= edit.y + 10) isHit = true;
         } else if (edit.type === 'draw') {
             let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-            edit.points.forEach(p => {
-                if(p.x < minX) minX = p.x; if(p.x > maxX) maxX = p.x;
-                if(p.y < minY) minY = p.y; if(p.y > maxY) maxY = p.y;
-            });
+            edit.points.forEach(p => { if(p.x < minX) minX = p.x; if(p.x > maxX) maxX = p.x; if(p.y < minY) minY = p.y; if(p.y > maxY) maxY = p.y; });
             if (pos.x >= minX - 10 && pos.x <= maxX + 10 && pos.y >= minY - 10 && pos.y <= maxY + 10) isHit = true;
         }
         
         if (isHit && (currentTool !== 'draw' || edit.type === 'draw')) { 
             activeDragIndex = i;
-            
-            if(edit.type === 'draw') {
-                dragOffsetX = pos.x; 
-                dragOffsetY = pos.y;
-            } else {
-                dragOffsetX = pos.x - edit.x;
-                dragOffsetY = pos.y - edit.y;
-            }
-            
-            const item = edits.splice(i, 1)[0];
-            edits.push(item);
-            activeDragIndex = edits.length - 1;
-            selectedEditIndex = activeDragIndex; 
-            
-            trashZone.style.display = 'flex';
-            drawOverlay(); 
-            return; 
+            if(edit.type === 'draw') { dragOffsetX = pos.x; dragOffsetY = pos.y; } else { dragOffsetX = pos.x - edit.x; dragOffsetY = pos.y - edit.y; }
+            const item = edits.splice(i, 1)[0]; edits.push(item); activeDragIndex = edits.length - 1; selectedEditIndex = activeDragIndex; 
+            if(currentVisualMode === 'edit') trashZone.style.display = 'flex';
+            drawOverlay(); return; 
         }
     }
 
-    selectedEditIndex = -1;
-    drawOverlay();
+    selectedEditIndex = -1; drawOverlay();
 
-    if (currentTool === 'text') {
-        openProTextModal("", { type: 'new', pos: { x: pos.x, y: pos.y } });
-    } else if (currentTool === 'whiteout') {
-        isDrawing = true;
-        startX = pos.x;
-        startY = pos.y;
-    } else if (currentTool === 'draw') {
-        isDrawing = true;
-        if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
-        currentPath = { type: 'draw', color: globalDrawColor, size: globalDrawSize, points: [ {x: pos.x, y: pos.y} ] };
-        pageEdits[editPageNum].push(currentPath);
+    if (currentTool === 'text') openTextModal("", { type: 'new', pos: { x: pos.x, y: pos.y } });
+    else if (currentTool === 'whiteout') { isDrawing = true; startX = pos.x; startY = pos.y; }
+    else if (currentTool === 'draw') { isDrawing = true; if (!pageEdits[editPageNum]) pageEdits[editPageNum] = []; currentPath = { type: 'draw', color: editColor, size: editSize, points: [ {x: pos.x, y: pos.y} ] }; pageEdits[editPageNum].push(currentPath); }
+    else if (currentTool === 'visual-box') {
+        isDrawing = true; startX = pos.x; startY = pos.y;
+        pageEdits[editPageNum] = [{ type: 'visual-box', x: pos.x, y: pos.y, w: 0, h: 0 }];
     }
-}
+});
 
-function moveAction(e) {
+window.addEventListener('pointermove', (e) => {
     if (activeDragIndex === -1 && !activeResizeHandle && !isDrawing) return;
-    if (e.touches && e.touches.length > 1) return; 
-    if (currentTool === 'none') return;
-    e.preventDefault();
-    const pos = getCursorPos(e);
+    if (e.touches && e.touches.length > 1) return;
+    e.preventDefault(); const pos = getCursorPos(e);
     
     if (activeResizeHandle) {
-        hasMovedDuringClick = true;
-        const edit = pageEdits[editPageNum][selectedEditIndex];
-        const dx = pos.x - dragOffsetX;
-        const dy = pos.y - dragOffsetY;
-        const orig = originalEditState;
-        
+        hasMovedDuringClick = true; const edit = pageEdits[editPageNum][selectedEditIndex]; const dx = pos.x - dragOffsetX; const dy = pos.y - dragOffsetY; const orig = originalEditState;
         let newX = orig.x, newY = orig.y, newW = orig.w, newH = orig.h;
-        
-        if (activeResizeHandle.includes('e')) newW = orig.w + dx;
-        if (activeResizeHandle.includes('s')) newH = orig.h + dy;
-        if (activeResizeHandle.includes('w')) { newX = orig.x + dx; newW = orig.w - dx; }
-        if (activeResizeHandle.includes('n')) { newY = orig.y + dy; newH = orig.h - dy; }
-        
-        const minSize = 20; 
-        if (newW >= minSize) { edit.x = newX; edit.w = newW; }
-        if (newH >= minSize) { edit.y = newY; edit.h = newH; }
-        
-        drawOverlay();
-        return;
+        if (activeResizeHandle.includes('e')) newW = orig.w + dx; if (activeResizeHandle.includes('s')) newH = orig.h + dy;
+        if (activeResizeHandle.includes('w')) { newX = orig.x + dx; newW = orig.w - dx; } if (activeResizeHandle.includes('n')) { newY = orig.y + dy; newH = orig.h - dy; }
+        if (newW >= 20) { edit.x = newX; edit.w = newW; } if (newH >= 20) { edit.y = newY; edit.h = newH; }
+        drawOverlay(); return;
     }
 
     if (activeDragIndex !== -1) {
-        hasMovedDuringClick = true; 
-        const edit = pageEdits[editPageNum][activeDragIndex];
+        hasMovedDuringClick = true; const edit = pageEdits[editPageNum][activeDragIndex];
+        if(edit.type === 'draw') { const dx = pos.x - dragOffsetX; const dy = pos.y - dragOffsetY; edit.points.forEach(p => { p.x += dx; p.y += dy; }); dragOffsetX = pos.x; dragOffsetY = pos.y; } 
+        else { edit.x = pos.x - dragOffsetX; edit.y = pos.y - dragOffsetY; }
         
-        if(edit.type === 'draw') {
-            const dx = pos.x - dragOffsetX;
-            const dy = pos.y - dragOffsetY;
-            edit.points.forEach(p => { p.x += dx; p.y += dy; });
-            dragOffsetX = pos.x;
-            dragOffsetY = pos.y;
-        } else {
-            edit.x = pos.x - dragOffsetX;
-            edit.y = pos.y - dragOffsetY;
+        if(currentVisualMode === 'edit') {
+            const tRect = trashZone.getBoundingClientRect(); const clientX = e.clientX; const clientY = e.clientY;
+            if (clientX >= tRect.left && clientX <= tRect.right && clientY >= tRect.top && clientY <= tRect.bottom) { isHoveringTrash = true; trashZone.style.transform = 'translateX(-50%) scale(1.1)'; trashZone.style.background = 'rgba(220, 38, 38, 1)'; } 
+            else { isHoveringTrash = false; trashZone.style.transform = 'translateX(-50%) scale(1)'; trashZone.style.background = 'rgba(239, 68, 68, 0.95)'; }
         }
-        
-        const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-        const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-        const tRect = trashZone.getBoundingClientRect();
-        
-        if (clientX >= tRect.left - 20 && clientX <= tRect.right + 20 &&
-            clientY >= tRect.top - 20 && clientY <= tRect.bottom + 20) {
-            isHoveringTrash = true;
-            trashZone.style.transform = 'translateX(-50%) scale(1.1)';
-            trashZone.style.background = 'rgba(220, 38, 38, 1)';
-        } else {
-            isHoveringTrash = false;
-            trashZone.style.transform = 'translateX(-50%) scale(1)';
-            trashZone.style.background = 'rgba(239, 68, 68, 0.95)';
-        }
-        
-        drawOverlay();
-        return;
+        drawOverlay(); return;
     }
     
     if (!isDrawing) return;
-
     if (currentTool === 'whiteout') {
-        drawOverlay(); 
-        overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        overlayCtx.fillRect(startX, startY, pos.x - startX, pos.y - startY);
-        overlayCtx.strokeStyle = 'red';
-        overlayCtx.lineWidth = 1;
-        overlayCtx.setLineDash([]);
-        overlayCtx.strokeRect(startX, startY, pos.x - startX, pos.y - startY);
-    } else if (currentTool === 'draw') {
-        currentPath.points.push({x: pos.x, y: pos.y});
-        drawOverlay();
+        drawOverlay(); overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.8)'; overlayCtx.fillRect(startX, startY, pos.x - startX, pos.y - startY);
+        overlayCtx.strokeStyle = 'red'; overlayCtx.lineWidth = 1; overlayCtx.setLineDash([]); overlayCtx.strokeRect(startX, startY, pos.x - startX, pos.y - startY);
+    } else if (currentTool === 'draw') { currentPath.points.push({x: pos.x, y: pos.y}); drawOverlay(); }
+    else if (currentTool === 'visual-box') {
+        const box = pageEdits[editPageNum][0]; box.w = pos.x - startX; box.h = pos.y - startY; drawOverlay();
     }
-}
+}, {passive: false});
 
-function endAction(e) {
-    if (activeDragIndex === -1 && !activeResizeHandle && !isDrawing) return;
-
-    if (activeResizeHandle) {
-        activeResizeHandle = null;
-        return;
-    }
-
+window.addEventListener('pointerup', (e) => {
+    if (activeResizeHandle) { activeResizeHandle = null; return; }
     if (activeDragIndex !== -1) {
         trashZone.style.display = 'none';
-        
-        if (isHoveringTrash) {
-            pageEdits[editPageNum].splice(activeDragIndex, 1);
-            isHoveringTrash = false;
-            selectedEditIndex = -1;
-            showCustomAlert("Element deleted successfully.");
-        } else if (!hasMovedDuringClick) {
+        if (isHoveringTrash && currentVisualMode === 'edit') { pageEdits[editPageNum].splice(activeDragIndex, 1); isHoveringTrash = false; selectedEditIndex = -1; showCustomAlert("Deleted."); } 
+        else if (!hasMovedDuringClick) {
             const edit = pageEdits[editPageNum][activeDragIndex];
-            if (edit.type === 'text' && currentTool === 'text') {
-                openProTextModal(edit.text, { type: 'edit', index: activeDragIndex });
-            }
+            if (edit.type === 'text' && currentTool === 'text') openTextModal(edit.text, { type: 'edit', index: activeDragIndex });
         }
-        
-        activeDragIndex = -1;
-        drawOverlay();
-        return;
+        activeDragIndex = -1; drawOverlay(); return;
     }
-    
     if (!isDrawing) return;
-    isDrawing = false;
-    currentPath = null;
+    isDrawing = false; currentPath = null;
     
     if (currentTool === 'whiteout') {
         const pos = getCursorPos(e); 
-        let clientX = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : 0);
-        let clientY = e.clientY || (e.changedTouches ? e.changedTouches[0].clientY : 0);
-        const rect = overlayCanvas.getBoundingClientRect();
-        const scaleX = overlayCanvas.width / rect.width;
-        const scaleY = overlayCanvas.height / rect.height;
-        const endX = (clientX - rect.left) * scaleX;
-        const endY = (clientY - rect.top) * scaleY;
-        
-        const w = endX - startX;
-        const h = endY - startY;
-        if (Math.abs(w) > 5 && Math.abs(h) > 5) {
-            if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
-            pageEdits[editPageNum].push({ type: 'whiteout', x: w < 0 ? endX : startX, y: h < 0 ? endY : startY, w: Math.abs(w), h: Math.abs(h) });
-        }
+        let clientX = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : 0); let clientY = e.clientY || (e.changedTouches ? e.changedTouches[0].clientY : 0);
+        const rect = overlayCanvas.getBoundingClientRect(); const scaleX = overlayCanvas.width / rect.width; const scaleY = overlayCanvas.height / rect.height;
+        const endX = (clientX - rect.left) * scaleX; const endY = (clientY - rect.top) * scaleY;
+        const w = endX - startX; const h = endY - startY;
+        if (Math.abs(w) > 5 && Math.abs(h) > 5) { if (!pageEdits[editPageNum]) pageEdits[editPageNum] = []; pageEdits[editPageNum].push({ type: 'whiteout', x: w < 0 ? endX : startX, y: h < 0 ? endY : startY, w: Math.abs(w), h: Math.abs(h) }); }
         drawOverlay();
     }
-}
-
-overlayCanvas?.addEventListener('mousedown', startAction);
-window.addEventListener('mousemove', moveAction, {passive: false});
-window.addEventListener('mouseup', endAction);
-overlayCanvas?.addEventListener('touchstart', startAction, {passive: false});
-window.addEventListener('touchmove', moveAction, {passive: false});
-window.addEventListener('touchend', endAction);
+});
 
 document.getElementById('prev-page')?.addEventListener('click', () => { if (editPageNum > 1) { editPageNum--; selectedEditIndex = -1; renderEditPage(editPageNum); } });
 document.getElementById('next-page')?.addEventListener('click', () => { if (editPageNum < editPdfDoc?.numPages) { editPageNum++; selectedEditIndex = -1; renderEditPage(editPageNum); } });
 
-function hexToRgbPdf(hex) {
-    if(hex === 'transparent') return null;
-    let r = 0, g = 0, b = 0;
-    if (hex.length === 7) {
-        r = parseInt(hex.substring(1, 3), 16) / 255;
-        g = parseInt(hex.substring(3, 5), 16) / 255;
-        b = parseInt(hex.substring(5, 7), 16) / 255;
-    }
-    return rgb(r, g, b);
-}
-
-// 5. Final Save Logic
+// ==========================================
+// UNIVERSAL SAVE ENGINE
+// ==========================================
 document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
     if (!currentEditFile) return;
-    const btn = document.getElementById('btn-edit-save');
-    const oldText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    const btn = document.getElementById('btn-edit-save'); const oldText = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
     
     try {
         const freshBuffer = await currentEditFile.arrayBuffer();
-        const pdfDoc = await PDFDocument.load(freshBuffer);
-        const pages = pdfDoc.getPages();
-        
-        for (const [pageNumStr, edits] of Object.entries(pageEdits)) {
-            const pageNum = parseInt(pageNumStr);
-            const page = pages[pageNum - 1]; 
-            const { width, height } = page.getSize();
-            
-            for (const edit of edits) {
-                const pdfX = edit.x / editScale;
-                const pdfY = height - (edit.y / editScale); 
-                
-                if (edit.type === 'whiteout') {
-                    page.drawRectangle({
-                        x: pdfX, y: pdfY - (edit.h / editScale),
-                        width: edit.w / editScale, height: edit.h / editScale,
-                        color: rgb(1, 1, 1),
-                    });
-                } else if (edit.type === 'text') {
-                    
-                    let fontToUse = StandardFonts.Helvetica;
-                    if(edit.bold && edit.italic) fontToUse = StandardFonts.HelveticaBoldOblique;
-                    else if(edit.bold) fontToUse = StandardFonts.HelveticaBold;
-                    else if(edit.italic) fontToUse = StandardFonts.HelveticaOblique;
+        if (freshBuffer.byteLength < 100) { showCustomAlert("File not fully loaded. Wait a moment."); btn.innerHTML = oldText; return; }
 
-                    const helveticaFont = await pdfDoc.embedFont(fontToUse);
-                    const pdfFontSize = edit.size / editScale;
-                    const textWidth = helveticaFont.widthOfTextAtSize(edit.text, pdfFontSize);
-                    
-                    if(edit.bgColor && edit.bgColor !== 'transparent') {
-                        page.drawRectangle({
-                            x: pdfX - (4 / editScale), 
-                            y: pdfY - (pdfFontSize * 0.2) - (2 / editScale),
-                            width: textWidth + (8 / editScale), 
-                            height: pdfFontSize * 1.2,
-                            color: hexToRgbPdf(edit.bgColor),
-                            opacity: edit.opacity || 1
-                        });
-                    }
-
-                    page.drawText(edit.text, {
-                        x: pdfX, y: pdfY,
-                        size: pdfFontSize,
-                        font: helveticaFont,
-                        color: hexToRgbPdf(edit.color),
-                        opacity: edit.opacity || 1
-                    });
-
-                    if(edit.underline) {
-                        page.drawLine({
-                            start: { x: pdfX, y: pdfY - 2 },
-                            end: { x: pdfX + textWidth, y: pdfY - 2 },
-                            thickness: Math.max(1, pdfFontSize / 15),
-                            color: hexToRgbPdf(edit.color),
-                            opacity: edit.opacity || 1
-                        });
-                    }
-                    
-                } else if (edit.type === 'draw') {
-                    for(let k=0; k < edit.points.length - 1; k++) {
-                        const p1 = edit.points[k];
-                        const p2 = edit.points[k+1];
-                        page.drawLine({
-                            start: { x: p1.x / editScale, y: height - (p1.y / editScale) },
-                            end: { x: p2.x / editScale, y: height - (p2.y / editScale) },
-                            thickness: edit.size / editScale,
-                            color: hexToRgbPdf(edit.color)
-                        });
-                    }
-                } else if (edit.type === 'image') {
-                    const res = await fetch(edit.dataUrl);
-                    const imageBytes = await res.arrayBuffer();
-                    
-                    let pdfImage;
-                    if (edit.imgType === 'image/png') {
-                        pdfImage = await pdfDoc.embedPng(imageBytes);
-                    } else {
-                        pdfImage = await pdfDoc.embedJpg(imageBytes);
-                    }
-                    
-                    const pdfW = edit.w / editScale;
-                    const pdfH = edit.h / editScale;
-                    
-                    page.drawImage(pdfImage, {
-                        x: pdfX,
-                        y: pdfY - pdfH,
-                        width: pdfW,
-                        height: pdfH
-                    });
+        if (currentVisualMode === 'edit') {
+            const pdfDoc = await PDFDocument.load(freshBuffer);
+            const pages = pdfDoc.getPages();
+            for (const [pageNumStr, edits] of Object.entries(pageEdits)) {
+                const pageNum = parseInt(pageNumStr); const page = pages[pageNum - 1]; const { width, height } = page.getSize();
+                for (const edit of edits) {
+                    const pdfX = edit.x / editScale; const pdfY = height - (edit.y / editScale); 
+                    if (edit.type === 'whiteout') { page.drawRectangle({ x: pdfX, y: pdfY - (edit.h / editScale), width: edit.w / editScale, height: edit.h / editScale, color: rgb(1, 1, 1) }); } 
+                    else if (edit.type === 'text') { const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica); page.drawText(edit.text, { x: pdfX, y: pdfY, size: edit.size / editScale, font: helveticaFont, color: hexToRgbPdf(edit.color) }); } 
+                    else if (edit.type === 'draw') { for(let k=0; k < edit.points.length - 1; k++) { const p1 = edit.points[k]; const p2 = edit.points[k+1]; page.drawLine({ start: { x: p1.x / editScale, y: height - (p1.y / editScale) }, end: { x: p2.x / editScale, y: height - (p2.y / editScale) }, thickness: edit.size / editScale, color: hexToRgbPdf(edit.color) }); } } 
+                    else if (edit.type === 'image') { const res = await fetch(edit.dataUrl); const imageBytes = await res.arrayBuffer(); let pdfImage = edit.imgType === 'image/png' ? await pdfDoc.embedPng(imageBytes) : await pdfDoc.embedJpg(imageBytes); const pdfW = edit.w / editScale; const pdfH = edit.h / editScale; page.drawImage(pdfImage, { x: pdfX, y: pdfY - pdfH, width: pdfW, height: pdfH }); }
                 }
             }
+            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Edited.pdf', 'application/pdf');
+
+        } else if (currentVisualMode === 'crop') {
+            const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
+            if(!boxData) return showCustomAlert("Draw a crop box first!");
+            const nBox = normalizeBox(boxData);
+            const pdfDoc = await PDFDocument.load(freshBuffer);
+            const pages = pdfDoc.getPages();
+            pages.forEach(p => {
+                const { height } = p.getSize();
+                p.setCropBox(nBox.x / editScale, height - ((nBox.y + nBox.h) / editScale), nBox.w / editScale, nBox.h / editScale);
+            });
+            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Cropped.pdf', 'application/pdf');
+
+        } else if (currentVisualMode === 'addmargins') {
+            const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
+            if(!boxData) return showCustomAlert("Draw a content box first!");
+            const nBox = normalizeBox(boxData);
+            const pdfDoc = await PDFDocument.load(freshBuffer);
+            const pages = pdfDoc.getPages();
+            const { width: pW, height: pH } = pages[0].getSize();
+            const mL = nBox.x / editScale; const mT = nBox.y / editScale; const mR = pW - ((nBox.x + nBox.w) / editScale); const mB = pH - ((nBox.y + nBox.h) / editScale);
+            pages.forEach(p => { const { width, height } = p.getSize(); p.setSize(width + mL + mR, height + mT + mB); p.translateContent(mL, mB); });
+            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Margined.pdf', 'application/pdf');
+
+        } else if (currentVisualMode === 'extract') {
+            const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
+            if(!boxData) return showCustomAlert("Draw a selection box first!");
+            const nBox = normalizeBox(boxData);
+            const pdf = await pdfjsLib.getDocument(freshBuffer).promise;
+            let fullText = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i); const textContent = await page.getTextContent(); const viewport = page.getViewport({ scale: editScale });
+                const extracted = textContent.items.filter(item => {
+                    const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+                    return tx[4] >= nBox.x && tx[4] <= nBox.x + nBox.w && tx[5] >= nBox.y && tx[5] <= nBox.y + nBox.h;
+                }).map(item => item.str).join(" ");
+                if(extracted.trim()) fullText += `--- Page ${i} ---\n${extracted}\n\n`;
+            }
+            if(!fullText) showCustomAlert("No text found in that area."); else await processAndDownload(new TextEncoder().encode(fullText), getBaseName(editOriginalFileName) + '_Extracted.txt', 'text/plain');
+
+        } else if (currentVisualMode === 'pagenumbers') {
+            const dummy = pageEdits[1]?.find(e => e.type === 'pagenum-dummy');
+            if(!dummy) return showCustomAlert("Position the number first.");
+            const pdfDoc = await PDFDocument.load(freshBuffer);
+            const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            const pages = pdfDoc.getPages();
+            pages.forEach((page, index) => {
+                const { height } = page.getSize();
+                let txt = `${index + 1}`;
+                if (visualData.format === 'Page 1') txt = `Page ${index + 1}`;
+                if (visualData.format === 'Page 1 of 10') txt = `Page ${index + 1} of ${pages.length}`;
+                page.drawText(txt, { x: dummy.x / editScale, y: height - (dummy.y / editScale), size: 14, font, color: rgb(0,0,0) });
+            });
+            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Numbered.pdf', 'application/pdf');
         }
-        
-        const savedBytes = await pdfDoc.save();
-        const outputName = getBaseName(editOriginalFileName) + '_Edited.pdf';
-        
-        await processAndDownload(savedBytes, outputName, 'application/pdf');
         if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
-        
-    } catch (error) {
-        handleError(error);
-    } finally {
-        btn.innerHTML = oldText;
-    }
+    } catch (error) { handleError(error); } 
+    finally { btn.innerHTML = oldText; }
 });
