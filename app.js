@@ -837,13 +837,15 @@ if (ui.jpgtopdf) {
 }
 
 // --- SEARCH FILTERING LOGIC ---
-document.getElementById('mobile-search')?.addEventListener('input', (e) => {
+const handleSearch = (e) => {
     const searchTerm = e.target.value.toLowerCase();
     document.querySelectorAll('.tool-card').forEach(card => {
         const title = card.querySelector('h3').innerText.toLowerCase();
         card.style.display = title.includes(searchTerm) ? 'block' : 'none';
     });
-});
+};
+document.getElementById('mobile-search')?.addEventListener('input', handleSearch);
+document.getElementById('desktop-search')?.addEventListener('input', handleSearch); // Fix 3 applied
 
 if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner === 'function') {
     AdManager.showBanner();
@@ -854,7 +856,7 @@ if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner 
 // ==========================================
 
 let editPdfDoc = null;
-let originalPdfBytes = null;
+let currentEditFile = null; // Fix 1: Store actual file reference safely
 let editOriginalFileName = "";
 let editPageNum = 1;
 const editScale = 1.5;
@@ -865,7 +867,7 @@ const renderCtx = renderCanvas ? renderCanvas.getContext('2d') : null;
 const overlayCanvas = document.getElementById('pdf-overlay-canvas');
 const overlayCtx = overlayCanvas ? overlayCanvas.getContext('2d') : null;
 
-let currentTool = 'none'; // 'text', 'whiteout', 'draw', 'image'
+let currentTool = 'none'; 
 let editColor = '#000000';
 let editSize = 20;
 
@@ -979,15 +981,16 @@ document.getElementById('edit-image-input')?.addEventListener('change', function
     }
 });
 
-// --- PDF Load ---
+// --- PDF Load Fix (Store File reference safely) ---
 document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
+        currentEditFile = file; // Fix 1: Store pure File object for Save phase
         editOriginalFileName = file.name;
         const fileReader = new FileReader();
         fileReader.onload = function() {
-            originalPdfBytes = new Uint8Array(this.result);
-            pdfjsLib.getDocument(originalPdfBytes).promise.then(pdf => {
+            const tempPdfBytes = new Uint8Array(this.result);
+            pdfjsLib.getDocument(tempPdfBytes).promise.then(pdf => {
                 editPdfDoc = pdf;
                 editPageNum = 1;
                 pageEdits = {}; 
@@ -1024,15 +1027,7 @@ function drawOverlay() {
         if (edit.type === 'whiteout') {
             overlayCtx.fillStyle = 'white';
             overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
-            
-            // Fix 1: Eraser Outline is completely invisible, UNLESS Eraser tool is active so user can find and drag it.
-            if (currentTool === 'whiteout') {
-                overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)';
-                overlayCtx.lineWidth = 1;
-                overlayCtx.setLineDash([4, 4]); 
-                overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
-                overlayCtx.setLineDash([]); 
-            }
+            // Fix 2: NO border drawn ever for whiteout items so it blends perfectly
         } else if (edit.type === 'text') {
             overlayCtx.font = `${edit.size}px Arial`;
             overlayCtx.fillStyle = edit.color;
@@ -1075,6 +1070,9 @@ function getCursorPos(e) {
 }
 
 function startAction(e) {
+    // Fix 4: Allow multi-touch for zoom!
+    if (e.touches && e.touches.length > 1) return;
+
     if (currentTool === 'none') return;
     if (e.target === document.getElementById('custom-text-input') || e.target.closest('#custom-text-modal')) return;
     
@@ -1097,7 +1095,6 @@ function startAction(e) {
             const textWidth = overlayCtx.measureText(edit.text).width;
             if (pos.x >= edit.x - 5 && pos.x <= edit.x + textWidth + 5 && pos.y >= edit.y - edit.size && pos.y <= edit.y + 10) isHit = true;
         } else if (edit.type === 'draw') {
-            // Rough bounding box check for drawings to allow drag/delete
             let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
             edit.points.forEach(p => {
                 if(p.x < minX) minX = p.x; if(p.x > maxX) maxX = p.x;
@@ -1106,7 +1103,6 @@ function startAction(e) {
             if (pos.x >= minX - 10 && pos.x <= maxX + 10 && pos.y >= minY - 10 && pos.y <= maxY + 10) isHit = true;
         }
         
-        // Drawing tool overrides dragging so you can draw over images, UNLESS you are trying to drag a drawing
         if (isHit && (currentTool !== 'draw' || edit.type === 'draw')) { 
             activeDragIndex = i;
             
@@ -1122,7 +1118,6 @@ function startAction(e) {
             edits.push(item);
             activeDragIndex = edits.length - 1;
             
-            // Show Trash Zone
             trashZone.style.display = 'flex';
             return; 
         }
@@ -1143,6 +1138,9 @@ function startAction(e) {
 }
 
 function moveAction(e) {
+    // Fix 4: Allow multi-touch for zoom
+    if (e.touches && e.touches.length > 1) return;
+
     if (currentTool === 'none') return;
     e.preventDefault();
     const pos = getCursorPos(e);
@@ -1196,18 +1194,14 @@ function moveAction(e) {
 }
 
 function endAction(e) {
-    e.preventDefault();
-    
     if (activeDragIndex !== -1) {
         trashZone.style.display = 'none';
         
         if (isHoveringTrash) {
-            // Delete Element!
             pageEdits[editPageNum].splice(activeDragIndex, 1);
             isHoveringTrash = false;
             showCustomAlert("Element deleted successfully.");
         } else if (!hasMovedDuringClick) {
-            // Tap to Edit
             const edit = pageEdits[editPageNum][activeDragIndex];
             if (edit.type === 'text' && currentTool === 'text') {
                 openTextModal(edit.text, { type: 'edit', index: activeDragIndex });
@@ -1263,15 +1257,17 @@ function hexToRgbPdf(hex) {
     return rgb(r, g, b);
 }
 
-// 5. Final Save Logic
+// 5. Final Save Logic (Fix 1 applied using clean ArrayBuffer)
 document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
-    if (!originalPdfBytes) return;
+    if (!currentEditFile) return;
     const btn = document.getElementById('btn-edit-save');
     const oldText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
     
     try {
-        const pdfDoc = await PDFDocument.load(originalPdfBytes);
+        // Read fresh arraybuffer directly from file to prevent parsing issues
+        const freshBuffer = await currentEditFile.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(freshBuffer);
         const pages = pdfDoc.getPages();
         
         for (const [pageNumStr, edits] of Object.entries(pageEdits)) {
@@ -1336,7 +1332,6 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
         const outputName = getBaseName(editOriginalFileName) + '_Edited.pdf';
         
         await processAndDownload(savedBytes, outputName, 'application/pdf');
-        showCustomAlert("Success! Edited PDF saved successfully.");
         if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
         
     } catch (error) {
