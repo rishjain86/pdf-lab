@@ -890,15 +890,27 @@ function openProTextModal(initialText = "", actionData) {
     if(actionData.type === 'edit') {
         const edit = pageEdits[editPageNum][actionData.index];
         activeTextState = { ...edit };
+    } else {
+        // Reset defaults for new text
+        activeTextState = { bold: false, italic: false, underline: false, color: '#000000', bgColor: 'transparent', size: 24, opacity: 1 };
     }
     
     document.getElementById('btn-style-bold').style.background = activeTextState.bold ? 'var(--accent)' : '#334155';
     document.getElementById('btn-style-italic').style.background = activeTextState.italic ? 'var(--accent)' : '#334155';
     document.getElementById('btn-style-underline').style.background = activeTextState.underline ? 'var(--accent)' : '#334155';
     document.getElementById('pro-color-picker').value = activeTextState.color;
-    document.getElementById('pro-bg-picker').value = activeTextState.bgColor === 'transparent' ? '#ffffff' : activeTextState.bgColor;
     document.getElementById('pro-size-picker').value = activeTextState.size;
     document.getElementById('pro-opacity-slider').value = activeTextState.opacity;
+
+    // Smart BG State UI Update
+    const bgPicker = document.getElementById('pro-bg-picker');
+    if (activeTextState.bgColor === 'transparent') {
+        bgPicker.value = '#ffffff'; // default view
+        bgPicker.style.boxShadow = 'none';
+    } else {
+        bgPicker.value = activeTextState.bgColor;
+        bgPicker.style.boxShadow = '0 0 0 2px var(--accent)';
+    }
 
     modal.style.display = 'flex';
     input.focus();
@@ -918,12 +930,20 @@ document.getElementById('btn-style-underline')?.addEventListener('click', (e) =>
     e.currentTarget.style.background = activeTextState.underline ? 'var(--accent)' : '#334155';
 });
 
-// BUG FIX: Update BG color actively when picker changes
-document.getElementById('pro-bg-picker')?.addEventListener('input', (e) => {
+// BUG FIX: Smart Background Color Tracking
+const proBgPicker = document.getElementById('pro-bg-picker');
+proBgPicker?.addEventListener('input', (e) => {
     activeTextState.bgColor = e.target.value;
+    proBgPicker.style.boxShadow = '0 0 0 2px var(--accent)'; // visual cue
 });
+proBgPicker?.addEventListener('change', (e) => {
+    activeTextState.bgColor = e.target.value;
+    proBgPicker.style.boxShadow = '0 0 0 2px var(--accent)'; // backup cue
+});
+
 document.getElementById('btn-bg-clear')?.addEventListener('click', () => {
     activeTextState.bgColor = 'transparent';
+    proBgPicker.style.boxShadow = 'none';
 });
 
 document.getElementById('btn-text-cancel')?.addEventListener('click', () => {
@@ -1096,7 +1116,6 @@ function drawOverlay() {
             const textMetrics = overlayCtx.measureText(edit.text);
             const tWidth = textMetrics.width;
             
-            // BG Draw fix: Wraps the text safely
             if(edit.bgColor && edit.bgColor !== 'transparent') {
                 overlayCtx.fillStyle = edit.bgColor;
                 overlayCtx.fillRect(edit.x - 4, edit.y - edit.size, tWidth + 8, edit.size * 1.2);
@@ -1403,7 +1422,7 @@ function hexToRgbPdf(hex) {
     return rgb(r, g, b);
 }
 
-// 5. Final Save Logic (Handles Pro Text Styling)
+// 5. Final Save Logic
 document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
     if (!currentEditFile) return;
     const btn = document.getElementById('btn-edit-save');
@@ -1441,12 +1460,11 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                     const pdfFontSize = edit.size / editScale;
                     const textWidth = helveticaFont.widthOfTextAtSize(edit.text, pdfFontSize);
                     
-                    // BG Draw fix for PDF save
                     if(edit.bgColor && edit.bgColor !== 'transparent') {
                         page.drawRectangle({
-                            x: pdfX - 4, 
-                            y: pdfY - (pdfFontSize * 0.2) - 2,
-                            width: textWidth + 8, 
+                            x: pdfX - (4 / editScale), 
+                            y: pdfY - (pdfFontSize * 0.2) - (2 / editScale),
+                            width: textWidth + (8 / editScale), 
                             height: pdfFontSize * 1.2,
                             color: hexToRgbPdf(edit.bgColor),
                             opacity: edit.opacity || 1
