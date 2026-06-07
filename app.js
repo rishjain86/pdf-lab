@@ -51,6 +51,10 @@ let lastBackPress = 0;
 if (window.Capacitor && window.Capacitor.isNativePlatform()) {
     App.addListener('backButton', () => {
         const activeView = document.querySelector('.view-section.active').id;
+        if (document.getElementById('global-preview-modal').style.display === 'flex') {
+            document.getElementById('btn-close-global-preview').click();
+            return;
+        }
         if (activeView !== 'view-dashboard') window.switchView('dashboard');
         else {
             const now = new Date().getTime();
@@ -107,7 +111,7 @@ const generateSingleFileUI = (id, icon, color, title, btnText, extraHtml = "") =
     <div id="${id}-file-info" style="${fileListStyle}"></div>
     <div id="${id}-controls" style="display: none; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border);">
         ${extraHtml}
-        <button id="btn-${id}-action" style="${btnStyle.replace('var(--accent)', color)}"><i class="fas ${icon}"></i> ${btnText}</button>
+        <button id="btn-${id}-action" style="${btnStyle.replace('var(--accent)', color)}"><i class="fas fa-eye"></i> Preview & ${btnText}</button>
     </div>
 `;
 
@@ -122,29 +126,55 @@ const generateMultipleFileUI = (id, icon, color, title, btnText, extraHtml = "")
     <div id="${id}-file-list" style="${fileListStyle}"></div>
     <div id="${id}-controls" style="display: none; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border);">
         ${extraHtml}
-        <button id="btn-${id}-action" style="${btnStyle.replace('var(--accent)', color)}"><i class="fas ${icon}"></i> ${btnText}</button>
+        <button id="btn-${id}-action" style="${btnStyle.replace('var(--accent)', color)}"><i class="fas fa-eye"></i> Preview & ${btnText}</button>
     </div>
 `;
 
-if (ui.merge) ui.merge.innerHTML = brandHeaderHtml + `<div id="merge-drop-zone" style="${dropZoneStyle}"><i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: var(--accent); margin-bottom: 15px;"></i><h3>Drag & Drop PDFs here</h3><button onclick="document.getElementById('merge-file-input').click()" style="padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: 600;">Browse Files</button><input type="file" id="merge-file-input" multiple accept="application/pdf" style="display: none;"></div><div id="merge-file-list" style="${fileListStyle}"></div><button id="btn-merge-action" style="${btnStyle}; display: none;"><i class="fas fa-object-group"></i> Merge Files Now</button>`;
-if (ui.jpgtopdf) ui.jpgtopdf.innerHTML = brandHeaderHtml + `<div id="jpgtopdf-drop-zone" style="${dropZoneStyle.replace('var(--accent)', '#eab308')}"><i class="fas fa-images" style="font-size: 3rem; color: #eab308; margin-bottom: 15px;"></i><h3>Drag & Drop Images</h3><button onclick="document.getElementById('jpgtopdf-file-input').click()" style="padding: 10px 20px; background: #eab308; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: 600;">Browse Images</button><input type="file" id="jpgtopdf-file-input" multiple accept="image/*" style="display: none;"></div><div id="jpgtopdf-file-list" style="${fileListStyle}"></div><button id="btn-jpgtopdf-action" style="${btnStyle.replace('var(--accent)', '#eab308')}; display: none;"><i class="fas fa-file-pdf"></i> Convert to PDF</button>`;
-if (ui.htmltopdf) ui.htmltopdf.innerHTML = brandHeaderHtml + `<div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border);"><label style="color: var(--text-secondary);">Paste your HTML Code here:</label><textarea id="html-input" rows="10" style="${inputStyle}" placeholder="<h1>Hello</h1>"></textarea><button id="btn-htmltopdf-action" style="${btnStyle.replace('var(--accent)', '#f97316')}"><i class="fas fa-code"></i> Convert to PDF</button></div>`;
+// MERGE UI IS NOW CUSTOM FOR ADVANCED EDITOR
+if (ui.merge) ui.merge.innerHTML = brandHeaderHtml + `
+    <div id="merge-drop-zone" style="${dropZoneStyle}"><i class="fas fa-object-group" style="font-size: 3rem; color: var(--accent); margin-bottom: 15px;"></i><h3>Select PDFs to Merge</h3><button onclick="document.getElementById('merge-file-input').click()" style="padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: 600;">Browse Files</button><input type="file" id="merge-file-input" multiple accept="application/pdf" style="display: none;"></div>
+    
+    <div id="merge-editor-panel" style="display:none; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 20px;">
+        <h3 style="margin-bottom: 15px; color: var(--accent);"><i class="fas fa-sliders-h"></i> Merge Settings</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div>
+                <label style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px; display: block;">Page Size</label>
+                <select id="merge-setting-size" style="${inputStyle} margin-bottom: 0;"><option value="original">Keep Original</option><option value="A4">Force A4</option></select>
+            </div>
+            <div>
+                <label style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px; display: block;">Add Margin Space</label>
+                <select id="merge-setting-margin" style="${inputStyle} margin-bottom: 0;"><option value="0">No Margin</option><option value="20">Small (20px)</option><option value="40">Large (40px)</option></select>
+            </div>
+            <div>
+                <label style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 5px; display: block;">Gap Between PDFs</label>
+                <select id="merge-setting-gap" style="${inputStyle} margin-bottom: 0;"><option value="0">No Gap</option><option value="1">1 Blank Page</option><option value="2">2 Blank Pages</option></select>
+            </div>
+        </div>
+        <h4 style="margin-bottom: 10px; color: white;">File Order (Drag or Use Arrows)</h4>
+        <div id="merge-file-list" style="${fileListStyle}"></div>
+        <button id="add-more-merge" style="background:var(--surface-color); color:var(--text-main); border:1px dashed var(--glass-border); padding:10px; width:100%; border-radius:8px; margin-bottom:15px; cursor:pointer; font-weight:600;"><i class="fas fa-plus"></i> Add More PDFs</button>
+        <button id="btn-merge-action" style="${btnStyle}"><i class="fas fa-eye"></i> Process & Preview Merge</button>
+    </div>
+`;
 
-if (ui.protect) ui.protect.innerHTML = generateMultipleFileUI('protect', 'fa-lock', '#8b5cf6', 'Protect', 'Encrypt Files', `<input type="password" id="protect-password" placeholder="Set Password for all files" style="${inputStyle}">`);
-if (ui.unlock) ui.unlock.innerHTML = generateMultipleFileUI('unlock', 'fa-unlock', '#06b6d4', 'Unlock', 'Unlock Files', `<input type="password" id="unlock-password" placeholder="Current Password (applied to all)" style="${inputStyle}">`);
-if (ui.compress) ui.compress.innerHTML = generateMultipleFileUI('compress', 'fa-compress-arrows-alt', '#10b981', 'Compress', 'Compress Files');
+if (ui.jpgtopdf) ui.jpgtopdf.innerHTML = brandHeaderHtml + `<div id="jpgtopdf-drop-zone" style="${dropZoneStyle.replace('var(--accent)', '#eab308')}"><i class="fas fa-images" style="font-size: 3rem; color: #eab308; margin-bottom: 15px;"></i><h3>Drag & Drop Images</h3><button onclick="document.getElementById('jpgtopdf-file-input').click()" style="padding: 10px 20px; background: #eab308; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: 600;">Browse Images</button><input type="file" id="jpgtopdf-file-input" multiple accept="image/*" style="display: none;"></div><div id="jpgtopdf-file-list" style="${fileListStyle}"></div><button id="btn-jpgtopdf-action" style="${btnStyle.replace('var(--accent)', '#eab308')}; display: none;"><i class="fas fa-eye"></i> Preview & Convert</button>`;
+if (ui.htmltopdf) ui.htmltopdf.innerHTML = brandHeaderHtml + `<div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border);"><label style="color: var(--text-secondary);">Paste your HTML Code here:</label><textarea id="html-input" rows="10" style="${inputStyle}" placeholder="<h1>Hello</h1>"></textarea><button id="btn-htmltopdf-action" style="${btnStyle.replace('var(--accent)', '#f97316')}"><i class="fas fa-eye"></i> Preview PDF</button></div>`;
 
-if (ui.split) ui.split.innerHTML = generateSingleFileUI('split', 'fa-cut', '#f59e0b', 'Split', 'Split & Download', `<input type="text" id="split-ranges" placeholder="e.g. 1-3" style="${inputStyle}">`);
+if (ui.protect) ui.protect.innerHTML = generateMultipleFileUI('protect', 'fa-lock', '#8b5cf6', 'Protect', 'Encrypt', `<input type="password" id="protect-password" placeholder="Set Password for all files" style="${inputStyle}">`);
+if (ui.unlock) ui.unlock.innerHTML = generateMultipleFileUI('unlock', 'fa-unlock', '#06b6d4', 'Unlock', 'Unlock', `<input type="password" id="unlock-password" placeholder="Current Password (applied to all)" style="${inputStyle}">`);
+if (ui.compress) ui.compress.innerHTML = generateMultipleFileUI('compress', 'fa-compress-arrows-alt', '#10b981', 'Compress', 'Compress');
+
+if (ui.split) ui.split.innerHTML = generateSingleFileUI('split', 'fa-cut', '#f59e0b', 'Split', 'Split', `<input type="text" id="split-ranges" placeholder="e.g. 1-3" style="${inputStyle}">`);
 if (ui.delete) ui.delete.innerHTML = generateSingleFileUI('delete', 'fa-trash-alt', '#ef4444', 'Delete Pages', 'Remove Pages', `<input type="text" id="delete-ranges" placeholder="e.g. 2, 4-6" style="${inputStyle}">`);
-if (ui.reorder) ui.reorder.innerHTML = generateSingleFileUI('reorder', 'fa-sort-amount-up', '#8b5cf6', 'Reorder Pages', 'Apply New Order', `<input type="text" id="reorder-input" placeholder="e.g. 3, 1, 2" style="${inputStyle}">`);
-if (ui.rotate) ui.rotate.innerHTML = generateSingleFileUI('rotate', 'fa-sync-alt', '#3b82f6', 'Rotate', 'Rotate & Download', `<select id="rotate-angle" style="${inputStyle}"><option value="90">Right 90°</option><option value="180">Upside Down 180°</option><option value="-90">Left -90°</option></select>`);
-if (ui.pdftojpg) ui.pdftojpg.innerHTML = generateSingleFileUI('pdftojpg', 'fa-file-archive', '#eab308', 'Convert to JPG', 'Download ZIP of Images');
-if (ui.flatten) ui.flatten.innerHTML = generateSingleFileUI('flatten', 'fa-layer-group', '#64748b', 'Flatten', 'Flatten Document');
+if (ui.reorder) ui.reorder.innerHTML = generateSingleFileUI('reorder', 'fa-sort-amount-up', '#8b5cf6', 'Reorder Pages', 'Apply Order', `<input type="text" id="reorder-input" placeholder="e.g. 3, 1, 2" style="${inputStyle}">`);
+if (ui.rotate) ui.rotate.innerHTML = generateSingleFileUI('rotate', 'fa-sync-alt', '#3b82f6', 'Rotate', 'Rotate', `<select id="rotate-angle" style="${inputStyle}"><option value="90">Right 90°</option><option value="180">Upside Down 180°</option><option value="-90">Left -90°</option></select>`);
+if (ui.pdftojpg) ui.pdftojpg.innerHTML = generateSingleFileUI('pdftojpg', 'fa-file-archive', '#eab308', 'Convert to JPG', 'Get ZIP');
+if (ui.flatten) ui.flatten.innerHTML = generateSingleFileUI('flatten', 'fa-layer-group', '#64748b', 'Flatten', 'Flatten');
 if (ui.metadata) ui.metadata.innerHTML = generateSingleFileUI('metadata', 'fa-info-circle', '#eab308', 'Edit Metadata', 'Update Metadata', `<input type="text" id="meta-title" placeholder="New Document Title" style="${inputStyle}"><input type="text" id="meta-author" placeholder="New Author Name" style="${inputStyle}">`);
 if (ui.repair) ui.repair.innerHTML = generateSingleFileUI('repair', 'fa-tools', '#10b981', 'Repair PDF', 'Attempt Repair');
-if (ui.addblank) ui.addblank.innerHTML = generateSingleFileUI('addblank', 'fa-file-medical', '#10b981', 'Insert Blank Page', 'Insert & Download', `<select id="addblank-position" style="${inputStyle}"><option value="start">At the very beginning</option><option value="end">At the very end</option></select>`);
+if (ui.addblank) ui.addblank.innerHTML = generateSingleFileUI('addblank', 'fa-file-medical', '#10b981', 'Insert Blank Page', 'Insert', `<select id="addblank-position" style="${inputStyle}"><option value="start">At the very beginning</option><option value="end">At the very end</option></select>`);
 if (ui.resizepdf) ui.resizepdf.innerHTML = generateSingleFileUI('resizepdf', 'fa-expand-arrows-alt', '#14b8a6', 'Resize Pages', 'Scale Document', `<select id="resize-profile" style="${inputStyle}"><option value="A4">A4 Profile</option><option value="Letter">Letter Profile</option><option value="Legal">Legal Profile</option></select>`);
-if (ui.splitevenodd) ui.splitevenodd.innerHTML = generateSingleFileUI('splitevenodd', 'fa-columns', '#6366f1', 'Split Even/Odd', 'Split & Download ZIP');
+if (ui.splitevenodd) ui.splitevenodd.innerHTML = generateSingleFileUI('splitevenodd', 'fa-columns', '#6366f1', 'Split Even/Odd', 'Split into ZIP');
 if (ui.removeannots) ui.removeannots.innerHTML = generateSingleFileUI('removeannots', 'fa-eraser', '#8b5cf6', 'Clean Annotations', 'Remove All');
 if (ui.imagewatermark) ui.imagewatermark.innerHTML = generateSingleFileUI('imagewatermark', 'fa-images', '#ec4899', 'Add Image Overlay', 'Stamp Image', `<label style="color: var(--text-secondary);">Select Logo/Image (PNG/JPG):</label><input type="file" id="imagewatermark-overlay-input" accept="image/png, image/jpeg" style="${inputStyle}">`);
 
@@ -228,8 +258,39 @@ function bytesToBase64(bytes) {
     return window.btoa(binary);
 }
 
+// --- GLOBAL PREVIEW LOGIC ---
+let pendingDownloadData = null;
+
 async function processAndDownload(bytes, filename, type, saveToDb = true) {
+    // Background Save
     if(saveToDb) { try { await saveToHistory(bytes, filename, type); } catch(e) {} }
+    
+    pendingDownloadData = { bytes, filename, type };
+    
+    const modal = document.getElementById('global-preview-modal');
+    const iframe = document.getElementById('global-preview-iframe');
+    const msg = document.getElementById('global-preview-message');
+    document.getElementById('global-preview-title').innerHTML = `<i class="fas fa-eye" style="color: var(--accent);"></i> Preview: ${filename}`;
+
+    if (type === 'application/pdf' || type === 'text/plain') {
+        const blob = new Blob([bytes], { type });
+        const url = URL.createObjectURL(blob);
+        iframe.src = url;
+        iframe.style.display = 'block';
+        msg.style.display = 'none';
+    } else {
+        // Fallback for ZIPs and Images where iframe doesn't work natively
+        iframe.style.display = 'none';
+        msg.style.display = 'block';
+    }
+    
+    modal.style.display = 'flex';
+}
+
+async function executeFinalDownload() {
+    if (!pendingDownloadData) return;
+    const { bytes, filename, type } = pendingDownloadData;
+    
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
             const base64 = bytesToBase64(bytes);
@@ -243,7 +304,20 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
         a.href = url; a.download = filename;
         document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     }
+    
+    document.getElementById('global-preview-modal').style.display = 'none';
+    pendingDownloadData = null;
+    document.getElementById('global-preview-iframe').src = ""; // Clear memory
 }
+
+document.getElementById('btn-close-global-preview')?.addEventListener('click', () => {
+    document.getElementById('global-preview-modal').style.display = 'none';
+    pendingDownloadData = null;
+    document.getElementById('global-preview-iframe').src = "";
+});
+
+document.getElementById('btn-download-global-preview')?.addEventListener('click', executeFinalDownload);
+
 
 function parseRange(rangeStr) {
     let pages = [];
@@ -541,7 +615,7 @@ if (ui.htmltopdf) {
             const blob = await html2pdf().set({ margin: 1, jsPDF: { format: 'letter' } }).from(htmlContent).output('blob');
             const bytes = new Uint8Array(await blob.arrayBuffer()); document.getElementById('html-input').value = '';
             await processAndDownload(bytes, 'HTML_Converted.pdf', 'application/pdf'); if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
-        } catch(e) { handleError(e); } finally { btn.innerHTML = '<i class="fas fa-code"></i> Convert to PDF'; }
+        } catch(e) { handleError(e); } finally { btn.innerHTML = '<i class="fas fa-eye"></i> Preview PDF'; }
     });
 }
 
@@ -565,27 +639,117 @@ setupSingleFileLogic('extract', async (file) => {
     return { bytes: new TextEncoder().encode(fullText), filename: `${getBaseName(file.name)}_Extracted.txt`, type: 'text/plain' };
 });
 
-// SECURE MERGE LIST FUNCTION
+// SECURE ADVANCED MERGE EDITOR FUNCTION
 let mergeFiles = [];
 if (ui.merge) {
     const mergeInput = document.getElementById('merge-file-input');
-    document.getElementById('merge-drop-zone')?.addEventListener('click', (e) => { if(e.target.tagName !== 'BUTTON') mergeInput.click(); });
+    const mergeDropZone = document.getElementById('merge-drop-zone');
+    const mergeEditorPanel = document.getElementById('merge-editor-panel');
+    
+    mergeDropZone?.addEventListener('click', (e) => { if(e.target.tagName !== 'BUTTON') mergeInput.click(); });
+    document.getElementById('add-more-merge')?.addEventListener('click', () => mergeInput.click());
+    
+    function moveMergeItem(index, direction) {
+        if (direction === -1 && index > 0) {
+            [mergeFiles[index - 1], mergeFiles[index]] = [mergeFiles[index], mergeFiles[index - 1]];
+        } else if (direction === 1 && index < mergeFiles.length - 1) {
+            [mergeFiles[index], mergeFiles[index + 1]] = [mergeFiles[index + 1], mergeFiles[index]];
+        }
+        renderMergeList();
+    }
+    
+    // Attach to window so HTML inline onclick works
+    window.moveMergeItem = moveMergeItem;
+
     function renderMergeList() {
         const list = document.getElementById('merge-file-list'); list.innerHTML = '';
-        mergeFiles.forEach((f, i) => { list.innerHTML += `<div style="${fileItemStyle}"><div class="text-container"><b class="text-ellipsis">${f.name}</b></div><button class="remove-merge" data-index="${i}" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;"><i class="fas fa-times"></i></button></div>`; });
-        list.querySelectorAll('.remove-merge').forEach(btn => btn.addEventListener('click', (e) => { mergeFiles.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1); renderMergeList(); }));
-        document.getElementById('btn-merge-action').style.display = mergeFiles.length > 1 ? 'block' : 'none';
+        mergeFiles.forEach((f, i) => { 
+            list.innerHTML += `
+            <div style="${fileItemStyle}">
+                <div class="text-container"><b class="text-ellipsis">${i + 1}. ${f.name}</b></div>
+                <div style="display:flex; gap:5px; flex-shrink:0;">
+                    <button onclick="window.moveMergeItem(${i}, -1)" style="background:var(--surface-color); color:white; border:1px solid var(--glass-border); padding:6px 10px; border-radius:6px; cursor:pointer;" title="Move Up"><i class="fas fa-arrow-up"></i></button>
+                    <button onclick="window.moveMergeItem(${i}, 1)" style="background:var(--surface-color); color:white; border:1px solid var(--glass-border); padding:6px 10px; border-radius:6px; cursor:pointer;" title="Move Down"><i class="fas fa-arrow-down"></i></button>
+                    <button class="remove-merge" data-index="${i}" style="background:#ef4444; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer;" title="Remove"><i class="fas fa-times"></i></button>
+                </div>
+            </div>`; 
+        });
+        
+        list.querySelectorAll('.remove-merge').forEach(btn => btn.addEventListener('click', (e) => { 
+            mergeFiles.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1); 
+            renderMergeList(); 
+        }));
+        
+        if (mergeFiles.length > 0) {
+            mergeEditorPanel.style.display = 'block';
+            mergeDropZone.style.display = 'none';
+        } else {
+            mergeEditorPanel.style.display = 'none';
+            mergeDropZone.style.display = 'block';
+        }
     }
-    mergeInput?.addEventListener('change', (e) => { mergeFiles = [...mergeFiles, ...Array.from(e.target.files).filter(f => f.type === 'application/pdf')]; renderMergeList(); mergeInput.value = ''; });
+
+    mergeInput?.addEventListener('change', (e) => { 
+        mergeFiles = [...mergeFiles, ...Array.from(e.target.files).filter(f => f.type === 'application/pdf')]; 
+        renderMergeList(); 
+        mergeInput.value = ''; 
+    });
+
     document.getElementById('btn-merge-action')?.addEventListener('click', async () => {
-        const btn = document.getElementById('btn-merge-action'); btn.innerHTML = 'Processing...';
+        if(mergeFiles.length < 2) {
+            showCustomAlert("Please add at least 2 PDFs to merge.");
+            return;
+        }
+        
+        const btn = document.getElementById('btn-merge-action'); 
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        
         try {
+            const sizeSetting = document.getElementById('merge-setting-size').value;
+            const marginSetting = parseInt(document.getElementById('merge-setting-margin').value);
+            const gapSetting = parseInt(document.getElementById('merge-setting-gap').value);
+            
             const mergedPdf = await PDFDocument.create();
-            for (const file of mergeFiles) { const pdf = await PDFDocument.load(await file.arrayBuffer()); const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices()); copiedPages.forEach(p => mergedPdf.addPage(p)); }
-            const bytes = await mergedPdf.save(); const outputName = mergeFiles.length > 0 ? `${getBaseName(mergeFiles[0].name)}_Merged.pdf` : 'Amazing_Merged.pdf';
-            mergeFiles = []; renderMergeList(); await processAndDownload(bytes, outputName, 'application/pdf');
+            
+            for (let i = 0; i < mergeFiles.length; i++) { 
+                const file = mergeFiles[i];
+                const pdf = await PDFDocument.load(await file.arrayBuffer()); 
+                const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices()); 
+                
+                copiedPages.forEach(p => { 
+                    if (sizeSetting === 'A4') {
+                        // Standard A4
+                        p.setSize(595.28, 841.89);
+                    }
+                    if (marginSetting > 0) {
+                        const { width, height } = p.getSize();
+                        p.setSize(width + marginSetting * 2, height + marginSetting * 2);
+                        p.translateContent(marginSetting, marginSetting);
+                    }
+                    mergedPdf.addPage(p); 
+                }); 
+                
+                // Add Gap (Blank Pages) if not the last document
+                if (gapSetting > 0 && i < mergeFiles.length - 1) {
+                    for(let g = 0; g < gapSetting; g++) {
+                        // Standard A4 blank page
+                        mergedPdf.addPage([595.28, 841.89]); 
+                    }
+                }
+            }
+            
+            const bytes = await mergedPdf.save(); 
+            const outputName = `${getBaseName(mergeFiles[0].name)}_Merged.pdf`;
+            mergeFiles = []; 
+            renderMergeList(); 
+            await processAndDownload(bytes, outputName, 'application/pdf');
+            
             if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
-        } catch (e) { handleError(e); } finally { btn.innerHTML = 'Merge Files Now'; }
+        } catch (e) { 
+            handleError(e); 
+        } finally { 
+            btn.innerHTML = '<i class="fas fa-eye"></i> Process & Preview Merge'; 
+        }
     });
 }
 
@@ -612,7 +776,7 @@ if (ui.jpgtopdf) {
             const bytes = await pdfDoc.save(); const outputName = imageFiles.length > 0 ? `${getBaseName(imageFiles[0].name)}_Images.pdf` : 'Amazing_Images.pdf';
             imageFiles = []; renderImgList(); await processAndDownload(bytes, outputName, 'application/pdf');
             if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
-        } catch (e) { handleError(e); } finally { btn.innerHTML = 'Convert to PDF'; }
+        } catch (e) { handleError(e); } finally { btn.innerHTML = '<i class="fas fa-eye"></i> Preview & Convert'; }
     });
 }
 
@@ -1110,7 +1274,7 @@ document.getElementById('next-page')?.addEventListener('click', () => { if (edit
 // ==========================================
 document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
     if (!currentEditFile) return;
-    const btn = document.getElementById('btn-edit-save'); const oldText = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    const btn = document.getElementById('btn-edit-save'); const oldText = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
     
     try {
         const freshBuffer = await currentEditFile.arrayBuffer();
@@ -1200,11 +1364,10 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 const cropH = nBox.h / editScale;
                 
                 copiedPage.setCropBox(cropX, cropY, cropW, cropH);
-                copiedPage.setMediaBox(cropX, cropY, cropW, cropH); // MediaBox ensures boundaries are strict
+                copiedPage.setMediaBox(cropX, cropY, cropW, cropH); 
                 
                 finalBytes = await smartDoc.save();
             } else {
-                // Apply crop to ALL pages
                 const pages = originalDoc.getPages();
                 pages.forEach((p) => {
                     const { height } = p.getSize();
@@ -1214,7 +1377,7 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                     const cropH = nBox.h / editScale;
                     
                     p.setCropBox(cropX, cropY, cropW, cropH);
-                    p.setMediaBox(cropX, cropY, cropW, cropH); // MediaBox ensures boundaries are strict
+                    p.setMediaBox(cropX, cropY, cropW, cropH);
                 });
                 finalBytes = await originalDoc.save();
             }
