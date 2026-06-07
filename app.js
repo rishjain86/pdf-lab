@@ -149,7 +149,7 @@ if (ui.imagewatermark) ui.imagewatermark.innerHTML = generateSingleFileUI('image
     <input type="file" id="imagewatermark-overlay-input" accept="image/png, image/jpeg" style="${inputStyle}">
 `);
 
-// --- NEW/UPGRADED UIs ---
+// --- UPGRADED UIs ---
 if (ui.sign) ui.sign.innerHTML = generateSingleFileUI('sign', 'fa-signature', '#8b5cf6', 'Sign', 'Sign Document', `
     <input type="text" id="sign-text" placeholder="Type your Full Name to sign" style="${inputStyle}">
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; border:1px solid var(--glass-border);">
@@ -538,17 +538,6 @@ setupSingleFileLogic('pdftojpg', async (file) => {
     return { bytes: await zip.generateAsync({type: 'uint8array'}), filename: `${getBaseName(file.name)}_Images.zip`, type: 'application/zip' };
 });
 
-setupSingleFileLogic('extract', async (file) => {
-    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
-    let fullText = "";
-    for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        fullText += `--- Page ${i} ---\n${textContent.items.map(item => item.str).join(" ")}\n\n`;
-    }
-    return { bytes: new TextEncoder().encode(fullText), filename: `${getBaseName(file.name)}_Extracted.txt`, type: 'text/plain' };
-});
-
 setupSingleFileLogic('imagewatermark', async (file) => {
     const imgInput = document.getElementById('imagewatermark-overlay-input');
     if (!imgInput.files.length) throw new Error("Please select an image file first.");
@@ -631,6 +620,22 @@ if (ui.htmltopdf) {
     });
 }
 
+// BINDING VISUAL TOOLS
+setupSingleFileLogic('crop', async () => {});
+setupSingleFileLogic('addmargins', async () => {});
+setupSingleFileLogic('pagenumbers', async () => {});
+setupSingleFileLogic('extract', async (file) => {
+    // Basic extraction (Full Document) if 'visual' is not chosen. Visual is handled in click listener.
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    let fullText = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        fullText += `--- Page ${i} ---\n${textContent.items.map(item => item.str).join(" ")}\n\n`;
+    }
+    return { bytes: new TextEncoder().encode(fullText), filename: `${getBaseName(file.name)}_Extracted.txt`, type: 'text/plain' };
+});
+
 // SECURE MERGE LIST FUNCTION
 let mergeFiles = [];
 if (ui.merge) {
@@ -703,7 +708,7 @@ let currentEditFile = null;
 let editOriginalFileName = "";
 let editPageNum = 1;
 
-let editScale = 1.5; // Dynamic setup
+let editScale = 1.5; 
 
 const renderCanvas = document.getElementById('pdf-render-canvas');
 const renderCtx = renderCanvas ? renderCanvas.getContext('2d') : null;
@@ -734,7 +739,6 @@ const trashZone = document.getElementById('drag-trash-zone');
 
 let pageEdits = {}; 
 
-// ZOOM ENGINE LISTENERS
 document.getElementById('btn-zoom-in')?.addEventListener('click', () => { editScale += 0.2; renderEditPage(editPageNum); });
 document.getElementById('btn-zoom-out')?.addEventListener('click', () => { editScale = Math.max(0.4, editScale - 0.2); renderEditPage(editPageNum); });
 document.getElementById('btn-zoom-fit')?.addEventListener('click', () => {
@@ -748,9 +752,9 @@ document.getElementById('btn-zoom-fit')?.addEventListener('click', () => {
     });
 });
 
-// --- ADVANCED TEXT MODAL LOGIC ---
+// --- ADVANCED TEXT MODAL LOGIC (UPDATED WITH SIZE & TRANSPARENT BG FIX) ---
 let pendingTextAction = null; 
-let tmState = { bold: false, italic: false, underline: false, align: 'left' };
+let tmState = { bold: false, italic: false, underline: false, align: 'left', bgColor: 'transparent' };
 
 function openTextModal(initialText = "", actionData) {
     pendingTextAction = actionData;
@@ -765,15 +769,17 @@ function openTextModal(initialText = "", actionData) {
         tmState.italic = edit.italic || false;
         tmState.underline = edit.underline || false;
         tmState.align = edit.align || 'left';
+        tmState.bgColor = edit.bgColor || 'transparent';
+        
+        document.getElementById('tm-size').value = edit.size || 20;
         document.getElementById('tm-color').value = edit.color || '#000000';
-        document.getElementById('tm-bg-color').value = edit.bgColor || '#ffffff';
-        document.getElementById('tm-bg-transparent').checked = (edit.bgColor === 'transparent');
+        document.getElementById('tm-bg-color').value = (tmState.bgColor === 'transparent') ? '#ffffff' : tmState.bgColor;
         document.getElementById('tm-opacity').value = edit.opacity || 1;
     } else {
-        tmState = { bold: false, italic: false, underline: false, align: 'left' };
+        tmState = { bold: false, italic: false, underline: false, align: 'left', bgColor: 'transparent' };
+        document.getElementById('tm-size').value = editSize;
         document.getElementById('tm-color').value = editColor;
         document.getElementById('tm-bg-color').value = '#ffffff';
-        document.getElementById('tm-bg-transparent').checked = true;
         document.getElementById('tm-opacity').value = 1;
     }
     
@@ -787,6 +793,9 @@ function openTextModal(initialText = "", actionData) {
 ['left', 'center', 'right'].forEach(align => {
     document.getElementById(`tm-align-${align}`)?.addEventListener('click', () => { tmState.align = align; updateTmUI(); });
 });
+
+document.getElementById('tm-bg-color')?.addEventListener('input', (e) => { tmState.bgColor = e.target.value; });
+document.getElementById('tm-clear-bg')?.addEventListener('click', () => { tmState.bgColor = 'transparent'; document.getElementById('tm-bg-color').value = '#ffffff'; });
 
 function updateTmUI() {
     ['bold', 'italic', 'underline'].forEach(prop => {
@@ -803,23 +812,25 @@ document.getElementById('btn-text-cancel')?.addEventListener('click', () => { do
 document.getElementById('btn-text-save')?.addEventListener('click', () => {
     const val = document.getElementById('custom-text-input').value;
     const color = document.getElementById('tm-color').value;
-    const bgColor = document.getElementById('tm-bg-transparent').checked ? 'transparent' : document.getElementById('tm-bg-color').value;
+    const size = parseInt(document.getElementById('tm-size').value) || 20;
     const opacity = parseFloat(document.getElementById('tm-opacity').value);
+
+    editSize = size; // Update global default brush/text size based on user choice
 
     if(val && val.trim() !== '' && pendingTextAction) {
         if(pendingTextAction.type === 'new') {
             if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
             pageEdits[editPageNum].push({ 
                 type: 'text', x: pendingTextAction.pos.x, y: pendingTextAction.pos.y, 
-                text: val, color: color, size: editSize,
+                text: val, color: color, size: size,
                 bold: tmState.bold, italic: tmState.italic, underline: tmState.underline, align: tmState.align,
-                bgColor: bgColor, opacity: opacity
+                bgColor: tmState.bgColor, opacity: opacity
             });
         } else if(pendingTextAction.type === 'edit') {
             const edit = pageEdits[editPageNum][pendingTextAction.index];
-            edit.text = val; edit.color = color; edit.size = editSize;
+            edit.text = val; edit.color = color; edit.size = size;
             edit.bold = tmState.bold; edit.italic = tmState.italic; edit.underline = tmState.underline;
-            edit.align = tmState.align; edit.bgColor = bgColor; edit.opacity = opacity;
+            edit.align = tmState.align; edit.bgColor = tmState.bgColor; edit.opacity = opacity;
         }
         drawOverlay();
     }
@@ -907,13 +918,12 @@ function openVisualWorkspace(file, mode) {
             editPdfDoc = pdf; editPageNum = 1; document.getElementById('page-count').textContent = pdf.numPages;
             window.switchView('edit'); document.getElementById('edit-upload-section').style.display = 'none'; document.getElementById('edit-workspace').style.display = 'flex';
             
-            // Set initial scale based on device
             const containerWidth = document.querySelector('.canvas-container').clientWidth;
             const padding = window.innerWidth > 768 ? 60 : 20;
             pdf.getPage(1).then(page => {
                  const baseViewport = page.getViewport({ scale: 1 });
                  let calculatedScale = (containerWidth - padding) / baseViewport.width;
-                 editScale = Math.min(calculatedScale, 1.5); // Cap max zoom at load
+                 editScale = Math.min(calculatedScale, 1.5); 
                  renderEditPage(editPageNum);
             });
             
@@ -1025,7 +1035,6 @@ function normalizeBox(box) {
     return { x: box.w < 0 ? box.x + box.w : box.x, y: box.h < 0 ? box.y + box.h : box.y, w: Math.abs(box.w), h: Math.abs(box.h) };
 }
 
-// Mobile Scroll Fix: Prevent native scroll when drawing/dragging with 1 finger
 overlayCanvas?.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1 && (currentTool !== 'none' || currentVisualMode === 'pagenumbers')) e.preventDefault();
 }, {passive: false});
