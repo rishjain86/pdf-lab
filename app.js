@@ -1106,7 +1106,7 @@ document.getElementById('prev-page')?.addEventListener('click', () => { if (edit
 document.getElementById('next-page')?.addEventListener('click', () => { if (editPageNum < editPdfDoc?.numPages) { editPageNum++; selectedEditIndex = -1; renderEditPage(editPageNum); } });
 
 // ==========================================
-// UNIVERSAL SAVE ENGINE (Handles 'Apply to All' vs 'Current Page')
+// UNIVERSAL SAVE ENGINE (Handles 'Apply to All' vs 'Current Page' + Single Page Crop)
 // ==========================================
 document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
     if (!currentEditFile) return;
@@ -1126,8 +1126,6 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 const page = pages[pIdx]; 
                 const { width, height } = page.getSize();
                 
-                // If Apply All: Stamp the CURRENT page's edits onto EVERY page.
-                // If Current: Apply each page's specific edits only to itself.
                 let editsToApply = [];
                 if (applyMode === 'all') {
                     editsToApply = pageEdits[editPageNum] || [];
@@ -1187,12 +1185,27 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
             if(!boxData) { showCustomAlert("Draw a crop box first!"); btn.innerHTML = oldText; return; }
             const nBox = normalizeBox(boxData);
             const pdfDoc = await PDFDocument.load(freshBuffer);
-            const pages = pdfDoc.getPages();
-            pages.forEach((p, i) => {
-                if (applyMode === 'current' && i !== editPageNum - 1) return;
+            
+            if (applyMode === 'current') {
+                // Remove all other pages first
+                const pageCount = pdfDoc.getPageCount();
+                for (let i = pageCount - 1; i >= 0; i--) {
+                    if (i !== editPageNum - 1) {
+                        pdfDoc.removePage(i);
+                    }
+                }
+                // Now there is only 1 page left in the document (the selected one)
+                const p = pdfDoc.getPage(0);
                 const { height } = p.getSize();
                 p.setCropBox(nBox.x / editScale, height - ((nBox.y + nBox.h) / editScale), nBox.w / editScale, nBox.h / editScale);
-            });
+            } else {
+                // Apply crop to ALL pages
+                const pages = pdfDoc.getPages();
+                pages.forEach((p) => {
+                    const { height } = p.getSize();
+                    p.setCropBox(nBox.x / editScale, height - ((nBox.y + nBox.h) / editScale), nBox.w / editScale, nBox.h / editScale);
+                });
+            }
             await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Cropped.pdf', 'application/pdf');
 
         } else if (currentVisualMode === 'addmargins') {
