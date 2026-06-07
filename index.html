@@ -10,13 +10,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- PDF.js Library for Rendering PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
     <style>
         :root {
@@ -532,7 +532,6 @@
             <div id="history-list"></div>
         </div>
 
-        <!-- FULL-SCREEN EDIT PDF SECTION -->
         <div id="view-edit" class="view-section">
             <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
             
@@ -578,7 +577,6 @@
 
                     <div id="visual-tool-header" style="display:none; color: #f59e0b; font-weight: 600;">Draw a box on the PDF</div>
 
-                    <!-- NEW: APPLY MODE SELECTOR -->
                     <select id="edit-apply-mode" style="padding: 6px; border-radius: 6px; border: 1px solid var(--glass-border); background: #334155; color: white; outline: none; font-size: 0.9rem; cursor: pointer; margin-left: 10px;">
                         <option value="current">Current Page Only</option>
                         <option value="all">Apply to All Pages</option>
@@ -603,7 +601,6 @@
             </div>
         </div>
 
-        <!-- NEW ADVANCED TEXT MODAL (With Size and Improved BG Logic) -->
         <div id="custom-text-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
             <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 350px; max-width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                 <h3 style="color: white; margin-bottom: 15px;" id="text-modal-title">Text Editor</h3>
@@ -651,7 +648,6 @@
             <i class="fas fa-trash-alt" style="font-size: 1.3rem;"></i> Drop here to delete
         </div>
 
-        <!-- Tool Containers -->
         <div id="view-merge" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="merge-ui-container"></div></div>
         <div id="view-split" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="split-ui-container"></div></div>
         <div id="view-compress" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="compress-ui-container"></div></div>
