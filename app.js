@@ -1184,29 +1184,41 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
             const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
             if(!boxData) { showCustomAlert("Draw a crop box first!"); btn.innerHTML = oldText; return; }
             const nBox = normalizeBox(boxData);
-            const pdfDoc = await PDFDocument.load(freshBuffer);
+            const originalDoc = await PDFDocument.load(freshBuffer);
+            let finalBytes;
             
             if (applyMode === 'current') {
-                // Remove all other pages first
-                const pageCount = pdfDoc.getPageCount();
-                for (let i = pageCount - 1; i >= 0; i--) {
-                    if (i !== editPageNum - 1) {
-                        pdfDoc.removePage(i);
-                    }
-                }
-                // Now there is only 1 page left in the document (the selected one)
-                const p = pdfDoc.getPage(0);
-                const { height } = p.getSize();
-                p.setCropBox(nBox.x / editScale, height - ((nBox.y + nBox.h) / editScale), nBox.w / editScale, nBox.h / editScale);
+                // SMART CROP: Create fresh document to remove orphaned objects & optimize size
+                const smartDoc = await PDFDocument.create();
+                const [copiedPage] = await smartDoc.copyPages(originalDoc, [editPageNum - 1]);
+                smartDoc.addPage(copiedPage);
+                
+                const { height } = copiedPage.getSize();
+                const cropX = nBox.x / editScale;
+                const cropY = height - ((nBox.y + nBox.h) / editScale);
+                const cropW = nBox.w / editScale;
+                const cropH = nBox.h / editScale;
+                
+                copiedPage.setCropBox(cropX, cropY, cropW, cropH);
+                copiedPage.setMediaBox(cropX, cropY, cropW, cropH); // MediaBox ensures boundaries are strict
+                
+                finalBytes = await smartDoc.save();
             } else {
                 // Apply crop to ALL pages
-                const pages = pdfDoc.getPages();
+                const pages = originalDoc.getPages();
                 pages.forEach((p) => {
                     const { height } = p.getSize();
-                    p.setCropBox(nBox.x / editScale, height - ((nBox.y + nBox.h) / editScale), nBox.w / editScale, nBox.h / editScale);
+                    const cropX = nBox.x / editScale;
+                    const cropY = height - ((nBox.y + nBox.h) / editScale);
+                    const cropW = nBox.w / editScale;
+                    const cropH = nBox.h / editScale;
+                    
+                    p.setCropBox(cropX, cropY, cropW, cropH);
+                    p.setMediaBox(cropX, cropY, cropW, cropH); // MediaBox ensures boundaries are strict
                 });
+                finalBytes = await originalDoc.save();
             }
-            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Cropped.pdf', 'application/pdf');
+            await processAndDownload(finalBytes, getBaseName(editOriginalFileName) + '_Cropped.pdf', 'application/pdf');
 
         } else if (currentVisualMode === 'addmargins') {
             const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
