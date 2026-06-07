@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- PDF.js Library for Rendering PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -41,7 +40,7 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
-            overscroll-behavior-y: none;
+            overscroll-behavior-y: none; /* Stops pull-to-refresh on mobile */
         }
 
         body.is-editing {
@@ -280,7 +279,6 @@
             touch-action: none; 
         }
         .canvas-container {
-            touch-action: pan-x pan-y pinch-zoom; 
             flex: 1; 
             width: 100%; 
             overflow: auto; 
@@ -288,7 +286,7 @@
             padding: 20px; 
             display: flex; 
             flex-direction: column;
-            align-items: center; /* Locks canvas horizontally */
+            align-items: center;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -312,7 +310,7 @@
             .download-btn { margin: 10px 15px; font-size: 0.9rem; padding: 10px; }
             
             #edit-toolbar { flex-wrap: wrap; justify-content: space-between; }
-            .edit-toolbar-btn { flex: 1 1 45%; justify-content: center; margin-bottom: 5px; }
+            .edit-toolbar-btn { flex: 1 1 22%; justify-content: center; margin-bottom: 5px; }
             .tool-settings { width: 100%; justify-content: center; border-left: none !important; border-top: 1px solid var(--glass-border); padding-top: 10px; margin-top: 5px; }
         }
     </style>
@@ -532,7 +530,6 @@
             <div id="history-list"></div>
         </div>
 
-        <!-- FULL-SCREEN EDIT PDF SECTION (Universal Engine) -->
         <div id="view-edit" class="view-section">
             <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
             
@@ -548,22 +545,25 @@
                 </button>
             </div>
 
-            <!-- WORKSPACE FIX: Strict Height & Overflow lock to prevent Native Browser scroll -->
             <div id="edit-workspace" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100%; z-index: 9999; background: var(--bg-color); flex-direction: column; overflow: hidden;">
                 
-                <!-- Fixed Header -->
                 <div style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--surface-color); border-bottom: 1px solid var(--glass-border);">
                     <div id="workspace-title" style="color: white; font-weight: 600; font-size: 1.1rem;"><i class="fas fa-edit" style="color: var(--accent);"></i> Pro PDF Editor</div>
                     <button id="btn-close-editor" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 500;"><i class="fas fa-times"></i> Exit</button>
                 </div>
 
-                <!-- Fixed Toolbar -->
                 <div id="edit-toolbar" style="flex-shrink: 0; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; background: rgba(0,0,0,0.2); padding: 10px; width: 100%; align-items: center; border-bottom: 1px solid var(--glass-border);">
-                    <button class="edit-toolbar-btn" id="btn-edit-text" style="background: #3b82f6; color: white;"><i class="fas fa-font"></i> Text</button>
-                    <button class="edit-toolbar-btn" id="btn-edit-draw" style="background: #f59e0b; color: white;"><i class="fas fa-pen"></i> Draw</button>
-                    <button class="edit-toolbar-btn" id="btn-edit-whiteout" style="background: #f8fafc; color: #0f172a;"><i class="fas fa-eraser"></i> Eraser</button>
-                    <button class="edit-toolbar-btn" id="btn-edit-image" style="background: #8b5cf6; color: white;"><i class="fas fa-image"></i> Image</button>
+                    <button class="edit-toolbar-btn" id="btn-edit-text" style="background: #3b82f6; color: white;" title="Add Text"><i class="fas fa-font"></i></button>
+                    <button class="edit-toolbar-btn" id="btn-edit-draw" style="background: #f59e0b; color: white;" title="Draw"><i class="fas fa-pen"></i></button>
+                    <button class="edit-toolbar-btn" id="btn-edit-whiteout" style="background: #f8fafc; color: #0f172a;" title="Eraser"><i class="fas fa-eraser"></i></button>
+                    <button class="edit-toolbar-btn" id="btn-edit-image" style="background: #8b5cf6; color: white;" title="Add Image"><i class="fas fa-image"></i></button>
                     <input type="file" id="edit-image-input" accept="image/png, image/jpeg" style="display: none;">
+
+                    <div style="display: flex; gap: 5px; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
+                        <button class="edit-toolbar-btn" id="btn-zoom-out" style="background: #475569; color: white;" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+                        <button class="edit-toolbar-btn" id="btn-zoom-fit" style="background: #475569; color: white;" title="Fit to Screen"><i class="fas fa-expand"></i></button>
+                        <button class="edit-toolbar-btn" id="btn-zoom-in" style="background: #475569; color: white;" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+                    </div>
 
                     <div class="tool-settings" style="display: flex; gap: 8px; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 10px;">
                         <input type="color" id="edit-color-picker" value="#000000" style="width: 30px; height: 30px; border: none; cursor: pointer; background: transparent; padding: 0;" title="Brush/Text Base Color">
@@ -573,7 +573,6 @@
                         </div>
                     </div>
 
-                    <!-- Visual Tools Dynamic Header Text -->
                     <div id="visual-tool-header" style="display:none; color: #f59e0b; font-weight: 600;">Draw a box on the PDF</div>
 
                     <div style="display: flex; gap: 10px; align-items: center; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
@@ -583,10 +582,9 @@
                     </div>
 
                     <button class="edit-toolbar-btn" id="btn-edit-clear" style="background: #ef4444; color: white; margin-left: auto;"><i class="fas fa-trash-alt"></i> Clear</button>
-                    <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white;"><i class="fas fa-save"></i> Save PDF</button>
+                    <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white;"><i class="fas fa-save"></i> Save</button>
                 </div>
 
-                <!-- Scrollable Canvas Zone -->
                 <div class="canvas-container">
                     <div style="position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.5); background: white; margin: 0 auto;">
                         <canvas id="pdf-render-canvas" style="display: block;"></canvas>
@@ -596,7 +594,6 @@
             </div>
         </div>
 
-        <!-- NEW ADVANCED TEXT MODAL (With Bold, Italic, Align, Bg Color, Opacity) -->
         <div id="custom-text-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
             <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 350px; max-width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                 <h3 style="color: white; margin-bottom: 15px;" id="text-modal-title">Text Editor</h3>
@@ -638,7 +635,6 @@
             <i class="fas fa-trash-alt" style="font-size: 1.3rem;"></i> Drop here to delete
         </div>
 
-        <!-- Tool Containers -->
         <div id="view-merge" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="merge-ui-container"></div></div>
         <div id="view-split" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="split-ui-container"></div></div>
         <div id="view-compress" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="compress-ui-container"></div></div>
@@ -668,6 +664,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=18"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
