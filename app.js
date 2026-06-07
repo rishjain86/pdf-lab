@@ -269,22 +269,59 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
     
     const modal = document.getElementById('global-preview-modal');
     const iframe = document.getElementById('global-preview-iframe');
+    const pdfContainer = document.getElementById('global-preview-pdf-container');
     const msg = document.getElementById('global-preview-message');
     document.getElementById('global-preview-title').innerHTML = `<i class="fas fa-eye" style="color: var(--accent);"></i> Preview: ${filename}`;
 
-    if (type === 'application/pdf' || type === 'text/plain') {
+    iframe.style.display = 'none';
+    pdfContainer.style.display = 'none';
+    msg.style.display = 'none';
+
+    if (type === 'application/pdf') {
+        pdfContainer.style.display = 'flex';
+        pdfContainer.innerHTML = '<div style="color:#3b82f6; font-weight:600; font-size: 1.1rem; margin-top: 50px;"><i class="fas fa-spinner fa-spin"></i> Generating Preview...</div>';
+        modal.style.display = 'flex';
+        
+        try {
+            const loadingTask = pdfjsLib.getDocument({ data: bytes });
+            const pdf = await loadingTask.promise;
+            pdfContainer.innerHTML = ''; 
+            
+            // Render first 5 pages max for fast mobile preview
+            const pagesToRender = Math.min(pdf.numPages, 5);
+            for (let i = 1; i <= pagesToRender; i++) {
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: window.innerWidth > 768 ? 1.5 : 1.0 });
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                canvas.style = "box-shadow: 0 4px 15px rgba(0,0,0,0.2); border-radius: 4px; max-width: 100%; height: auto; display: block; margin-bottom: 10px;";
+                pdfContainer.appendChild(canvas);
+                
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+            }
+            if(pdf.numPages > 5) {
+                const moreTxt = document.createElement('div');
+                moreTxt.style = "color: #475569; font-weight: 600; padding: 10px; background: rgba(255,255,255,0.5); border-radius: 8px;";
+                moreTxt.innerText = `+ ${pdf.numPages - 5} more pages (Download to view all)`;
+                pdfContainer.appendChild(moreTxt);
+            }
+        } catch(err) {
+            // Fallback to iframe if pdf.js fails internally
+            pdfContainer.style.display = 'none';
+            const blob = new Blob([bytes], { type });
+            iframe.src = URL.createObjectURL(blob);
+            iframe.style.display = 'block';
+        }
+    } else if (type === 'text/plain') {
         const blob = new Blob([bytes], { type });
-        const url = URL.createObjectURL(blob);
-        iframe.src = url;
+        iframe.src = URL.createObjectURL(blob);
         iframe.style.display = 'block';
-        msg.style.display = 'none';
+        modal.style.display = 'flex';
     } else {
-        // Fallback for ZIPs and Images where iframe doesn't work natively
-        iframe.style.display = 'none';
         msg.style.display = 'block';
+        modal.style.display = 'flex';
     }
-    
-    modal.style.display = 'flex';
 }
 
 async function executeFinalDownload() {
@@ -308,12 +345,14 @@ async function executeFinalDownload() {
     document.getElementById('global-preview-modal').style.display = 'none';
     pendingDownloadData = null;
     document.getElementById('global-preview-iframe').src = ""; // Clear memory
+    document.getElementById('global-preview-pdf-container').innerHTML = ""; 
 }
 
 document.getElementById('btn-close-global-preview')?.addEventListener('click', () => {
     document.getElementById('global-preview-modal').style.display = 'none';
     pendingDownloadData = null;
     document.getElementById('global-preview-iframe').src = "";
+    document.getElementById('global-preview-pdf-container').innerHTML = "";
 });
 
 document.getElementById('btn-download-global-preview')?.addEventListener('click', executeFinalDownload);
@@ -714,25 +753,49 @@ if (ui.merge) {
             for (let i = 0; i < mergeFiles.length; i++) { 
                 const file = mergeFiles[i];
                 const pdf = await PDFDocument.load(await file.arrayBuffer()); 
-                const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices()); 
                 
-                copiedPages.forEach(p => { 
-                    if (sizeSetting === 'A4') {
-                        // Standard A4
-                        p.setSize(595.28, 841.89);
+                // Advanced Merge logic to prevent margins ghosting
+                if (sizeSetting === 'original' && marginSetting === 0) {
+                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    copiedPages.forEach(p => mergedPdf.addPage(p));
+                } else {
+                    const pageIndices = pdf.getPageIndices();
+                    for (let pageIndex of pageIndices) {
+                        const srcPage = pdf.getPage(pageIndex);
+                        const embeddedPage = await mergedPdf.embedPage(srcPage);
+                        let targetW = embeddedPage.width;
+                        let targetH = embeddedPage.height;
+                        
+                        if (sizeSetting === 'A4') {
+                            targetW = 595.28;
+                            targetH = 841.89;
+                        }
+                        
+                        targetW += marginSetting * 2;
+                        targetH += marginSetting * 2;
+                        
+                        const newPage = mergedPdf.addPage([targetW, targetH]);
+                        
+                        // Centered perfect scaling
+                        const innerW = targetW - marginSetting * 2;
+                        const innerH = targetH - marginSetting * 2;
+                        const scale = Math.min(innerW / embeddedPage.width, innerH / embeddedPage.height);
+                        
+                        const drawW = embeddedPage.width * scale;
+                        const drawH = embeddedPage.height * scale;
+                        
+                        newPage.drawPage(embeddedPage, {
+                            x: marginSetting + (innerW - drawW) / 2,
+                            y: marginSetting + (innerH - drawH) / 2,
+                            width: drawW,
+                            height: drawH,
+                        });
                     }
-                    if (marginSetting > 0) {
-                        const { width, height } = p.getSize();
-                        p.setSize(width + marginSetting * 2, height + marginSetting * 2);
-                        p.translateContent(marginSetting, marginSetting);
-                    }
-                    mergedPdf.addPage(p); 
-                }); 
+                }
                 
-                // Add Gap (Blank Pages) if not the last document
+                // Gap logic
                 if (gapSetting > 0 && i < mergeFiles.length - 1) {
                     for(let g = 0; g < gapSetting; g++) {
-                        // Standard A4 blank page
                         mergedPdf.addPage([595.28, 841.89]); 
                     }
                 }
@@ -742,6 +805,8 @@ if (ui.merge) {
             const outputName = `${getBaseName(mergeFiles[0].name)}_Merged.pdf`;
             mergeFiles = []; 
             renderMergeList(); 
+            
+            // Calls our new global preview logic!
             await processAndDownload(bytes, outputName, 'application/pdf');
             
             if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
@@ -1352,7 +1417,6 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
             let finalBytes;
             
             if (applyMode === 'current') {
-                // SMART CROP: Create fresh document to remove orphaned objects & optimize size
                 const smartDoc = await PDFDocument.create();
                 const [copiedPage] = await smartDoc.copyPages(originalDoc, [editPageNum - 1]);
                 smartDoc.addPage(copiedPage);
@@ -1363,8 +1427,10 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 const cropW = nBox.w / editScale;
                 const cropH = nBox.h / editScale;
                 
-                copiedPage.setCropBox(cropX, cropY, cropW, cropH);
-                copiedPage.setMediaBox(cropX, cropY, cropW, cropH); 
+                // Advanced Crop Fix (Translates content back to 0,0 to fix merge ghosts)
+                copiedPage.translateContent(-cropX, -cropY);
+                copiedPage.setMediaBox(0, 0, cropW, cropH);
+                copiedPage.setCropBox(0, 0, cropW, cropH); 
                 
                 finalBytes = await smartDoc.save();
             } else {
@@ -1376,8 +1442,9 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                     const cropW = nBox.w / editScale;
                     const cropH = nBox.h / editScale;
                     
-                    p.setCropBox(cropX, cropY, cropW, cropH);
-                    p.setMediaBox(cropX, cropY, cropW, cropH);
+                    p.translateContent(-cropX, -cropY);
+                    p.setMediaBox(0, 0, cropW, cropH);
+                    p.setCropBox(0, 0, cropW, cropH);
                 });
                 finalBytes = await originalDoc.save();
             }
