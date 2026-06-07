@@ -429,7 +429,6 @@ setupSingleFileLogic('repair', async (file) => {
     return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_Repaired.pdf`, type: 'application/pdf' };
 });
 
-// UPGRADED SIGN
 setupSingleFileLogic('sign', async (file) => {
     const name = document.getElementById('sign-text').value;
     const colorHex = document.getElementById('sign-color').value;
@@ -474,7 +473,6 @@ setupSingleFileLogic('removeannots', async (file) => {
     return { bytes: await doc.save(), filename: `${getBaseName(file.name)}_Cleaned.pdf`, type: 'application/pdf' };
 });
 
-// UPGRADED WATERMARK
 setupSingleFileLogic('watermark', async (file) => {
     const text = document.getElementById('watermark-text').value || "CONFIDENTIAL";
     const isBold = document.getElementById('wm-bold').checked;
@@ -705,8 +703,7 @@ let currentEditFile = null;
 let editOriginalFileName = "";
 let editPageNum = 1;
 
-// DYNAMIC SCALE INSTEAD OF CONSTANT
-let editScale = 1.5;
+let editScale = 1.5; // Dynamic setup
 
 const renderCanvas = document.getElementById('pdf-render-canvas');
 const renderCtx = renderCanvas ? renderCanvas.getContext('2d') : null;
@@ -736,6 +733,20 @@ let isHoveringTrash = false;
 const trashZone = document.getElementById('drag-trash-zone');
 
 let pageEdits = {}; 
+
+// ZOOM ENGINE LISTENERS
+document.getElementById('btn-zoom-in')?.addEventListener('click', () => { editScale += 0.2; renderEditPage(editPageNum); });
+document.getElementById('btn-zoom-out')?.addEventListener('click', () => { editScale = Math.max(0.4, editScale - 0.2); renderEditPage(editPageNum); });
+document.getElementById('btn-zoom-fit')?.addEventListener('click', () => {
+    if (!editPdfDoc) return;
+    const containerWidth = document.querySelector('.canvas-container').clientWidth;
+    const padding = window.innerWidth > 768 ? 60 : 20;
+    editPdfDoc.getPage(editPageNum).then(page => {
+        const baseViewport = page.getViewport({ scale: 1 });
+        editScale = (containerWidth - padding) / baseViewport.width;
+        renderEditPage(editPageNum);
+    });
+});
 
 // --- ADVANCED TEXT MODAL LOGIC ---
 let pendingTextAction = null; 
@@ -895,11 +906,28 @@ function openVisualWorkspace(file, mode) {
         pdfjsLib.getDocument(tempPdfBytes).promise.then(pdf => {
             editPdfDoc = pdf; editPageNum = 1; document.getElementById('page-count').textContent = pdf.numPages;
             window.switchView('edit'); document.getElementById('edit-upload-section').style.display = 'none'; document.getElementById('edit-workspace').style.display = 'flex';
-            renderEditPage(editPageNum);
+            
+            // Set initial scale based on device
+            const containerWidth = document.querySelector('.canvas-container').clientWidth;
+            const padding = window.innerWidth > 768 ? 60 : 20;
+            pdf.getPage(1).then(page => {
+                 const baseViewport = page.getViewport({ scale: 1 });
+                 let calculatedScale = (containerWidth - padding) / baseViewport.width;
+                 editScale = Math.min(calculatedScale, 1.5); // Cap max zoom at load
+                 renderEditPage(editPageNum);
+            });
+            
         }).catch(error => { showCustomAlert("Error loading PDF."); document.body.classList.remove('is-editing'); });
     };
     fileReader.readAsArrayBuffer(file);
 }
+
+document.getElementById('btn-close-editor')?.addEventListener('click', () => {
+    document.body.classList.remove('is-editing');
+    document.getElementById('edit-workspace').style.display='none'; 
+    document.getElementById('edit-upload-section').style.display='block'; 
+    window.switchView('dashboard');
+});
 
 document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) {
     if (e.target.files[0]) openVisualWorkspace(e.target.files[0], 'edit');
@@ -908,22 +936,11 @@ document.getElementById('edit-pdf-input')?.addEventListener('change', function(e
 function renderEditPage(num) {
     if (!editPdfDoc) return;
     editPdfDoc.getPage(num).then(page => {
-        // DYNAMIC SCALE CALCULATION TO FIT ANY SCREEN
-        const baseViewport = page.getViewport({ scale: 1 });
-        const containerWidth = document.querySelector('.canvas-container').clientWidth;
-        const padding = window.innerWidth > 768 ? 60 : 20; 
-        let calcScale = (containerWidth - padding) / baseViewport.width;
-        
-        editScale = Math.min(calcScale, 1.5); 
-
         const viewport = page.getViewport({ scale: editScale });
-        renderCanvas.height = viewport.height; 
-        renderCanvas.width = viewport.width;
-        overlayCanvas.height = viewport.height; 
-        overlayCanvas.width = viewport.width;
+        renderCanvas.height = viewport.height; renderCanvas.width = viewport.width;
+        overlayCanvas.height = viewport.height; overlayCanvas.width = viewport.width;
         page.render({ canvasContext: renderCtx, viewport: viewport });
-        document.getElementById('page-num').textContent = num; 
-        drawOverlay(); 
+        document.getElementById('page-num').textContent = num; drawOverlay(); 
     });
 }
 
@@ -1008,12 +1025,10 @@ function normalizeBox(box) {
     return { x: box.w < 0 ? box.x + box.w : box.x, y: box.h < 0 ? box.y + box.h : box.y, w: Math.abs(box.w), h: Math.abs(box.h) };
 }
 
-document.getElementById('btn-close-editor')?.addEventListener('click', () => {
-    document.body.classList.remove('is-editing');
-    document.getElementById('edit-workspace').style.display='none'; 
-    document.getElementById('edit-upload-section').style.display='block'; 
-    window.switchView('dashboard');
-});
+// Mobile Scroll Fix: Prevent native scroll when drawing/dragging with 1 finger
+overlayCanvas?.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1 && (currentTool !== 'none' || currentVisualMode === 'pagenumbers')) e.preventDefault();
+}, {passive: false});
 
 overlayCanvas?.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'touch' && e.isPrimary === false) return; 
