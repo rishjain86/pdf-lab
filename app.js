@@ -1387,6 +1387,15 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                             });
                         }
                     } 
+
+                                            else if (edit.type === 'link-box') { 
+                        const { height } = page.getSize();
+                        page.addLinkAnnotation(page.node.createLinkAnnotation(
+                            [pdfX, pdfY - (edit.h / editScale), pdfX + (edit.w / editScale), pdfY],
+                            { url: edit.url }
+                        ));
+                                            }
+                                                
                     else if (edit.type === 'draw') { 
                         for(let k=0; k < edit.points.length - 1; k++) { const p1 = edit.points[k]; const p2 = edit.points[k+1]; page.drawLine({ start: { x: p1.x / editScale, y: height - (p1.y / editScale) }, end: { x: p2.x / editScale, y: height - (p2.y / editScale) }, thickness: edit.size / editScale, color: hexToRgbPdf(edit.color) }); } 
                     } 
