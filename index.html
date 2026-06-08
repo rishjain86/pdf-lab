@@ -10,12 +10,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- PDF.js Library for Rendering PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- pdf-lib is required for your crop & merge logic -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
     <style>
@@ -319,17 +321,19 @@
 </head>
 <body>
 
-    <div id="global-preview-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); z-index: 999999; flex-direction: column;">
-        <div style="padding: 12px 15px; background: var(--surface-color); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); gap: 10px;">
-            <h3 id="global-preview-title" style="flex: 1; min-width: 0; color: white; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin: 0;">
-                <i class="fas fa-eye" style="color: var(--accent); flex-shrink: 0;"></i> <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Document Preview</span>
+    <!-- GLOBAL PREVIEW MODAL -->
+    <div id="global-preview-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-color); z-index: 999999; flex-direction: column;">
+        <div style="padding: 15px 20px; background: var(--surface-color); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border);">
+            <h3 id="global-preview-title" style="color: white; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 15px;">
+                <i class="fas fa-eye" style="color: var(--accent);"></i> Document Preview
             </h3>
-            <button id="btn-close-global-preview" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; flex-shrink: 0; font-size: 0.9rem;"><i class="fas fa-times"></i> Close</button>
+            <button id="btn-close-global-preview" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; flex-shrink: 0;"><i class="fas fa-times"></i> Close</button>
         </div>
         
         <div id="global-preview-container" style="flex: 1; background: #cbd5e1; display: flex; flex-direction: column; overflow: hidden; position: relative;">
             <iframe id="global-preview-iframe" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
             
+            <!-- Mobile PDF.js Canvas Fallback Container -->
             <div id="global-preview-pdf-container" style="width: 100%; height: 100%; overflow: auto; display: none; flex-direction: column; align-items: center; padding: 20px; gap: 20px;"></div>
             
             <div id="global-preview-message" style="display: none; color: #0f172a; font-size: 1.2rem; font-weight: 600; text-align: center; padding: 20px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
@@ -338,7 +342,7 @@
             </div>
         </div>
 
-        <div style="padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom)); background: var(--surface-color); display: flex; justify-content: center; border-top: 1px solid var(--glass-border);">
+        <div style="padding: 15px; background: var(--surface-color); display: flex; justify-content: center; border-top: 1px solid var(--glass-border);">
             <button id="btn-download-global-preview" style="background: #10b981; color: white; border: none; padding: 14px 40px; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); transition: 0.3s; width: 100%; max-width: 400px;">
                 <i class="fas fa-download"></i> Download Final File
             </button>
@@ -558,6 +562,7 @@
             <div id="history-list"></div>
         </div>
 
+        <!-- FULL-SCREEN EDIT PDF SECTION -->
         <div id="view-edit" class="view-section">
             <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
             
@@ -674,6 +679,7 @@
             <i class="fas fa-trash-alt" style="font-size: 1.3rem;"></i> Drop here to delete
         </div>
 
+        <!-- Tool Containers -->
         <div id="view-merge" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="merge-ui-container"></div></div>
         <div id="view-split" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="split-ui-container"></div></div>
         <div id="view-compress" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="compress-ui-container"></div></div>
@@ -703,6 +709,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=25"></script>
+    <script type="module" src="app.js?v=23"></script>
 </body>
 </html>
