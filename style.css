@@ -21,8 +21,10 @@ body {
     background-color: var(--bg-main);
     color: var(--text-primary);
     height: 100vh;
+    height: 100dvh; /* Mobile browser bottom bar fix */
     display: flex;
     overflow: hidden;
+    overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
 }
 
 /* Glassmorphism Classes */
@@ -39,13 +41,19 @@ body {
     height: 100%;
 }
 
-/* Sidebar */
+/* =========================================
+   SIDEBAR & NAVIGATION
+   ========================================= */
+
 .sidebar {
     width: var(--sidebar-width);
     height: 100%;
     display: flex;
     flex-direction: column;
     padding: 20px;
+    /* Capacitor Notch / Safe Area Support */
+    padding-top: max(20px, env(safe-area-inset-top)); 
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
     border-right: 1px solid var(--glass-border);
     z-index: 10;
 }
@@ -110,11 +118,16 @@ body {
     border-left: 3px solid var(--accent);
 }
 
-/* Workspace & Dashboard */
+/* =========================================
+   WORKSPACE & DASHBOARD
+   ========================================= */
+
 .workspace {
     flex: 1;
     overflow-y: auto;
     padding: 30px;
+    /* Capacitor Bottom Safe Area Support (for gesture bars) */
+    padding-bottom: max(30px, env(safe-area-inset-bottom)); 
     position: relative;
 }
 
@@ -196,7 +209,59 @@ body {
     display: none;
 }
 
-/* Mobile Responsiveness */
+/* =========================================
+   ADD LINK TOOL & VISUAL EDITOR STYLES
+   ========================================= */
+
+/* Base style for Edit PDF Toolbar Buttons */
+.edit-toolbar-btn {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.2s;
+    font-size: 0.9rem;
+}
+
+.edit-toolbar-btn:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
+/* Default Active State (For Text, Crop, Margin, Draw etc) */
+.edit-tool-active {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+    background: var(--accent) !important;
+}
+
+/* Add Link Specific Button Style (Magenta/Pink Theme) */
+.btn-edit-link {
+    background: #ec4899 !important; /* Standard Pink */
+    color: white !important;
+    transition: all 0.3s ease;
+}
+
+.btn-edit-link:hover {
+    background: #db2777 !important; /* Darker Pink on Hover */
+}
+
+/* Custom Active State for Link Tool ONLY */
+.link-tool-active {
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.4) !important; /* Pink Glow */
+    transform: translateY(-2px);
+    background: #be185d !important; /* Deep Magenta */
+    color: white !important;
+}
+
+/* =========================================
+   MOBILE RESPONSIVENESS (NATIVE APP FEEL)
+   ========================================= */
+
 @media (max-width: 768px) {
     .app-layout {
         flex-direction: column;
@@ -211,20 +276,19 @@ body {
     }
     
     .mobile-header {
-        padding: 15px 20px;
+        /* Capacitor Notch Padding injected into Header */
+        padding: max(15px, env(safe-area-inset-top)) 20px 15px 20px; 
         margin-bottom: 20px;
         border-radius: 12px;
     }
     
     .workspace {
         padding: 15px;
+        /* Padding to prevent content hiding behind gesture bars */
+        padding-bottom: max(15px, env(safe-area-inset-bottom));
     }
     
     .hero-header h1 {
         font-size: 1.5rem;
     }
-}
-
-.btn-edit-link {
-    background: #ec4899 !important;
 }
