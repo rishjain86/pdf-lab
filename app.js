@@ -1,12 +1,11 @@
-import { PDFDocument, degrees, StandardFonts, rgb, PDFName } from 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm';
+import { PDFDocument, degrees, StandardFonts, rgb, PDFName, PDFString } from 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm';
+import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
 import JSZip from 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
 import { AdManager } from './adManager.js';
 import { Filesystem, Directory } from 'https://cdn.jsdelivr.net/npm/@capacitor/filesystem@6.0.0/+esm';
 import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@6.0.0/+esm';
 import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.0/+esm';
-
-// IMPORTANT FIX: Use global pdfjsLib to avoid worker mismatch version crashes on mobile
-const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
 
 function showCustomAlert(message) {
     let alertBox = document.getElementById('custom-alert-box');
@@ -263,6 +262,7 @@ function bytesToBase64(bytes) {
 let pendingDownloadData = null;
 
 async function processAndDownload(bytes, filename, type, saveToDb = true) {
+    // Background Save
     if(saveToDb) { try { await saveToHistory(bytes, filename, type); } catch(e) {} }
     
     pendingDownloadData = { bytes, filename, type };
@@ -271,11 +271,7 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
     const iframe = document.getElementById('global-preview-iframe');
     const pdfContainer = document.getElementById('global-preview-pdf-container');
     const msg = document.getElementById('global-preview-message');
-    // app.js mein processAndDownload function ke andar ye line update kardo:
-document.getElementById('global-preview-title').innerHTML = `
-    <i class="fas fa-eye" style="color: var(--accent); flex-shrink: 0;"></i> 
-    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">${filename}</span>
-`;
+    document.getElementById('global-preview-title').innerHTML = `<i class="fas fa-eye" style="color: var(--accent);"></i> Preview: ${filename}`;
 
     iframe.style.display = 'none';
     pdfContainer.style.display = 'none';
@@ -287,11 +283,11 @@ document.getElementById('global-preview-title').innerHTML = `
         modal.style.display = 'flex';
         
         try {
-            // FIX: Using globally loaded pdfjsLib to avoid v2/v4 mismatch
-            const loadingTask = window.pdfjsLib.getDocument({ data: bytes });
+            const loadingTask = pdfjsLib.getDocument({ data: bytes });
             const pdf = await loadingTask.promise;
             pdfContainer.innerHTML = ''; 
             
+            // Render first 5 pages max for fast mobile preview
             const pagesToRender = Math.min(pdf.numPages, 5);
             for (let i = 1; i <= pagesToRender; i++) {
                 const page = await pdf.getPage(i);
@@ -311,8 +307,11 @@ document.getElementById('global-preview-title').innerHTML = `
                 pdfContainer.appendChild(moreTxt);
             }
         } catch(err) {
-            console.error(err);
-            pdfContainer.innerHTML = '<div style="color:#ef4444; padding:20px; text-align:center;"><i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 10px;"></i><br>Preview not available for this specific file.<br>Please click Download to view it.</div>';
+            // Fallback to iframe if pdf.js fails internally
+            pdfContainer.style.display = 'none';
+            const blob = new Blob([bytes], { type });
+            iframe.src = URL.createObjectURL(blob);
+            iframe.style.display = 'block';
         }
     } else if (type === 'text/plain') {
         const blob = new Blob([bytes], { type });
@@ -340,16 +339,12 @@ async function executeFinalDownload() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.download = filename;
-        document.body.appendChild(a); 
-        a.click(); 
-        document.body.removeChild(a); 
-        // FIX: Increased timeout to ensure Android download manager catches the blob
-        setTimeout(() => { URL.revokeObjectURL(url); }, 60000); 
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     }
     
     document.getElementById('global-preview-modal').style.display = 'none';
     pendingDownloadData = null;
-    document.getElementById('global-preview-iframe').src = "";
+    document.getElementById('global-preview-iframe').src = ""; // Clear memory
     document.getElementById('global-preview-pdf-container').innerHTML = ""; 
 }
 
@@ -387,6 +382,7 @@ function setupSingleFileLogic(id, actionCallback) {
 
     // Direct click to dropzone or specific browse button handles this seamlessly
     dropZone.addEventListener('click', (e) => {
+        // Prevent double trigger if button inside is clicked
         if(e.target.tagName !== 'BUTTON') input.click();
     });
 
@@ -567,7 +563,7 @@ setupSingleFileLogic('splitevenodd', async (file) => {
 });
 
 setupSingleFileLogic('pdftojpg', async (file) => {
-    const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
     const zip = new JSZip();
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
@@ -669,10 +665,10 @@ setupSingleFileLogic('pagenumbers', null);
 setupSingleFileLogic('sign', null);
 setupSingleFileLogic('watermark', null);
 setupSingleFileLogic('addtext', null);
-setupSingleFileLogic('link', null);
 
 setupSingleFileLogic('extract', async (file) => {
-    const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    // Only triggers if fallback standard mode is used
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
     let fullText = "";
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
@@ -701,6 +697,7 @@ if (ui.merge) {
         renderMergeList();
     }
     
+    // Attach to window so HTML inline onclick works
     window.moveMergeItem = moveMergeItem;
 
     function renderMergeList() {
@@ -757,21 +754,44 @@ if (ui.merge) {
                 const file = mergeFiles[i];
                 const pdf = await PDFDocument.load(await file.arrayBuffer()); 
                 
-                const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices()); 
-                
-                copiedPages.forEach(p => { 
-                    const { width, height } = p.getSize();
-                    
-                    if (sizeSetting === 'A4') {
-                        p.setSize(595.28, 841.89); 
+                // Advanced Merge logic to prevent margins ghosting
+                if (sizeSetting === 'original' && marginSetting === 0) {
+                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    copiedPages.forEach(p => mergedPdf.addPage(p));
+                } else {
+                    const pageIndices = pdf.getPageIndices();
+                    for (let pageIndex of pageIndices) {
+                        const srcPage = pdf.getPage(pageIndex);
+                        const embeddedPage = await mergedPdf.embedPage(srcPage);
+                        let targetW = embeddedPage.width;
+                        let targetH = embeddedPage.height;
+                        
+                        if (sizeSetting === 'A4') {
+                            targetW = 595.28;
+                            targetH = 841.89;
+                        }
+                        
+                        targetW += marginSetting * 2;
+                        targetH += marginSetting * 2;
+                        
+                        const newPage = mergedPdf.addPage([targetW, targetH]);
+                        
+                        // Centered perfect scaling
+                        const innerW = targetW - marginSetting * 2;
+                        const innerH = targetH - marginSetting * 2;
+                        const scale = Math.min(innerW / embeddedPage.width, innerH / embeddedPage.height);
+                        
+                        const drawW = embeddedPage.width * scale;
+                        const drawH = embeddedPage.height * scale;
+                        
+                        newPage.drawPage(embeddedPage, {
+                            x: marginSetting + (innerW - drawW) / 2,
+                            y: marginSetting + (innerH - drawH) / 2,
+                            width: drawW,
+                            height: drawH,
+                        });
                     }
-                    
-                    if (marginSetting > 0) {
-                        p.setSize(width + marginSetting * 2, height + marginSetting * 2);
-                        p.translateContent(marginSetting, marginSetting);
-                    }
-                    mergedPdf.addPage(p); 
-                }); 
+                }
                 
                 // Gap logic
                 if (gapSetting > 0 && i < mergeFiles.length - 1) {
@@ -781,11 +801,12 @@ if (ui.merge) {
                 }
             }
             
-            const bytes = await mergedPdf.save(); 
+            const bytes = await mergedPdf.save({ useObjectStreams: false }); 
             const outputName = `${getBaseName(mergeFiles[0].name)}_Merged.pdf`;
             mergeFiles = []; 
             renderMergeList(); 
             
+            // Calls our new global preview logic!
             await processAndDownload(bytes, outputName, 'application/pdf');
             
             if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
@@ -817,7 +838,7 @@ if (ui.jpgtopdf) {
                 let pdfImage = file.type === 'image/png' ? await pdfDoc.embedPng(await file.arrayBuffer()) : await pdfDoc.embedJpg(await file.arrayBuffer());
                 const dims = pdfImage.scale(1); const page = pdfDoc.addPage([dims.width, dims.height]); page.drawImage(pdfImage, { x: 0, y: 0, width: dims.width, height: dims.height });
             }
-            const bytes = await pdfDoc.save(); const outputName = imageFiles.length > 0 ? `${getBaseName(imageFiles[0].name)}_Images.pdf` : 'Amazing_Images.pdf';
+            const bytes = await pdfDoc.save({ useObjectStreams: false }); const outputName = imageFiles.length > 0 ? `${getBaseName(imageFiles[0].name)}_Images.pdf` : 'Amazing_Images.pdf';
             imageFiles = []; renderImgList(); await processAndDownload(bytes, outputName, 'application/pdf');
             if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
         } catch (e) { handleError(e); } finally { btn.innerHTML = '<i class="fas fa-eye"></i> Preview & Convert'; }
@@ -837,7 +858,7 @@ document.getElementById('desktop-search')?.addEventListener('input', handleSearc
 if(typeof AdManager !== 'undefined' && AdManager && typeof AdManager.showBanner === 'function') AdManager.showBanner();
 
 // ==========================================
-//    UNIVERSAL PRO ENGINE (Edit, Crop, Margin, Extract, PageNumbers, Sign, Watermark)
+//    UNIVERSAL PRO ENGINE (Edit, Crop, Margin, Extract, PageNumbers, Sign, Watermark, AddLink)
 // ==========================================
 
 let editPdfDoc = null;
@@ -974,9 +995,63 @@ document.getElementById('btn-text-save')?.addEventListener('click', () => {
     document.getElementById('custom-text-modal').style.display = 'none'; pendingTextAction = null;
 });
 
+// --- URL LINK MODAL LOGIC ---
+let pendingLinkEdit = null;
+
+function openUrlModal(linkEdit) {
+    pendingLinkEdit = linkEdit;
+    document.getElementById('custom-url-input').value = linkEdit.url || '';
+    document.getElementById('url-link-modal').style.display = 'flex';
+    document.getElementById('custom-url-input').focus();
+}
+
+document.getElementById('btn-url-cancel')?.addEventListener('click', () => {
+    if (pendingLinkEdit && !pendingLinkEdit.url) {
+        // If it's a new empty box, remove it
+        const idx = pageEdits[editPageNum].indexOf(pendingLinkEdit);
+        if (idx > -1) pageEdits[editPageNum].splice(idx, 1);
+    }
+    document.getElementById('url-link-modal').style.display = 'none';
+    pendingLinkEdit = null;
+    drawOverlay();
+});
+
+document.getElementById('btn-url-save')?.addEventListener('click', () => {
+    const url = document.getElementById('custom-url-input').value;
+    if (url && url.trim() !== '' && pendingLinkEdit) {
+        let finalUrl = url.trim();
+        if(!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+            finalUrl = 'https://' + finalUrl;
+        }
+        pendingLinkEdit.url = finalUrl;
+        // Normalize box size so width/height are positive
+        const nBox = normalizeBox(pendingLinkEdit);
+        pendingLinkEdit.x = nBox.x;
+        pendingLinkEdit.y = nBox.y;
+        pendingLinkEdit.w = nBox.w;
+        pendingLinkEdit.h = nBox.h;
+    } else if (pendingLinkEdit) {
+        // If saved without URL, discard the box
+        const idx = pageEdits[editPageNum].indexOf(pendingLinkEdit);
+        if (idx > -1) pageEdits[editPageNum].splice(idx, 1);
+    }
+    document.getElementById('url-link-modal').style.display = 'none';
+    pendingLinkEdit = null;
+    drawOverlay();
+});
+
 function setToolActive(btnId, toolName) {
-    document.querySelectorAll('.edit-toolbar-btn').forEach(b => b.classList.remove('edit-tool-active'));
-    if(btnId) document.getElementById(btnId).classList.add('edit-tool-active');
+    document.querySelectorAll('.edit-toolbar-btn').forEach(b => {
+        b.classList.remove('edit-tool-active');
+        b.classList.remove('link-tool-active');
+    });
+    if(btnId) {
+        if(toolName === 'link') {
+            document.getElementById(btnId).classList.add('link-tool-active');
+        } else {
+            document.getElementById(btnId).classList.add('edit-tool-active');
+        }
+    }
     currentTool = toolName; selectedEditIndex = -1; drawOverlay(); 
 }
 
@@ -986,8 +1061,9 @@ document.getElementById('edit-size-picker')?.addEventListener('input', (e) => ed
 document.getElementById('btn-edit-text')?.addEventListener('click', () => setToolActive('btn-edit-text', 'text'));
 document.getElementById('btn-edit-whiteout')?.addEventListener('click', () => setToolActive('btn-edit-whiteout', 'whiteout'));
 document.getElementById('btn-edit-draw')?.addEventListener('click', () => setToolActive('btn-edit-draw', 'draw'));
-document.getElementById('btn-edit-clear')?.addEventListener('click', () => { pageEdits[editPageNum] = []; selectedEditIndex = -1; drawOverlay(); showCustomAlert("Cleared!"); });
 document.getElementById('btn-edit-link')?.addEventListener('click', () => setToolActive('btn-edit-link', 'link'));
+document.getElementById('btn-edit-clear')?.addEventListener('click', () => { pageEdits[editPageNum] = []; selectedEditIndex = -1; drawOverlay(); showCustomAlert("Cleared!"); });
+
 document.getElementById('btn-edit-image')?.addEventListener('click', () => { setToolActive('btn-edit-image', 'image'); document.getElementById('edit-image-input').click(); });
 document.getElementById('edit-image-input')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -1021,40 +1097,34 @@ function openVisualWorkspace(file, mode) {
     const btnDraw = document.getElementById('btn-edit-draw');
     const btnErase = document.getElementById('btn-edit-whiteout');
     const btnImage = document.getElementById('btn-edit-image');
+    const btnLink = document.getElementById('btn-edit-link');
     const toolSettings = document.querySelector('.tool-settings');
     const btnClear = document.getElementById('btn-edit-clear');
     const applyModeSelector = document.getElementById('edit-apply-mode');
 
     headerHelp.style.display = 'none';
     document.body.classList.add('is-editing'); 
-        // Set Apply Mode Default
+    
+    // Set Apply Mode Default
     if (mode === 'pagenumbers' || mode === 'watermark') applyModeSelector.value = 'all';
     else applyModeSelector.value = 'current';
 
-    if (['edit', 'sign', 'watermark', 'addtext', 'link'].includes(mode)) {
+    if (['edit', 'sign', 'watermark', 'addtext'].includes(mode)) {
         title.innerHTML = mode === 'sign' ? '<i class="fas fa-signature"></i> Visual Signature' :
                           mode === 'watermark' ? '<i class="fas fa-stamp"></i> Add Watermark' :
                           mode === 'addtext' ? '<i class="fas fa-font"></i> Add Text' :
-                          mode === 'link' ? '<i class="fas fa-link"></i> Add Link' :
                           '<i class="fas fa-edit"></i> Pro PDF Editor';
+        btnText.style.display = 'inline-flex'; btnDraw.style.display = 'inline-flex'; btnErase.style.display = 'inline-flex'; btnImage.style.display = 'inline-flex'; btnLink.style.display = 'inline-flex'; toolSettings.style.display = 'flex'; btnClear.style.display = 'inline-flex';
         
-        btnText.style.display = (mode === 'link') ? 'none' : 'inline-flex';
-        btnDraw.style.display = 'inline-flex'; 
-        btnErase.style.display = 'inline-flex'; 
-        btnImage.style.display = 'inline-flex'; 
-        toolSettings.style.display = 'flex'; 
-        btnClear.style.display = 'inline-flex';
-        
+        // Auto-select tool to help user
         if (mode === 'sign' || mode === 'watermark' || mode === 'addtext') {
             setToolActive('btn-edit-text', 'text');
-        } else if (mode === 'link') {
-            setToolActive('btn-edit-link', 'link');
         } else {
             currentTool = 'none';
         }
 
     } else {
-        btnText.style.display = 'none'; btnDraw.style.display = 'none'; btnErase.style.display = 'none'; btnImage.style.display = 'none'; toolSettings.style.display = 'none'; btnClear.style.display = 'none';
+        btnText.style.display = 'none'; btnDraw.style.display = 'none'; btnErase.style.display = 'none'; btnImage.style.display = 'none'; btnLink.style.display = 'none'; toolSettings.style.display = 'none'; btnClear.style.display = 'none';
         
         if (mode === 'crop') { title.innerHTML = '<i class="fas fa-crop"></i> Visual Crop'; headerHelp.style.display = 'block'; currentTool = 'visual-box'; }
         else if (mode === 'addmargins') { title.innerHTML = '<i class="fas fa-border-all"></i> Visual Margin'; headerHelp.style.display = 'block'; headerHelp.innerText = "Draw content area (Margins will be added outside)"; currentTool = 'visual-box'; }
@@ -1070,11 +1140,10 @@ function openVisualWorkspace(file, mode) {
         }
     }
 
-
     const fileReader = new FileReader();
     fileReader.onload = function() {
         const tempPdfBytes = new Uint8Array(this.result);
-        window.pdfjsLib.getDocument(tempPdfBytes).promise.then(pdf => {
+        pdfjsLib.getDocument(tempPdfBytes).promise.then(pdf => {
             editPdfDoc = pdf; editPageNum = 1; document.getElementById('page-count').textContent = pdf.numPages;
             window.switchView('edit'); document.getElementById('edit-upload-section').style.display = 'none'; document.getElementById('edit-workspace').style.display = 'flex';
             
@@ -1131,6 +1200,25 @@ function drawOverlay() {
         if (edit.type === 'whiteout') {
             overlayCtx.fillStyle = 'white'; overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
             if (currentTool === 'whiteout') { overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)'; overlayCtx.lineWidth = 1; overlayCtx.setLineDash([4, 4]); overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h); overlayCtx.setLineDash([]); }
+        } else if (edit.type === 'link') {
+            // Visual feedback for Hyperlink tool (Magenta theme)
+            overlayCtx.fillStyle = 'rgba(236, 72, 153, 0.2)'; 
+            overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
+            overlayCtx.strokeStyle = '#ec4899';
+            overlayCtx.lineWidth = 2;
+            overlayCtx.setLineDash([4, 4]);
+            overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
+            overlayCtx.setLineDash([]);
+            
+            // Draw link icon/text
+            overlayCtx.fillStyle = '#be185d';
+            overlayCtx.font = "bold 12px Arial";
+            overlayCtx.fillText("🔗 " + (edit.url || "Empty Link"), edit.x + 5, edit.y + 16);
+            
+            if (i === selectedEditIndex) { 
+                overlayCtx.strokeStyle = 'blue'; overlayCtx.lineWidth = 1; 
+                const rects = getHandleRects(edit); for (let key in rects) { const r = rects[key]; overlayCtx.fillRect(r.x, r.y, r.w, r.h); overlayCtx.strokeRect(r.x, r.y, r.w, r.h); }
+            }
         } else if (edit.type === 'text') {
             overlayCtx.save();
             overlayCtx.globalAlpha = edit.opacity || 1;
@@ -1202,11 +1290,11 @@ overlayCanvas?.addEventListener('touchstart', (e) => {
 overlayCanvas?.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'touch' && e.isPrimary === false) return; 
     if (currentTool === 'none' && currentVisualMode !== 'pagenumbers') return;
-    if (e.target.closest('#custom-text-modal')) return;
+    if (e.target.closest('#custom-text-modal') || e.target.closest('#url-link-modal')) return;
     
     const pos = getCursorPos(e); const edits = pageEdits[editPageNum] || []; hasMovedDuringClick = false; 
     
-    if (selectedEditIndex !== -1 && edits[selectedEditIndex]?.type === 'image') {
+    if (selectedEditIndex !== -1 && (edits[selectedEditIndex]?.type === 'image' || edits[selectedEditIndex]?.type === 'link')) {
         const edit = edits[selectedEditIndex]; const rects = getHandleRects(edit);
         for (let key in rects) {
             const r = rects[key];
@@ -1216,7 +1304,7 @@ overlayCanvas?.addEventListener('pointerdown', (e) => {
     
     for (let i = edits.length - 1; i >= 0; i--) {
         const edit = edits[i]; let isHit = false;
-        if (edit.type === 'whiteout' || edit.type === 'image' || edit.type === 'visual-box') {
+        if (edit.type === 'whiteout' || edit.type === 'image' || edit.type === 'visual-box' || edit.type === 'link') {
             const nBox = normalizeBox(edit);
             if (pos.x >= nBox.x && pos.x <= nBox.x + nBox.w && pos.y >= nBox.y && pos.y <= nBox.y + nBox.h) isHit = true;
         } else if (edit.type === 'text' || edit.type === 'pagenum-dummy') {
@@ -1246,6 +1334,12 @@ overlayCanvas?.addEventListener('pointerdown', (e) => {
     if (currentTool === 'text') openTextModal("", { type: 'new', pos: { x: pos.x, y: pos.y } });
     else if (currentTool === 'whiteout') { isDrawing = true; startX = pos.x; startY = pos.y; }
     else if (currentTool === 'draw') { isDrawing = true; if (!pageEdits[editPageNum]) pageEdits[editPageNum] = []; currentPath = { type: 'draw', color: editColor, size: editSize, points: [ {x: pos.x, y: pos.y} ] }; pageEdits[editPageNum].push(currentPath); }
+    else if (currentTool === 'link') {
+        isDrawing = true; startX = pos.x; startY = pos.y;
+        if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
+        currentPath = { type: 'link', x: pos.x, y: pos.y, w: 0, h: 0, url: '' };
+        pageEdits[editPageNum].push(currentPath);
+    }
     else if (currentTool === 'visual-box') {
         isDrawing = true; startX = pos.x; startY = pos.y;
         pageEdits[editPageNum] = [{ type: 'visual-box', x: pos.x, y: pos.y, w: 0, h: 0 }];
@@ -1288,6 +1382,9 @@ window.addEventListener('pointermove', (e) => {
         drawOverlay(); overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.8)'; overlayCtx.fillRect(startX, startY, pos.x - startX, pos.y - startY);
         overlayCtx.strokeStyle = 'red'; overlayCtx.lineWidth = 1; overlayCtx.setLineDash([]); overlayCtx.strokeRect(startX, startY, pos.x - startX, pos.y - startY);
     } else if (currentTool === 'draw') { currentPath.points.push({x: pos.x, y: pos.y}); drawOverlay(); }
+    else if (currentTool === 'link') {
+        currentPath.w = pos.x - startX; currentPath.h = pos.y - startY; drawOverlay();
+    }
     else if (currentTool === 'visual-box') {
         const box = pageEdits[editPageNum][0]; box.w = pos.x - startX; box.h = pos.y - startY; drawOverlay();
     }
@@ -1301,12 +1398,12 @@ window.addEventListener('pointerup', (e) => {
         else if (!hasMovedDuringClick) {
             const edit = pageEdits[editPageNum][activeDragIndex];
             if (edit.type === 'text' && currentTool === 'text') openTextModal(edit.text, { type: 'edit', index: activeDragIndex });
-            else if (edit.type === 'link-box' && currentTool === 'link') openTextModal(edit.url, { type: 'edit-link', index: activeDragIndex });
+            else if (edit.type === 'link' && currentTool === 'link') openUrlModal(edit);
         }
         activeDragIndex = -1; drawOverlay(); return;
     }
     if (!isDrawing) return;
-    isDrawing = false; currentPath = null;
+    isDrawing = false; 
     
     if (currentTool === 'whiteout') {
         const pos = getCursorPos(e); 
@@ -1319,21 +1416,21 @@ window.addEventListener('pointerup', (e) => {
     } else if (currentTool === 'link') {
         const pos = getCursorPos(e);
         const w = pos.x - startX; const h = pos.y - startY;
-        if (Math.abs(w) > 5 && Math.abs(h) > 5) {
-            if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
-            pageEdits[editPageNum].push({ type: 'link-box', x: w < 0 ? pos.x : startX, y: h < 0 ? pos.y : startY, w: Math.abs(w), h: Math.abs(h), url: '' });
-            openTextModal("", { type: 'new-link', index: pageEdits[editPageNum].length - 1 });
+        if (Math.abs(w) > 10 && Math.abs(h) > 10) { 
+            openUrlModal(currentPath);
+        } else {
+            pageEdits[editPageNum].pop();
+            drawOverlay();
         }
-        drawOverlay();
     }
+    currentPath = null;
 });
 
 document.getElementById('prev-page')?.addEventListener('click', () => { if (editPageNum > 1) { editPageNum--; selectedEditIndex = -1; renderEditPage(editPageNum); } });
 document.getElementById('next-page')?.addEventListener('click', () => { if (editPageNum < editPdfDoc?.numPages) { editPageNum++; selectedEditIndex = -1; renderEditPage(editPageNum); } });
 
-
 // ==========================================
-// UNIVERSAL SAVE ENGINE (Handles 'Apply to All' vs 'Current Page' + Single Page Crop)
+// UNIVERSAL SAVE ENGINE (Handles Links, 'Apply to All' vs 'Current Page' + Single Page Crop Optimizer)
 // ==========================================
 document.getElementById('btn-edit-save')?.addEventListener('click', async () => {
     if (!currentEditFile) return;
@@ -1365,6 +1462,31 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                     if (edit.type === 'whiteout') { 
                         page.drawRectangle({ x: pdfX, y: pdfY - (edit.h / editScale), width: edit.w / editScale, height: edit.h / editScale, color: rgb(1, 1, 1) }); 
                     } 
+                    else if (edit.type === 'link' && edit.url) {
+                        try {
+                            const pdfW = edit.w / editScale; 
+                            const pdfH = edit.h / editScale;
+                            
+                            const linkAnnotation = pdfDoc.context.obj({
+                                Type: 'Annot',
+                                Subtype: 'Link',
+                                Rect: [pdfX, pdfY - pdfH, pdfX + pdfW, pdfY],
+                                Border: [0, 0, 0],
+                                A: {
+                                    Type: 'Action',
+                                    S: 'URI',
+                                    URI: PDFString.of(edit.url),
+                                },
+                            });
+                            const linkAnnotationRef = pdfDoc.context.register(linkAnnotation);
+                            
+                            const annots = page.node.Annots();
+                            if (!annots) {
+                                page.node.set(PDFName.of('Annots'), pdfDoc.context.obj([]));
+                            }
+                            page.node.Annots().push(linkAnnotationRef);
+                        } catch(e) { console.error("Link creation error: ", e); }
+                    }
                     else if (edit.type === 'text') { 
                         let font;
                         if (edit.bold && edit.italic) font = await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique);
@@ -1396,15 +1518,6 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                             });
                         }
                     } 
-
-                                            else if (edit.type === 'link-box') { 
-                        const { height } = page.getSize();
-                        page.addLinkAnnotation(page.node.createLinkAnnotation(
-                            [pdfX, pdfY - (edit.h / editScale), pdfX + (edit.w / editScale), pdfY],
-                            { url: edit.url }
-                        ));
-                                            }
-                                                
                     else if (edit.type === 'draw') { 
                         for(let k=0; k < edit.points.length - 1; k++) { const p1 = edit.points[k]; const p2 = edit.points[k+1]; page.drawLine({ start: { x: p1.x / editScale, y: height - (p1.y / editScale) }, end: { x: p2.x / editScale, y: height - (p2.y / editScale) }, thickness: edit.size / editScale, color: hexToRgbPdf(edit.color) }); } 
                     } 
@@ -1414,7 +1527,7 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 }
             }
             let outputSuffix = currentVisualMode === 'sign' ? '_Signed' : currentVisualMode === 'watermark' ? '_Watermark' : '_Edited';
-            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + outputSuffix + '.pdf', 'application/pdf');
+            await processAndDownload(await pdfDoc.save({ useObjectStreams: false }), getBaseName(editOriginalFileName) + outputSuffix + '.pdf', 'application/pdf');
 
         } else if (currentVisualMode === 'crop') {
             const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
@@ -1428,29 +1541,33 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 const [copiedPage] = await smartDoc.copyPages(originalDoc, [editPageNum - 1]);
                 smartDoc.addPage(copiedPage);
                 
-                const { height: pHeight } = copiedPage.getSize();
+                const { height } = copiedPage.getSize();
+                const cropX = nBox.x / editScale;
+                const cropY = height - ((nBox.y + nBox.h) / editScale);
                 const cropW = nBox.w / editScale;
                 const cropH = nBox.h / editScale;
-                const cropX = nBox.x / editScale;
-                const cropY = pHeight - (nBox.y / editScale) - cropH; 
                 
-                copiedPage.setCropBox(cropX, cropY, cropW, cropH);
-                copiedPage.setMediaBox(cropX, cropY, cropW, cropH); 
+                // Advanced Crop Fix (Translates content back to 0,0 to fix merge ghosts)
+                copiedPage.translateContent(-cropX, -cropY);
+                copiedPage.setMediaBox(0, 0, cropW, cropH);
+                copiedPage.setCropBox(0, 0, cropW, cropH); 
                 
-                finalBytes = await smartDoc.save();
+                // Optimization flag injected here
+                finalBytes = await smartDoc.save({ useObjectStreams: false });
             } else {
                 const pages = originalDoc.getPages();
                 pages.forEach((p) => {
-                    const { height: pHeight } = p.getSize();
+                    const { height } = p.getSize();
+                    const cropX = nBox.x / editScale;
+                    const cropY = height - ((nBox.y + nBox.h) / editScale);
                     const cropW = nBox.w / editScale;
                     const cropH = nBox.h / editScale;
-                    const cropX = nBox.x / editScale;
-                    const cropY = pHeight - (nBox.y / editScale) - cropH;
                     
-                    p.setCropBox(cropX, cropY, cropW, cropH);
-                    p.setMediaBox(cropX, cropY, cropW, cropH);
+                    p.translateContent(-cropX, -cropY);
+                    p.setMediaBox(0, 0, cropW, cropH);
+                    p.setCropBox(0, 0, cropW, cropH);
                 });
-                finalBytes = await originalDoc.save();
+                finalBytes = await originalDoc.save({ useObjectStreams: false });
             }
             await processAndDownload(finalBytes, getBaseName(editOriginalFileName) + '_Cropped.pdf', 'application/pdf');
 
@@ -1466,13 +1583,13 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 if (applyMode === 'current' && i !== editPageNum - 1) return;
                 const { width, height } = p.getSize(); p.setSize(width + mL + mR, height + mT + mB); p.translateContent(mL, mB); 
             });
-            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Margined.pdf', 'application/pdf');
+            await processAndDownload(await pdfDoc.save({ useObjectStreams: false }), getBaseName(editOriginalFileName) + '_Margined.pdf', 'application/pdf');
 
         } else if (currentVisualMode === 'extract') {
             const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
             if(!boxData) { showCustomAlert("Draw a selection box first!"); btn.innerHTML = oldText; return; }
             const nBox = normalizeBox(boxData);
-            const pdf = await window.pdfjsLib.getDocument(freshBuffer).promise;
+            const pdf = await pdfjsLib.getDocument(freshBuffer).promise;
             let fullText = "";
             for (let i = 1; i <= pdf.numPages; i++) {
                 if (applyMode === 'current' && i !== editPageNum) continue;
@@ -1499,25 +1616,8 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 if (visualData.format === 'Page 1 of 10') txt = `Page ${index + 1} of ${pages.length}`;
                 page.drawText(txt, { x: dummy.x / editScale, y: height - (dummy.y / editScale), size: 14, font, color: rgb(0,0,0) });
             });
-            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Numbered.pdf', 'application/pdf');
-        
-        } else if (currentVisualMode === 'link') {
-            const boxData = pageEdits[editPageNum]?.find(e => e.type === 'link-box');
-            if (!boxData) { showCustomAlert("Draw a link box first!"); btn.innerHTML = oldText; return; }
-            const nBox = normalizeBox(boxData);
-            const pdfDoc = await PDFDocument.load(freshBuffer);
-            const pages = pdfDoc.getPages();
-            pages.forEach((page, index) => {
-                if (applyMode === 'current' && index !== editPageNum - 1) return;
-                const { height } = page.getSize();
-                page.addLinkAnnotation(page.node.createLinkAnnotation(
-                    [nBox.x / editScale, height - (nBox.y / editScale) - (nBox.h / editScale), (nBox.x + nBox.w) / editScale, height - (nBox.y / editScale)],
-                    { url: nBox.url }
-                ));
-            });
-            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Linked.pdf', 'application/pdf');
+            await processAndDownload(await pdfDoc.save({ useObjectStreams: false }), getBaseName(editOriginalFileName) + '_Numbered.pdf', 'application/pdf');
         }
-        
         document.body.classList.remove('is-editing');
         if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
     } catch (error) { handleError(error); document.body.classList.remove('is-editing'); } 
