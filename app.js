@@ -271,7 +271,7 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
     const iframe = document.getElementById('global-preview-iframe');
     const pdfContainer = document.getElementById('global-preview-pdf-container');
     const msg = document.getElementById('global-preview-message');
-    document.getElementById('global-preview-title').innerHTML = `<i class="fas fa-eye" style="color: var(--accent);"></i> Preview: ${filename}`;
+    document.getElementById('global-preview-title').innerHTML = `<i class="fas fa-eye" style="color: var(--accent); flex-shrink: 0;"></i> <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Preview: ${filename}</span>`;
 
     iframe.style.display = 'none';
     pdfContainer.style.display = 'none';
