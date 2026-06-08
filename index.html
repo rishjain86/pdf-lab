@@ -10,13 +10,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- PDF.js Library for Rendering PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
     <style>
         :root {
@@ -40,7 +40,6 @@
             color: var(--text-main);
             display: flex;
             height: 100vh;
-            height: 100dvh;
             overflow: hidden;
             overscroll-behavior-y: none;
         }
@@ -128,7 +127,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            height: 100%;
+            height: 100vh;
             overflow-y: auto;
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -275,13 +274,6 @@
             background: var(--accent) !important;
         }
 
-        /* Special class for Link tool active state */
-        .link-tool-active {
-            box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.4);
-            transform: translateY(-2px);
-            background: #be185d !important;
-        }
-
         .desktop-search-container { display: block; }
 
         /* Mobile & PC Safe Canvas Container */
@@ -327,29 +319,6 @@
 </head>
 <body>
 
-    <div id="global-preview-modal" style="display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 999999; flex-direction: column;">
-    
-    <div style="padding: 12px 15px; background: var(--surface-color); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); gap: 10px; flex-shrink: 0;">
-        <h3 id="global-preview-title" style="flex: 1; min-width: 0; color: white; font-size: 1rem; display: flex; align-items: center; gap: 8px; margin: 0;">
-            <i class="fas fa-eye" style="color: var(--accent); flex-shrink: 0;"></i> 
-            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">Document Preview</span>
-        </h3>
-        <button id="btn-close-global-preview" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; flex-shrink: 0;">Close</button>
-    </div>
-    
-    <div id="global-preview-container" style="flex: 1; min-height: 0; background: #cbd5e1; display: flex; flex-direction: column; overflow-y: auto; position: relative;">
-        <iframe id="global-preview-iframe" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
-        <div id="global-preview-pdf-container" style="width: 100%; display: none; flex-direction: column; align-items: center; padding: 10px; gap: 15px;"></div>
-        <div id="global-preview-message" style="display: none; color: #0f172a; font-size: 1rem; text-align: center; padding: 20px;">Preview failed.</div>
-    </div>
-
-    <div style="padding: 15px; background: var(--surface-color); display: flex; justify-content: center; border-top: 1px solid var(--glass-border); flex-shrink: 0;">
-        <button id="btn-download-global-preview" style="background: #10b981; color: white; border: none; padding: 14px 40px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; max-width: 400px;">
-            Download File
-        </button>
-    </div>
-</div>
-    
     <div class="sidebar">
         <div class="brand-logo" onclick="switchView('dashboard')" style="cursor: pointer;">
             <img src="assets/icon.png?v=5" style="width: 32px; height: 32px; border-radius: 6px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain;">
@@ -563,6 +532,7 @@
             <div id="history-list"></div>
         </div>
 
+        <!-- FULL-SCREEN EDIT PDF SECTION -->
         <div id="view-edit" class="view-section">
             <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
             
@@ -590,8 +560,6 @@
                     <button class="edit-toolbar-btn" id="btn-edit-draw" style="background: #f59e0b; color: white;" title="Draw"><i class="fas fa-pen"></i></button>
                     <button class="edit-toolbar-btn" id="btn-edit-whiteout" style="background: #f8fafc; color: #0f172a;" title="Eraser"><i class="fas fa-eraser"></i></button>
                     <button class="edit-toolbar-btn" id="btn-edit-image" style="background: #8b5cf6; color: white;" title="Add Image"><i class="fas fa-image"></i></button>
-                    <button class="edit-toolbar-btn" id="btn-edit-link" style="background: #ec4899; color: white;" title="Add Link"><i class="fas fa-link"></i></button>
-                    
                     <input type="file" id="edit-image-input" accept="image/png, image/jpeg" style="display: none;">
 
                     <div style="display: flex; gap: 5px; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
@@ -610,6 +578,7 @@
 
                     <div id="visual-tool-header" style="display:none; color: #f59e0b; font-weight: 600;">Draw a box on the PDF</div>
 
+                    <!-- NEW: APPLY MODE SELECTOR -->
                     <select id="edit-apply-mode" style="padding: 6px; border-radius: 6px; border: 1px solid var(--glass-border); background: #334155; color: white; outline: none; font-size: 0.9rem; cursor: pointer; margin-left: 10px;">
                         <option value="current">Current Page Only</option>
                         <option value="all">Apply to All Pages</option>
@@ -622,7 +591,7 @@
                     </div>
 
                     <button class="edit-toolbar-btn" id="btn-edit-clear" style="background: #ef4444; color: white; margin-left: auto;"><i class="fas fa-trash-alt"></i> Clear</button>
-                    <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white;"><i class="fas fa-save"></i> Preview & Save</button>
+                    <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white;"><i class="fas fa-save"></i> Save</button>
                 </div>
 
                 <div class="canvas-container">
@@ -634,6 +603,7 @@
             </div>
         </div>
 
+        <!-- NEW ADVANCED TEXT MODAL (With Size and Improved BG Logic) -->
         <div id="custom-text-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
             <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 350px; max-width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                 <h3 style="color: white; margin-bottom: 15px;" id="text-modal-title">Text Editor</h3>
@@ -677,21 +647,11 @@
             </div>
         </div>
 
-        <div id="url-link-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-            <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 350px; max-width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                <h3 style="color: #ec4899; margin-bottom: 15px;"><i class="fas fa-link"></i> Add Hyperlink</h3>
-                <input type="url" id="custom-url-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; margin-bottom: 15px; outline: none; font-size: 1rem;" placeholder="https://example.com">
-                <div style="display: flex; gap: 10px;">
-                    <button id="btn-url-cancel" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #ef4444; color: white; font-weight: 600;">Cancel</button>
-                    <button id="btn-url-save" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #10b981; color: white; font-weight: 600;">Add Link</button>
-                </div>
-            </div>
-        </div>
-
         <div id="drag-trash-zone" style="display: none; position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(239, 68, 68, 0.95); color: white; padding: 15px 30px; border-radius: 50px; z-index: 99999; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.6); align-items: center; gap: 10px; font-weight: 600; font-size: 1.1rem; transition: 0.2s; pointer-events: none;">
             <i class="fas fa-trash-alt" style="font-size: 1.3rem;"></i> Drop here to delete
         </div>
 
+        <!-- Tool Containers -->
         <div id="view-merge" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="merge-ui-container"></div></div>
         <div id="view-split" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="split-ui-container"></div></div>
         <div id="view-compress" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="compress-ui-container"></div></div>
@@ -721,6 +681,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=27"></script>
+    <script type="module" src="app.js?v=21"></script>
 </body>
 </html>
