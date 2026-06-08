@@ -1312,6 +1312,7 @@ window.addEventListener('pointerup', (e) => {
 document.getElementById('prev-page')?.addEventListener('click', () => { if (editPageNum > 1) { editPageNum--; selectedEditIndex = -1; renderEditPage(editPageNum); } });
 document.getElementById('next-page')?.addEventListener('click', () => { if (editPageNum < editPdfDoc?.numPages) { editPageNum++; selectedEditIndex = -1; renderEditPage(editPageNum); } });
 
+
 // ==========================================
 // UNIVERSAL SAVE ENGINE (Handles 'Apply to All' vs 'Current Page' + Single Page Crop)
 // ==========================================
@@ -1403,7 +1404,6 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 const cropW = nBox.w / editScale;
                 const cropH = nBox.h / editScale;
                 const cropX = nBox.x / editScale;
-                // FIX: Perfect PDF-lib bottom-left coordinate mapping
                 const cropY = pHeight - (nBox.y / editScale) - cropH; 
                 
                 copiedPage.setCropBox(cropX, cropY, cropW, cropH);
@@ -1417,7 +1417,6 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                     const cropW = nBox.w / editScale;
                     const cropH = nBox.h / editScale;
                     const cropX = nBox.x / editScale;
-                    // FIX: Perfect PDF-lib bottom-left coordinate mapping
                     const cropY = pHeight - (nBox.y / editScale) - cropH;
                     
                     p.setCropBox(cropX, cropY, cropW, cropH);
@@ -1473,7 +1472,24 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 page.drawText(txt, { x: dummy.x / editScale, y: height - (dummy.y / editScale), size: 14, font, color: rgb(0,0,0) });
             });
             await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Numbered.pdf', 'application/pdf');
+        
+        } else if (currentVisualMode === 'link') {
+            const boxData = pageEdits[editPageNum]?.find(e => e.type === 'link-box');
+            if (!boxData) { showCustomAlert("Draw a link box first!"); btn.innerHTML = oldText; return; }
+            const nBox = normalizeBox(boxData);
+            const pdfDoc = await PDFDocument.load(freshBuffer);
+            const pages = pdfDoc.getPages();
+            pages.forEach((page, index) => {
+                if (applyMode === 'current' && index !== editPageNum - 1) return;
+                const { height } = page.getSize();
+                page.addLinkAnnotation(page.node.createLinkAnnotation(
+                    [nBox.x / editScale, height - (nBox.y / editScale) - (nBox.h / editScale), (nBox.x + nBox.w) / editScale, height - (nBox.y / editScale)],
+                    { url: nBox.url }
+                ));
+            });
+            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Linked.pdf', 'application/pdf');
         }
+        
         document.body.classList.remove('is-editing');
         if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
     } catch (error) { handleError(error); document.body.classList.remove('is-editing'); } 
