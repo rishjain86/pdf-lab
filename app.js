@@ -1029,7 +1029,7 @@ function openVisualWorkspace(file, mode) {
     document.body.classList.add('is-editing'); 
     
     // Set Apply Mode Default
-    if (mode === 'pagenumbers' || mode === 'watermark') applyModeSelector.value = 'all';
+        if (mode === 'pagenumbers' || mode === 'watermark') applyModeSelector.value = 'all';
     else applyModeSelector.value = 'current';
 
     if (['edit', 'sign', 'watermark', 'addtext'].includes(mode)) {
@@ -1051,6 +1051,7 @@ function openVisualWorkspace(file, mode) {
         if (mode === 'crop') { title.innerHTML = '<i class="fas fa-crop"></i> Visual Crop'; headerHelp.style.display = 'block'; currentTool = 'visual-box'; }
         else if (mode === 'addmargins') { title.innerHTML = '<i class="fas fa-border-all"></i> Visual Margin'; headerHelp.style.display = 'block'; headerHelp.innerText = "Draw content area (Margins will be added outside)"; currentTool = 'visual-box'; }
         else if (mode === 'extract') { title.innerHTML = '<i class="fas fa-file-alt"></i> Select Text Area'; headerHelp.style.display = 'block'; currentTool = 'visual-box'; }
+        else if (mode === 'link') { title.innerHTML = '<i class="fas fa-link"></i> Add Link'; headerHelp.style.display = 'block'; headerHelp.innerText = "Draw a box where the link should be"; currentTool = 'link'; }
         else if (mode === 'pagenumbers') {
             title.innerHTML = '<i class="fas fa-sort-numeric-down"></i> Place Page Number';
             currentTool = 'none';
