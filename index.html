@@ -323,32 +323,29 @@
 <body>
 
     <!-- GLOBAL PREVIEW MODAL (FIXED UI/OVERLAP) -->
-    <div id="global-preview-modal" style="display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 999999; flex-direction: column; height: 100dvh;">
-        <div style="padding: 12px 15px; background: var(--surface-color); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); gap: 10px; flex-shrink: 0;">
-            <h3 id="global-preview-title" style="flex: 1; min-width: 0; color: white; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin: 0;">
-                <i class="fas fa-eye" style="color: var(--accent); flex-shrink: 0;"></i> <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Document Preview</span>
-            </h3>
-            <button id="btn-close-global-preview" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; flex-shrink: 0; font-size: 0.9rem; white-space: nowrap;"><i class="fas fa-times"></i> Close</button>
-        </div>
-        
-        <div id="global-preview-container" style="flex: 1; min-height: 0; background: #cbd5e1; display: flex; flex-direction: column; overflow: hidden; position: relative;">
-            <iframe id="global-preview-iframe" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
-            
-            <div id="global-preview-pdf-container" style="width: 100%; height: 100%; overflow: auto; display: none; flex-direction: column; align-items: center; padding: 20px; gap: 20px; -webkit-overflow-scrolling: touch;"></div>
-            
-            <div id="global-preview-message" style="display: none; color: #0f172a; font-size: 1.2rem; font-weight: 600; text-align: center; padding: 20px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%;">
-                <i class="fas fa-file-archive" style="font-size: 3rem; color: #64748b; margin-bottom: 15px;"></i><br>
-                Preview rendering failed.<br>Please click Download to view it.
-            </div>
-        </div>
-
-        <div style="padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom)); background: var(--surface-color); display: flex; justify-content: center; border-top: 1px solid var(--glass-border); flex-shrink: 0;">
-            <button id="btn-download-global-preview" style="background: #10b981; color: white; border: none; padding: 14px 40px; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); transition: 0.3s; width: 100%; max-width: 400px;">
-                <i class="fas fa-download"></i> Download Final File
-            </button>
-        </div>
+    <div id="global-preview-modal" style="display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 999999; flex-direction: column;">
+    
+    <div style="padding: 12px 15px; background: var(--surface-color); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); gap: 10px; flex-shrink: 0;">
+        <h3 id="global-preview-title" style="flex: 1; min-width: 0; color: white; font-size: 1rem; display: flex; align-items: center; gap: 8px; margin: 0;">
+            <i class="fas fa-eye" style="color: var(--accent); flex-shrink: 0;"></i> 
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">Document Preview</span>
+        </h3>
+        <button id="btn-close-global-preview" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; flex-shrink: 0;">Close</button>
+    </div>
+    
+    <div id="global-preview-container" style="flex: 1; min-height: 0; background: #cbd5e1; display: flex; flex-direction: column; overflow-y: auto; position: relative;">
+        <iframe id="global-preview-iframe" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+        <div id="global-preview-pdf-container" style="width: 100%; display: none; flex-direction: column; align-items: center; padding: 10px; gap: 15px;"></div>
+        <div id="global-preview-message" style="display: none; color: #0f172a; font-size: 1rem; text-align: center; padding: 20px;">Preview failed.</div>
     </div>
 
+    <div style="padding: 15px; background: var(--surface-color); display: flex; justify-content: center; border-top: 1px solid var(--glass-border); flex-shrink: 0;">
+        <button id="btn-download-global-preview" style="background: #10b981; color: white; border: none; padding: 14px 40px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; max-width: 400px;">
+            Download File
+        </button>
+    </div>
+</div>
+    
     <div class="sidebar">
         <div class="brand-logo" onclick="switchView('dashboard')" style="cursor: pointer;">
             <img src="assets/icon.png?v=5" style="width: 32px; height: 32px; border-radius: 6px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain;">
