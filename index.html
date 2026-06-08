@@ -583,42 +583,45 @@
                 </div>
 
                 <div id="edit-toolbar" style="flex-shrink: 0; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; background: rgba(0,0,0,0.2); padding: 10px; width: 100%; align-items: center; border-bottom: 1px solid var(--glass-border);">
-                    <button class="edit-toolbar-btn" id="btn-edit-text" style="background: #3b82f6; color: white;" title="Add Text"><i class="fas fa-font"></i></button>
-                    <button class="edit-toolbar-btn" id="btn-edit-draw" style="background: #f59e0b; color: white;" title="Draw"><i class="fas fa-pen"></i></button>
-                    <button class="edit-toolbar-btn" id="btn-edit-whiteout" style="background: #f8fafc; color: #0f172a;" title="Eraser"><i class="fas fa-eraser"></i></button>
-                    <button class="edit-toolbar-btn" id="btn-edit-image" style="background: #8b5cf6; color: white;" title="Add Image"><i class="fas fa-image"></i></button>
-                    <input type="file" id="edit-image-input" accept="image/png, image/jpeg" style="display: none;">
+    <button class="edit-toolbar-btn" id="btn-edit-text" style="background: #3b82f6; color: white;" title="Add Text"><i class="fas fa-font"></i></button>
+    <button class="edit-toolbar-btn" id="btn-edit-draw" style="background: #f59e0b; color: white;" title="Draw"><i class="fas fa-pen"></i></button>
+    <button class="edit-toolbar-btn" id="btn-edit-whiteout" style="background: #f8fafc; color: #0f172a;" title="Eraser"><i class="fas fa-eraser"></i></button>
+    <button class="edit-toolbar-btn" id="btn-edit-image" style="background: #8b5cf6; color: white;" title="Add Image"><i class="fas fa-image"></i></button>
+    <button class="edit-toolbar-btn" id="btn-edit-link" style="background: #ec4899; color: white;" title="Add Link"><i class="fas fa-link"></i></button>
+    
+    <input type="file" id="edit-image-input" accept="image/png, image/jpeg" style="display: none;">
 
-                    <div style="display: flex; gap: 5px; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
-                        <button class="edit-toolbar-btn" id="btn-zoom-out" style="background: #475569; color: white;" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
-                        <button class="edit-toolbar-btn" id="btn-zoom-fit" style="background: #475569; color: white;" title="Fit to Screen"><i class="fas fa-expand"></i></button>
-                        <button class="edit-toolbar-btn" id="btn-zoom-in" style="background: #475569; color: white;" title="Zoom In"><i class="fas fa-search-plus"></i></button>
-                    </div>
+    <div style="display: flex; gap: 5px; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
+        <button class="edit-toolbar-btn" id="btn-zoom-out" style="background: #475569; color: white;" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+        <button class="edit-toolbar-btn" id="btn-zoom-fit" style="background: #475569; color: white;" title="Fit to Screen"><i class="fas fa-expand"></i></button>
+        <button class="edit-toolbar-btn" id="btn-zoom-in" style="background: #475569; color: white;" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+    </div>
 
-                    <div class="tool-settings" style="display: flex; gap: 8px; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 10px;">
-                        <input type="color" id="edit-color-picker" value="#000000" style="width: 30px; height: 30px; border: none; cursor: pointer; background: transparent; padding: 0;" title="Brush/Text Base Color">
-                        <div style="display: flex; align-items: center; background: var(--surface-color); border: 1px solid var(--glass-border); border-radius: 4px; padding: 2px 5px;">
-                            <i class="fas fa-text-height" style="color: var(--text-secondary); font-size: 0.8rem; margin-right: 5px;"></i>
-                            <input type="number" id="edit-size-picker" value="20" min="5" max="150" style="width: 45px; border: none; background: transparent; color: white; outline: none; font-size: 0.9rem;" title="Size (Brush)">
-                        </div>
-                    </div>
+    <div class="tool-settings" style="display: flex; gap: 8px; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 10px;">
+        <input type="color" id="edit-color-picker" value="#000000" style="width: 30px; height: 30px; border: none; cursor: pointer; background: transparent; padding: 0;" title="Brush/Text Base Color">
+        <div style="display: flex; align-items: center; background: var(--surface-color); border: 1px solid var(--glass-border); border-radius: 4px; padding: 2px 5px;">
+            <i class="fas fa-text-height" style="color: var(--text-secondary); font-size: 0.8rem; margin-right: 5px;"></i>
+            <input type="number" id="edit-size-picker" value="20" min="5" max="150" style="width: 45px; border: none; background: transparent; color: white; outline: none; font-size: 0.9rem;" title="Size (Brush)">
+        </div>
+    </div>
 
-                    <div id="visual-tool-header" style="display:none; color: #f59e0b; font-weight: 600;">Draw a box on the PDF</div>
+    <div id="visual-tool-header" style="display:none; color: #f59e0b; font-weight: 600;">Draw a box on the PDF</div>
 
-                    <select id="edit-apply-mode" style="padding: 6px; border-radius: 6px; border: 1px solid var(--glass-border); background: #334155; color: white; outline: none; font-size: 0.9rem; cursor: pointer; margin-left: 10px;">
-                        <option value="current">Current Page Only</option>
-                        <option value="all">Apply to All Pages</option>
-                    </select>
+    <select id="edit-apply-mode" style="padding: 6px; border-radius: 6px; border: 1px solid var(--glass-border); background: #334155; color: white; outline: none; font-size: 0.9rem; cursor: pointer; margin-left: 10px;">
+        <option value="current">Current Page Only</option>
+        <option value="all">Apply to All Pages</option>
+    </select>
 
-                    <div style="display: flex; gap: 10px; align-items: center; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
-                        <button id="prev-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-left"></i></button>
-                        <span style="font-size: 0.9rem;">Page <span id="page-num">1</span> / <span id="page-count">--</span></span>
-                        <button id="next-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-right"></i></button>
-                    </div>
+    <div style="display: flex; gap: 10px; align-items: center; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
+        <button id="prev-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-left"></i></button>
+        <span style="font-size: 0.9rem;">Page <span id="page-num">1</span> / <span id="page-count">--</span></span>
+        <button id="next-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-right"></i></button>
+    </div>
 
-                    <button class="edit-toolbar-btn" id="btn-edit-clear" style="background: #ef4444; color: white; margin-left: auto;"><i class="fas fa-trash-alt"></i> Clear</button>
-                    <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white;"><i class="fas fa-save"></i> Preview & Save</button>
-                </div>
+    <button class="edit-toolbar-btn" id="btn-edit-clear" style="background: #ef4444; color: white; margin-left: auto;"><i class="fas fa-trash-alt"></i> Clear</button>
+    <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white;"><i class="fas fa-save"></i> Preview & Save</button>
+</div>
+
 
                 <div class="canvas-container">
                     <div style="position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.5); background: white; margin: 0 auto;">
