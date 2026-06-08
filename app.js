@@ -669,6 +669,7 @@ setupSingleFileLogic('pagenumbers', null);
 setupSingleFileLogic('sign', null);
 setupSingleFileLogic('watermark', null);
 setupSingleFileLogic('addtext', null);
+setupSingleFileLogic('link', null);
 
 setupSingleFileLogic('extract', async (file) => {
     const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
