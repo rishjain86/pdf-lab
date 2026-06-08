@@ -224,3 +224,7 @@ body {
         font-size: 1.5rem;
     }
 }
+
+.btn-edit-link {
+    background: #ec4899 !important;
+}
