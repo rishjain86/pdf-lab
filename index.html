@@ -275,10 +275,11 @@
             background: var(--accent) !important;
         }
 
-        /* CUSTOM THEME FOR LINK TOOL */
-        #btn-edit-link.edit-tool-active {
-            background: #db2777 !important; /* Darker magenta for active */
+        /* Special class for Link tool active state */
+        .link-tool-active {
             box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.4);
+            transform: translateY(-2px);
+            background: #be185d !important;
         }
 
         .desktop-search-container { display: block; }
@@ -678,11 +679,11 @@
 
         <div id="url-link-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
             <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 350px; max-width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                <h3 style="color: white; margin-bottom: 15px;"><i class="fas fa-link" style="color: #ec4899;"></i> Enter Target URL</h3>
-                <input type="url" id="link-url-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; margin-bottom: 15px; outline: none; font-size: 1rem;" placeholder="https://example.com">
+                <h3 style="color: #ec4899; margin-bottom: 15px;"><i class="fas fa-link"></i> Add Hyperlink</h3>
+                <input type="url" id="custom-url-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; margin-bottom: 15px; outline: none; font-size: 1rem;" placeholder="https://example.com">
                 <div style="display: flex; gap: 10px;">
-                    <button id="btn-link-cancel" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #ef4444; color: white; font-weight: 600;">Cancel</button>
-                    <button id="btn-link-save" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #ec4899; color: white; font-weight: 600;">Save Link</button>
+                    <button id="btn-url-cancel" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #ef4444; color: white; font-weight: 600;">Cancel</button>
+                    <button id="btn-url-save" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #10b981; color: white; font-weight: 600;">Add Link</button>
                 </div>
             </div>
         </div>
