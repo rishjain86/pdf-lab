@@ -10,14 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- PDF.js Library for Rendering PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- pdf-lib is required for your crop & merge logic -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
     <style>
@@ -277,6 +275,12 @@
             background: var(--accent) !important;
         }
 
+        /* CUSTOM THEME FOR LINK TOOL */
+        #btn-edit-link.edit-tool-active {
+            background: #db2777 !important; /* Darker magenta for active */
+            box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.4);
+        }
+
         .desktop-search-container { display: block; }
 
         /* Mobile & PC Safe Canvas Container */
@@ -322,7 +326,6 @@
 </head>
 <body>
 
-    <!-- GLOBAL PREVIEW MODAL (FIXED UI/OVERLAP) -->
     <div id="global-preview-modal" style="display: none; position: fixed; inset: 0; background: var(--bg-color); z-index: 999999; flex-direction: column;">
     
     <div style="padding: 12px 15px; background: var(--surface-color); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); gap: 10px; flex-shrink: 0;">
@@ -559,7 +562,6 @@
             <div id="history-list"></div>
         </div>
 
-        <!-- FULL-SCREEN EDIT PDF SECTION -->
         <div id="view-edit" class="view-section">
             <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
             
@@ -583,45 +585,44 @@
                 </div>
 
                 <div id="edit-toolbar" style="flex-shrink: 0; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; background: rgba(0,0,0,0.2); padding: 10px; width: 100%; align-items: center; border-bottom: 1px solid var(--glass-border);">
-    <button class="edit-toolbar-btn" id="btn-edit-text" style="background: #3b82f6; color: white;" title="Add Text"><i class="fas fa-font"></i></button>
-    <button class="edit-toolbar-btn" id="btn-edit-draw" style="background: #f59e0b; color: white;" title="Draw"><i class="fas fa-pen"></i></button>
-    <button class="edit-toolbar-btn" id="btn-edit-whiteout" style="background: #f8fafc; color: #0f172a;" title="Eraser"><i class="fas fa-eraser"></i></button>
-    <button class="edit-toolbar-btn" id="btn-edit-image" style="background: #8b5cf6; color: white;" title="Add Image"><i class="fas fa-image"></i></button>
-    <button class="edit-toolbar-btn" id="btn-edit-link" style="background: #ec4899; color: white;" title="Add Link"><i class="fas fa-link"></i></button>
-    
-    <input type="file" id="edit-image-input" accept="image/png, image/jpeg" style="display: none;">
+                    <button class="edit-toolbar-btn" id="btn-edit-text" style="background: #3b82f6; color: white;" title="Add Text"><i class="fas fa-font"></i></button>
+                    <button class="edit-toolbar-btn" id="btn-edit-draw" style="background: #f59e0b; color: white;" title="Draw"><i class="fas fa-pen"></i></button>
+                    <button class="edit-toolbar-btn" id="btn-edit-whiteout" style="background: #f8fafc; color: #0f172a;" title="Eraser"><i class="fas fa-eraser"></i></button>
+                    <button class="edit-toolbar-btn" id="btn-edit-image" style="background: #8b5cf6; color: white;" title="Add Image"><i class="fas fa-image"></i></button>
+                    <button class="edit-toolbar-btn" id="btn-edit-link" style="background: #ec4899; color: white;" title="Add Link"><i class="fas fa-link"></i></button>
+                    
+                    <input type="file" id="edit-image-input" accept="image/png, image/jpeg" style="display: none;">
 
-    <div style="display: flex; gap: 5px; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
-        <button class="edit-toolbar-btn" id="btn-zoom-out" style="background: #475569; color: white;" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
-        <button class="edit-toolbar-btn" id="btn-zoom-fit" style="background: #475569; color: white;" title="Fit to Screen"><i class="fas fa-expand"></i></button>
-        <button class="edit-toolbar-btn" id="btn-zoom-in" style="background: #475569; color: white;" title="Zoom In"><i class="fas fa-search-plus"></i></button>
-    </div>
+                    <div style="display: flex; gap: 5px; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
+                        <button class="edit-toolbar-btn" id="btn-zoom-out" style="background: #475569; color: white;" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+                        <button class="edit-toolbar-btn" id="btn-zoom-fit" style="background: #475569; color: white;" title="Fit to Screen"><i class="fas fa-expand"></i></button>
+                        <button class="edit-toolbar-btn" id="btn-zoom-in" style="background: #475569; color: white;" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+                    </div>
 
-    <div class="tool-settings" style="display: flex; gap: 8px; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 10px;">
-        <input type="color" id="edit-color-picker" value="#000000" style="width: 30px; height: 30px; border: none; cursor: pointer; background: transparent; padding: 0;" title="Brush/Text Base Color">
-        <div style="display: flex; align-items: center; background: var(--surface-color); border: 1px solid var(--glass-border); border-radius: 4px; padding: 2px 5px;">
-            <i class="fas fa-text-height" style="color: var(--text-secondary); font-size: 0.8rem; margin-right: 5px;"></i>
-            <input type="number" id="edit-size-picker" value="20" min="5" max="150" style="width: 45px; border: none; background: transparent; color: white; outline: none; font-size: 0.9rem;" title="Size (Brush)">
-        </div>
-    </div>
+                    <div class="tool-settings" style="display: flex; gap: 8px; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 10px;">
+                        <input type="color" id="edit-color-picker" value="#000000" style="width: 30px; height: 30px; border: none; cursor: pointer; background: transparent; padding: 0;" title="Brush/Text Base Color">
+                        <div style="display: flex; align-items: center; background: var(--surface-color); border: 1px solid var(--glass-border); border-radius: 4px; padding: 2px 5px;">
+                            <i class="fas fa-text-height" style="color: var(--text-secondary); font-size: 0.8rem; margin-right: 5px;"></i>
+                            <input type="number" id="edit-size-picker" value="20" min="5" max="150" style="width: 45px; border: none; background: transparent; color: white; outline: none; font-size: 0.9rem;" title="Size (Brush)">
+                        </div>
+                    </div>
 
-    <div id="visual-tool-header" style="display:none; color: #f59e0b; font-weight: 600;">Draw a box on the PDF</div>
+                    <div id="visual-tool-header" style="display:none; color: #f59e0b; font-weight: 600;">Draw a box on the PDF</div>
 
-    <select id="edit-apply-mode" style="padding: 6px; border-radius: 6px; border: 1px solid var(--glass-border); background: #334155; color: white; outline: none; font-size: 0.9rem; cursor: pointer; margin-left: 10px;">
-        <option value="current">Current Page Only</option>
-        <option value="all">Apply to All Pages</option>
-    </select>
+                    <select id="edit-apply-mode" style="padding: 6px; border-radius: 6px; border: 1px solid var(--glass-border); background: #334155; color: white; outline: none; font-size: 0.9rem; cursor: pointer; margin-left: 10px;">
+                        <option value="current">Current Page Only</option>
+                        <option value="all">Apply to All Pages</option>
+                    </select>
 
-    <div style="display: flex; gap: 10px; align-items: center; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
-        <button id="prev-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-left"></i></button>
-        <span style="font-size: 0.9rem;">Page <span id="page-num">1</span> / <span id="page-count">--</span></span>
-        <button id="next-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-right"></i></button>
-    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
+                        <button id="prev-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-left"></i></button>
+                        <span style="font-size: 0.9rem;">Page <span id="page-num">1</span> / <span id="page-count">--</span></span>
+                        <button id="next-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-right"></i></button>
+                    </div>
 
-    <button class="edit-toolbar-btn" id="btn-edit-clear" style="background: #ef4444; color: white; margin-left: auto;"><i class="fas fa-trash-alt"></i> Clear</button>
-    <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white;"><i class="fas fa-save"></i> Preview & Save</button>
-</div>
-
+                    <button class="edit-toolbar-btn" id="btn-edit-clear" style="background: #ef4444; color: white; margin-left: auto;"><i class="fas fa-trash-alt"></i> Clear</button>
+                    <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white;"><i class="fas fa-save"></i> Preview & Save</button>
+                </div>
 
                 <div class="canvas-container">
                     <div style="position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.5); background: white; margin: 0 auto;">
@@ -675,11 +676,21 @@
             </div>
         </div>
 
+        <div id="url-link-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+            <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 350px; max-width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <h3 style="color: white; margin-bottom: 15px;"><i class="fas fa-link" style="color: #ec4899;"></i> Enter Target URL</h3>
+                <input type="url" id="link-url-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; margin-bottom: 15px; outline: none; font-size: 1rem;" placeholder="https://example.com">
+                <div style="display: flex; gap: 10px;">
+                    <button id="btn-link-cancel" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #ef4444; color: white; font-weight: 600;">Cancel</button>
+                    <button id="btn-link-save" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #ec4899; color: white; font-weight: 600;">Save Link</button>
+                </div>
+            </div>
+        </div>
+
         <div id="drag-trash-zone" style="display: none; position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(239, 68, 68, 0.95); color: white; padding: 15px 30px; border-radius: 50px; z-index: 99999; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.6); align-items: center; gap: 10px; font-weight: 600; font-size: 1.1rem; transition: 0.2s; pointer-events: none;">
             <i class="fas fa-trash-alt" style="font-size: 1.3rem;"></i> Drop here to delete
         </div>
 
-        <!-- Tool Containers -->
         <div id="view-merge" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="merge-ui-container"></div></div>
         <div id="view-split" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="split-ui-container"></div></div>
         <div id="view-compress" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="compress-ui-container"></div></div>
@@ -709,6 +720,6 @@
 
     </div>
 
-    <script type="module" src="app.js?v=26"></script>
+    <script type="module" src="app.js?v=27"></script>
 </body>
 </html>
