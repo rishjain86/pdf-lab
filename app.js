@@ -262,6 +262,7 @@ function bytesToBase64(bytes) {
 let pendingDownloadData = null;
 
 async function processAndDownload(bytes, filename, type, saveToDb = true) {
+    // Background Save
     if(saveToDb) { try { await saveToHistory(bytes, filename, type); } catch(e) {} }
     
     pendingDownloadData = { bytes, filename, type };
@@ -270,14 +271,13 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
     const iframe = document.getElementById('global-preview-iframe');
     const pdfContainer = document.getElementById('global-preview-pdf-container');
     const msg = document.getElementById('global-preview-message');
-    document.getElementById('global-preview-title').innerHTML = `<i class="fas fa-eye" style="color: var(--accent); flex-shrink: 0;"></i> <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Preview: ${filename}</span>`;
+    document.getElementById('global-preview-title').innerHTML = `<i class="fas fa-eye" style="color: var(--accent);"></i> Preview: ${filename}`;
 
     iframe.style.display = 'none';
     pdfContainer.style.display = 'none';
     msg.style.display = 'none';
 
     if (type === 'application/pdf') {
-        // ALWAYS use PDF.js Canvas on mobile/desktop to prevent iframe blocks
         pdfContainer.style.display = 'flex';
         pdfContainer.innerHTML = '<div style="color:#3b82f6; font-weight:600; font-size: 1.1rem; margin-top: 50px;"><i class="fas fa-spinner fa-spin"></i> Generating Preview...</div>';
         modal.style.display = 'flex';
@@ -287,6 +287,7 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
             const pdf = await loadingTask.promise;
             pdfContainer.innerHTML = ''; 
             
+            // Render first 5 pages max for fast mobile preview
             const pagesToRender = Math.min(pdf.numPages, 5);
             for (let i = 1; i <= pagesToRender; i++) {
                 const page = await pdf.getPage(i);
@@ -306,7 +307,11 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
                 pdfContainer.appendChild(moreTxt);
             }
         } catch(err) {
-            pdfContainer.innerHTML = '<div style="color:#ef4444; padding:20px; text-align:center;"><i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 10px;"></i><br>Preview not available for this specific file.<br>Please click Download to view it.</div>';
+            // Fallback to iframe if pdf.js fails internally
+            pdfContainer.style.display = 'none';
+            const blob = new Blob([bytes], { type });
+            iframe.src = URL.createObjectURL(blob);
+            iframe.style.display = 'block';
         }
     } else if (type === 'text/plain') {
         const blob = new Blob([bytes], { type });
@@ -334,16 +339,12 @@ async function executeFinalDownload() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.download = filename;
-        document.body.appendChild(a); 
-        a.click(); 
-        document.body.removeChild(a); 
-        // FIX: Delay revoke to prevent Android Chrome "Download Failed" bug
-        setTimeout(() => { URL.revokeObjectURL(url); }, 5000); 
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
     }
     
     document.getElementById('global-preview-modal').style.display = 'none';
     pendingDownloadData = null;
-    document.getElementById('global-preview-iframe').src = "";
+    document.getElementById('global-preview-iframe').src = ""; // Clear memory
     document.getElementById('global-preview-pdf-container').innerHTML = ""; 
 }
 
@@ -713,6 +714,11 @@ if (ui.merge) {
             </div>`; 
         });
         
+        list.querySelectorAll('.remove-merge').forEach(btn => btn.addEventListener('click', (e) => { 
+            mergeFiles.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1); 
+            renderMergeList(); 
+        }));
+        
         if (mergeFiles.length > 0) {
             mergeEditorPanel.style.display = 'block';
             mergeDropZone.style.display = 'none';
@@ -748,22 +754,44 @@ if (ui.merge) {
                 const file = mergeFiles[i];
                 const pdf = await PDFDocument.load(await file.arrayBuffer()); 
                 
-                // SAFE MERGE LOGIC (No Ghost Margins on Cropped files)
-                const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices()); 
-                
-                copiedPages.forEach(p => { 
-                    const { width, height } = p.getSize();
-                    
-                    if (sizeSetting === 'A4') {
-                        p.setSize(595.28, 841.89); 
+                // Advanced Merge logic to prevent margins ghosting
+                if (sizeSetting === 'original' && marginSetting === 0) {
+                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    copiedPages.forEach(p => mergedPdf.addPage(p));
+                } else {
+                    const pageIndices = pdf.getPageIndices();
+                    for (let pageIndex of pageIndices) {
+                        const srcPage = pdf.getPage(pageIndex);
+                        const embeddedPage = await mergedPdf.embedPage(srcPage);
+                        let targetW = embeddedPage.width;
+                        let targetH = embeddedPage.height;
+                        
+                        if (sizeSetting === 'A4') {
+                            targetW = 595.28;
+                            targetH = 841.89;
+                        }
+                        
+                        targetW += marginSetting * 2;
+                        targetH += marginSetting * 2;
+                        
+                        const newPage = mergedPdf.addPage([targetW, targetH]);
+                        
+                        // Centered perfect scaling
+                        const innerW = targetW - marginSetting * 2;
+                        const innerH = targetH - marginSetting * 2;
+                        const scale = Math.min(innerW / embeddedPage.width, innerH / embeddedPage.height);
+                        
+                        const drawW = embeddedPage.width * scale;
+                        const drawH = embeddedPage.height * scale;
+                        
+                        newPage.drawPage(embeddedPage, {
+                            x: marginSetting + (innerW - drawW) / 2,
+                            y: marginSetting + (innerH - drawH) / 2,
+                            width: drawW,
+                            height: drawH,
+                        });
                     }
-                    
-                    if (marginSetting > 0) {
-                        p.setSize(width + marginSetting * 2, height + marginSetting * 2);
-                        p.translateContent(marginSetting, marginSetting);
-                    }
-                    mergedPdf.addPage(p); 
-                }); 
+                }
                 
                 // Gap logic
                 if (gapSetting > 0 && i < mergeFiles.length - 1) {
@@ -778,6 +806,7 @@ if (ui.merge) {
             mergeFiles = []; 
             renderMergeList(); 
             
+            // Calls our new global preview logic!
             await processAndDownload(bytes, outputName, 'application/pdf');
             
             if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
@@ -1392,29 +1421,30 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 const [copiedPage] = await smartDoc.copyPages(originalDoc, [editPageNum - 1]);
                 smartDoc.addPage(copiedPage);
                 
-                const { height: pHeight } = copiedPage.getSize();
+                const { height } = copiedPage.getSize();
+                const cropX = nBox.x / editScale;
+                const cropY = height - ((nBox.y + nBox.h) / editScale);
                 const cropW = nBox.w / editScale;
                 const cropH = nBox.h / editScale;
-                const cropX = nBox.x / editScale;
-                // FIX: PERFECT MATH FOR BOTTOM-LEFT ORIGIN
-                const cropY = pHeight - (nBox.y / editScale) - cropH; 
                 
-                copiedPage.setCropBox(cropX, cropY, cropW, cropH);
-                copiedPage.setMediaBox(cropX, cropY, cropW, cropH); 
+                // Advanced Crop Fix (Translates content back to 0,0 to fix merge ghosts)
+                copiedPage.translateContent(-cropX, -cropY);
+                copiedPage.setMediaBox(0, 0, cropW, cropH);
+                copiedPage.setCropBox(0, 0, cropW, cropH); 
                 
                 finalBytes = await smartDoc.save();
             } else {
                 const pages = originalDoc.getPages();
                 pages.forEach((p) => {
-                    const { height: pHeight } = p.getSize();
+                    const { height } = p.getSize();
+                    const cropX = nBox.x / editScale;
+                    const cropY = height - ((nBox.y + nBox.h) / editScale);
                     const cropW = nBox.w / editScale;
                     const cropH = nBox.h / editScale;
-                    const cropX = nBox.x / editScale;
-                    // FIX: PERFECT MATH FOR BOTTOM-LEFT ORIGIN
-                    const cropY = pHeight - (nBox.y / editScale) - cropH;
                     
-                    p.setCropBox(cropX, cropY, cropW, cropH);
-                    p.setMediaBox(cropX, cropY, cropW, cropH);
+                    p.translateContent(-cropX, -cropY);
+                    p.setMediaBox(0, 0, cropW, cropH);
+                    p.setCropBox(0, 0, cropW, cropH);
                 });
                 finalBytes = await originalDoc.save();
             }
