@@ -1292,6 +1292,7 @@ window.addEventListener('pointerup', (e) => {
         else if (!hasMovedDuringClick) {
             const edit = pageEdits[editPageNum][activeDragIndex];
             if (edit.type === 'text' && currentTool === 'text') openTextModal(edit.text, { type: 'edit', index: activeDragIndex });
+            else if (edit.type === 'link-box' && currentTool === 'link') openTextModal(edit.url, { type: 'edit-link', index: activeDragIndex });
         }
         activeDragIndex = -1; drawOverlay(); return;
     }
@@ -1305,6 +1306,15 @@ window.addEventListener('pointerup', (e) => {
         const endX = (clientX - rect.left) * scaleX; const endY = (clientY - rect.top) * scaleY;
         const w = endX - startX; const h = endY - startY;
         if (Math.abs(w) > 5 && Math.abs(h) > 5) { if (!pageEdits[editPageNum]) pageEdits[editPageNum] = []; pageEdits[editPageNum].push({ type: 'whiteout', x: w < 0 ? endX : startX, y: h < 0 ? endY : startY, w: Math.abs(w), h: Math.abs(h) }); }
+        drawOverlay();
+    } else if (currentTool === 'link') {
+        const pos = getCursorPos(e);
+        const w = pos.x - startX; const h = pos.y - startY;
+        if (Math.abs(w) > 5 && Math.abs(h) > 5) {
+            if (!pageEdits[editPageNum]) pageEdits[editPageNum] = [];
+            pageEdits[editPageNum].push({ type: 'link-box', x: w < 0 ? pos.x : startX, y: h < 0 ? pos.y : startY, w: Math.abs(w), h: Math.abs(h), url: '' });
+            openTextModal("", { type: 'new-link', index: pageEdits[editPageNum].length - 1 });
+        }
         drawOverlay();
     }
 });
