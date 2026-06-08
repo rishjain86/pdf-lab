@@ -913,8 +913,9 @@ function drawOverlay() {
     
     edits.forEach((edit, i) => {
         if (edit.type === 'whiteout') {
-            overlayCtx.fillStyle = 'white'; overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
-            if (currentTool === 'whiteout') { overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)'; overlayCtx.lineWidth = 1; overlayCtx.setLineDash([4, 4]); overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h); overlayCtx.setLineDash([]); }
+            // Yaha se border wala code hata diya gaya hai. Ab sirf white box banega.
+            overlayCtx.fillStyle = 'white'; 
+            overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
         } else if (edit.type === 'text') {
             overlayCtx.save();
             overlayCtx.globalAlpha = edit.opacity || 1;
