@@ -1,11 +1,12 @@
 import { PDFDocument, degrees, StandardFonts, rgb, PDFName } from 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm';
-import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs';
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
 import JSZip from 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
 import { AdManager } from './adManager.js';
 import { Filesystem, Directory } from 'https://cdn.jsdelivr.net/npm/@capacitor/filesystem@6.0.0/+esm';
 import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@6.0.0/+esm';
 import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.0/+esm';
+
+// IMPORTANT FIX: Use global pdfjsLib to avoid worker mismatch version crashes on mobile
+const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
 
 function showCustomAlert(message) {
     let alertBox = document.getElementById('custom-alert-box');
@@ -262,7 +263,6 @@ function bytesToBase64(bytes) {
 let pendingDownloadData = null;
 
 async function processAndDownload(bytes, filename, type, saveToDb = true) {
-    // Background Save
     if(saveToDb) { try { await saveToHistory(bytes, filename, type); } catch(e) {} }
     
     pendingDownloadData = { bytes, filename, type };
@@ -271,7 +271,7 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
     const iframe = document.getElementById('global-preview-iframe');
     const pdfContainer = document.getElementById('global-preview-pdf-container');
     const msg = document.getElementById('global-preview-message');
-    document.getElementById('global-preview-title').innerHTML = `<i class="fas fa-eye" style="color: var(--accent);"></i> Preview: ${filename}`;
+    document.getElementById('global-preview-title').innerHTML = `<i class="fas fa-eye" style="color: var(--accent); flex-shrink: 0;"></i> <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Preview: ${filename}</span>`;
 
     iframe.style.display = 'none';
     pdfContainer.style.display = 'none';
@@ -283,11 +283,11 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
         modal.style.display = 'flex';
         
         try {
-            const loadingTask = pdfjsLib.getDocument({ data: bytes });
+            // FIX: Using globally loaded pdfjsLib to avoid v2/v4 mismatch
+            const loadingTask = window.pdfjsLib.getDocument({ data: bytes });
             const pdf = await loadingTask.promise;
             pdfContainer.innerHTML = ''; 
             
-            // Render first 5 pages max for fast mobile preview
             const pagesToRender = Math.min(pdf.numPages, 5);
             for (let i = 1; i <= pagesToRender; i++) {
                 const page = await pdf.getPage(i);
@@ -307,11 +307,8 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
                 pdfContainer.appendChild(moreTxt);
             }
         } catch(err) {
-            // Fallback to iframe if pdf.js fails internally
-            pdfContainer.style.display = 'none';
-            const blob = new Blob([bytes], { type });
-            iframe.src = URL.createObjectURL(blob);
-            iframe.style.display = 'block';
+            console.error(err);
+            pdfContainer.innerHTML = '<div style="color:#ef4444; padding:20px; text-align:center;"><i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 10px;"></i><br>Preview not available for this specific file.<br>Please click Download to view it.</div>';
         }
     } else if (type === 'text/plain') {
         const blob = new Blob([bytes], { type });
@@ -339,12 +336,16 @@ async function executeFinalDownload() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.download = filename;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        document.body.appendChild(a); 
+        a.click(); 
+        document.body.removeChild(a); 
+        // FIX: Increased timeout to ensure Android download manager catches the blob
+        setTimeout(() => { URL.revokeObjectURL(url); }, 60000); 
     }
     
     document.getElementById('global-preview-modal').style.display = 'none';
     pendingDownloadData = null;
-    document.getElementById('global-preview-iframe').src = ""; // Clear memory
+    document.getElementById('global-preview-iframe').src = "";
     document.getElementById('global-preview-pdf-container').innerHTML = ""; 
 }
 
@@ -382,7 +383,6 @@ function setupSingleFileLogic(id, actionCallback) {
 
     // Direct click to dropzone or specific browse button handles this seamlessly
     dropZone.addEventListener('click', (e) => {
-        // Prevent double trigger if button inside is clicked
         if(e.target.tagName !== 'BUTTON') input.click();
     });
 
@@ -563,7 +563,7 @@ setupSingleFileLogic('splitevenodd', async (file) => {
 });
 
 setupSingleFileLogic('pdftojpg', async (file) => {
-    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
     const zip = new JSZip();
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
@@ -667,8 +667,7 @@ setupSingleFileLogic('watermark', null);
 setupSingleFileLogic('addtext', null);
 
 setupSingleFileLogic('extract', async (file) => {
-    // Only triggers if fallback standard mode is used
-    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
     let fullText = "";
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
@@ -697,7 +696,6 @@ if (ui.merge) {
         renderMergeList();
     }
     
-    // Attach to window so HTML inline onclick works
     window.moveMergeItem = moveMergeItem;
 
     function renderMergeList() {
@@ -754,44 +752,21 @@ if (ui.merge) {
                 const file = mergeFiles[i];
                 const pdf = await PDFDocument.load(await file.arrayBuffer()); 
                 
-                // Advanced Merge logic to prevent margins ghosting
-                if (sizeSetting === 'original' && marginSetting === 0) {
-                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                    copiedPages.forEach(p => mergedPdf.addPage(p));
-                } else {
-                    const pageIndices = pdf.getPageIndices();
-                    for (let pageIndex of pageIndices) {
-                        const srcPage = pdf.getPage(pageIndex);
-                        const embeddedPage = await mergedPdf.embedPage(srcPage);
-                        let targetW = embeddedPage.width;
-                        let targetH = embeddedPage.height;
-                        
-                        if (sizeSetting === 'A4') {
-                            targetW = 595.28;
-                            targetH = 841.89;
-                        }
-                        
-                        targetW += marginSetting * 2;
-                        targetH += marginSetting * 2;
-                        
-                        const newPage = mergedPdf.addPage([targetW, targetH]);
-                        
-                        // Centered perfect scaling
-                        const innerW = targetW - marginSetting * 2;
-                        const innerH = targetH - marginSetting * 2;
-                        const scale = Math.min(innerW / embeddedPage.width, innerH / embeddedPage.height);
-                        
-                        const drawW = embeddedPage.width * scale;
-                        const drawH = embeddedPage.height * scale;
-                        
-                        newPage.drawPage(embeddedPage, {
-                            x: marginSetting + (innerW - drawW) / 2,
-                            y: marginSetting + (innerH - drawH) / 2,
-                            width: drawW,
-                            height: drawH,
-                        });
+                const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices()); 
+                
+                copiedPages.forEach(p => { 
+                    const { width, height } = p.getSize();
+                    
+                    if (sizeSetting === 'A4') {
+                        p.setSize(595.28, 841.89); 
                     }
-                }
+                    
+                    if (marginSetting > 0) {
+                        p.setSize(width + marginSetting * 2, height + marginSetting * 2);
+                        p.translateContent(marginSetting, marginSetting);
+                    }
+                    mergedPdf.addPage(p); 
+                }); 
                 
                 // Gap logic
                 if (gapSetting > 0 && i < mergeFiles.length - 1) {
@@ -806,7 +781,6 @@ if (ui.merge) {
             mergeFiles = []; 
             renderMergeList(); 
             
-            // Calls our new global preview logic!
             await processAndDownload(bytes, outputName, 'application/pdf');
             
             if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
@@ -1060,7 +1034,6 @@ function openVisualWorkspace(file, mode) {
                           '<i class="fas fa-edit"></i> Pro PDF Editor';
         btnText.style.display = 'inline-flex'; btnDraw.style.display = 'inline-flex'; btnErase.style.display = 'inline-flex'; btnImage.style.display = 'inline-flex'; toolSettings.style.display = 'flex'; btnClear.style.display = 'inline-flex';
         
-        // Auto-select tool to help user
         if (mode === 'sign' || mode === 'watermark' || mode === 'addtext') {
             setToolActive('btn-edit-text', 'text');
         } else {
@@ -1087,7 +1060,7 @@ function openVisualWorkspace(file, mode) {
     const fileReader = new FileReader();
     fileReader.onload = function() {
         const tempPdfBytes = new Uint8Array(this.result);
-        pdfjsLib.getDocument(tempPdfBytes).promise.then(pdf => {
+        window.pdfjsLib.getDocument(tempPdfBytes).promise.then(pdf => {
             editPdfDoc = pdf; editPageNum = 1; document.getElementById('page-count').textContent = pdf.numPages;
             window.switchView('edit'); document.getElementById('edit-upload-section').style.display = 'none'; document.getElementById('edit-workspace').style.display = 'flex';
             
@@ -1421,30 +1394,29 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 const [copiedPage] = await smartDoc.copyPages(originalDoc, [editPageNum - 1]);
                 smartDoc.addPage(copiedPage);
                 
-                const { height } = copiedPage.getSize();
-                const cropX = nBox.x / editScale;
-                const cropY = height - ((nBox.y + nBox.h) / editScale);
+                const { height: pHeight } = copiedPage.getSize();
                 const cropW = nBox.w / editScale;
                 const cropH = nBox.h / editScale;
+                const cropX = nBox.x / editScale;
+                // FIX: Perfect PDF-lib bottom-left coordinate mapping
+                const cropY = pHeight - (nBox.y / editScale) - cropH; 
                 
-                // Advanced Crop Fix (Translates content back to 0,0 to fix merge ghosts)
-                copiedPage.translateContent(-cropX, -cropY);
-                copiedPage.setMediaBox(0, 0, cropW, cropH);
-                copiedPage.setCropBox(0, 0, cropW, cropH); 
+                copiedPage.setCropBox(cropX, cropY, cropW, cropH);
+                copiedPage.setMediaBox(cropX, cropY, cropW, cropH); 
                 
                 finalBytes = await smartDoc.save();
             } else {
                 const pages = originalDoc.getPages();
                 pages.forEach((p) => {
-                    const { height } = p.getSize();
-                    const cropX = nBox.x / editScale;
-                    const cropY = height - ((nBox.y + nBox.h) / editScale);
+                    const { height: pHeight } = p.getSize();
                     const cropW = nBox.w / editScale;
                     const cropH = nBox.h / editScale;
+                    const cropX = nBox.x / editScale;
+                    // FIX: Perfect PDF-lib bottom-left coordinate mapping
+                    const cropY = pHeight - (nBox.y / editScale) - cropH;
                     
-                    p.translateContent(-cropX, -cropY);
-                    p.setMediaBox(0, 0, cropW, cropH);
-                    p.setCropBox(0, 0, cropW, cropH);
+                    p.setCropBox(cropX, cropY, cropW, cropH);
+                    p.setMediaBox(cropX, cropY, cropW, cropH);
                 });
                 finalBytes = await originalDoc.save();
             }
@@ -1468,7 +1440,7 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
             const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
             if(!boxData) { showCustomAlert("Draw a selection box first!"); btn.innerHTML = oldText; return; }
             const nBox = normalizeBox(boxData);
-            const pdf = await pdfjsLib.getDocument(freshBuffer).promise;
+            const pdf = await window.pdfjsLib.getDocument(freshBuffer).promise;
             let fullText = "";
             for (let i = 1; i <= pdf.numPages; i++) {
                 if (applyMode === 'current' && i !== editPageNum) continue;
