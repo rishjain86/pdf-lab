@@ -1027,20 +1027,28 @@ function openVisualWorkspace(file, mode) {
 
     headerHelp.style.display = 'none';
     document.body.classList.add('is-editing'); 
-    
-    // Set Apply Mode Default
-        if (mode === 'pagenumbers' || mode === 'watermark') applyModeSelector.value = 'all';
+        // Set Apply Mode Default
+    if (mode === 'pagenumbers' || mode === 'watermark') applyModeSelector.value = 'all';
     else applyModeSelector.value = 'current';
 
-    if (['edit', 'sign', 'watermark', 'addtext'].includes(mode)) {
+    if (['edit', 'sign', 'watermark', 'addtext', 'link'].includes(mode)) {
         title.innerHTML = mode === 'sign' ? '<i class="fas fa-signature"></i> Visual Signature' :
                           mode === 'watermark' ? '<i class="fas fa-stamp"></i> Add Watermark' :
                           mode === 'addtext' ? '<i class="fas fa-font"></i> Add Text' :
+                          mode === 'link' ? '<i class="fas fa-link"></i> Add Link' :
                           '<i class="fas fa-edit"></i> Pro PDF Editor';
-        btnText.style.display = 'inline-flex'; btnDraw.style.display = 'inline-flex'; btnErase.style.display = 'inline-flex'; btnImage.style.display = 'inline-flex'; toolSettings.style.display = 'flex'; btnClear.style.display = 'inline-flex';
+        
+        btnText.style.display = (mode === 'link') ? 'none' : 'inline-flex';
+        btnDraw.style.display = 'inline-flex'; 
+        btnErase.style.display = 'inline-flex'; 
+        btnImage.style.display = 'inline-flex'; 
+        toolSettings.style.display = 'flex'; 
+        btnClear.style.display = 'inline-flex';
         
         if (mode === 'sign' || mode === 'watermark' || mode === 'addtext') {
             setToolActive('btn-edit-text', 'text');
+        } else if (mode === 'link') {
+            setToolActive('btn-edit-link', 'link');
         } else {
             currentTool = 'none';
         }
@@ -1051,7 +1059,6 @@ function openVisualWorkspace(file, mode) {
         if (mode === 'crop') { title.innerHTML = '<i class="fas fa-crop"></i> Visual Crop'; headerHelp.style.display = 'block'; currentTool = 'visual-box'; }
         else if (mode === 'addmargins') { title.innerHTML = '<i class="fas fa-border-all"></i> Visual Margin'; headerHelp.style.display = 'block'; headerHelp.innerText = "Draw content area (Margins will be added outside)"; currentTool = 'visual-box'; }
         else if (mode === 'extract') { title.innerHTML = '<i class="fas fa-file-alt"></i> Select Text Area'; headerHelp.style.display = 'block'; currentTool = 'visual-box'; }
-        else if (mode === 'link') { title.innerHTML = '<i class="fas fa-link"></i> Add Link'; headerHelp.style.display = 'block'; headerHelp.innerText = "Draw a box where the link should be"; currentTool = 'link'; }
         else if (mode === 'pagenumbers') {
             title.innerHTML = '<i class="fas fa-sort-numeric-down"></i> Place Page Number';
             currentTool = 'none';
@@ -1062,6 +1069,7 @@ function openVisualWorkspace(file, mode) {
             headerHelp.style.display = 'block'; headerHelp.innerText = "Drag the blue text to position it";
         }
     }
+
 
     const fileReader = new FileReader();
     fileReader.onload = function() {
