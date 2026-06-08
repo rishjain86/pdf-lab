@@ -987,7 +987,7 @@ document.getElementById('btn-edit-text')?.addEventListener('click', () => setToo
 document.getElementById('btn-edit-whiteout')?.addEventListener('click', () => setToolActive('btn-edit-whiteout', 'whiteout'));
 document.getElementById('btn-edit-draw')?.addEventListener('click', () => setToolActive('btn-edit-draw', 'draw'));
 document.getElementById('btn-edit-clear')?.addEventListener('click', () => { pageEdits[editPageNum] = []; selectedEditIndex = -1; drawOverlay(); showCustomAlert("Cleared!"); });
-
+document.getElementById('btn-edit-link')?.addEventListener('click', () => setToolActive('btn-edit-link', 'link'));
 document.getElementById('btn-edit-image')?.addEventListener('click', () => { setToolActive('btn-edit-image', 'image'); document.getElementById('edit-image-input').click(); });
 document.getElementById('edit-image-input')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
