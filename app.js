@@ -99,7 +99,6 @@ const brandHeaderHtml = `
     </div>
 `;
 
-// Explicit Button Click added for Foolproof Mobile File Manager triggers
 const generateSingleFileUI = (id, icon, color, title, btnText, extraHtml = "") => `
     ${brandHeaderHtml}
     <div id="${id}-drop-zone" style="${dropZoneStyle.replace('var(--accent)', color)}">
@@ -130,7 +129,6 @@ const generateMultipleFileUI = (id, icon, color, title, btnText, extraHtml = "")
     </div>
 `;
 
-// MERGE UI IS NOW CUSTOM FOR ADVANCED EDITOR
 if (ui.merge) ui.merge.innerHTML = brandHeaderHtml + `
     <div id="merge-drop-zone" style="${dropZoneStyle}"><i class="fas fa-object-group" style="font-size: 3rem; color: var(--accent); margin-bottom: 15px;"></i><h3>Select PDFs to Merge</h3><button onclick="document.getElementById('merge-file-input').click()" style="padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: 600;">Browse Files</button><input type="file" id="merge-file-input" multiple accept="application/pdf" style="display: none;"></div>
     
@@ -182,18 +180,15 @@ if (ui.extract) ui.extract.innerHTML = generateSingleFileUI('extract', 'fa-file-
     <select id="extract-mode" style="${inputStyle}"><option value="full">Extract Full PDF Text</option><option value="visual">Select Text Area Visually</option></select>
 `);
 
-// NOW PURE VISUAL TOOLS
 if (ui.crop) ui.crop.innerHTML = generateSingleFileUI('crop', 'fa-crop', '#3b82f6', 'Crop PDF', '');
 if (ui.addmargins) ui.addmargins.innerHTML = generateSingleFileUI('addmargins', 'fa-border-all', '#3b82f6', 'Add Margins', '');
 if (ui.pagenumbers) ui.pagenumbers.innerHTML = generateSingleFileUI('pagenumbers', 'fa-sort-numeric-down', '#6366f1', 'Add Numbers', '', `<label style="color:var(--text-secondary); font-size:0.9rem;">Format:</label><select id="pagenumbers-format" style="${inputStyle}"><option value="1">1, 2, 3...</option><option value="Page 1">Page 1, Page 2...</option><option value="Page 1 of 10">Page 1 of 10...</option></select>`);
 
-// NEW UPGRADED VISUAL TOOLS
 if (ui.sign) ui.sign.innerHTML = generateSingleFileUI('sign', 'fa-signature', '#8b5cf6', 'Sign', '');
 if (ui.watermark) ui.watermark.innerHTML = generateSingleFileUI('watermark', 'fa-stamp', '#ec4899', 'Watermark', '');
 if (ui.addtext) ui.addtext.innerHTML = generateSingleFileUI('addtext', 'fa-font', '#6366f1', 'Add Text', '');
 
 
-// --- UTILS ---
 const getBaseName = (filename) => filename.substring(0, filename.lastIndexOf('.')) || filename;
 
 const DB_NAME = 'AmazingPDFHistory';
@@ -258,11 +253,10 @@ function bytesToBase64(bytes) {
     return window.btoa(binary);
 }
 
-// --- GLOBAL PREVIEW LOGIC ---
+// --- GLOBAL PREVIEW LOGIC (UPDATED WITH DISCLAIMER & DOWNLOAD FIX) ---
 let pendingDownloadData = null;
 
 async function processAndDownload(bytes, filename, type, saveToDb = true) {
-    // Background Save
     if(saveToDb) { try { await saveToHistory(bytes, filename, type); } catch(e) {} }
     
     pendingDownloadData = { bytes, filename, type };
@@ -287,7 +281,6 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
             const pdf = await loadingTask.promise;
             pdfContainer.innerHTML = ''; 
             
-            // Render first 5 pages max for fast mobile preview
             const pagesToRender = Math.min(pdf.numPages, 5);
             for (let i = 1; i <= pagesToRender; i++) {
                 const page = await pdf.getPage(i);
@@ -306,8 +299,14 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
                 moreTxt.innerText = `+ ${pdf.numPages - 5} more pages (Download to view all)`;
                 pdfContainer.appendChild(moreTxt);
             }
+            
+            // NEW: Disclaimer for Hyperlinks
+            const noteTxt = document.createElement('div');
+            noteTxt.style = "color: #f59e0b; font-size: 0.85rem; text-align: center; margin-top: 10px; padding: 0 15px;";
+            noteTxt.innerHTML = '<i class="fas fa-info-circle"></i> <b>Note:</b> This is an image preview. Hyperlinks will only be clickable in the downloaded PDF.';
+            pdfContainer.appendChild(noteTxt);
+
         } catch(err) {
-            // Fallback to iframe if pdf.js fails internally
             pdfContainer.style.display = 'none';
             const blob = new Blob([bytes], { type });
             const url = URL.createObjectURL(blob);
@@ -337,23 +336,25 @@ async function executeFinalDownload() {
             await Share.share({ title: filename, text: 'Processed via Amazing PDF', url: savedFile.uri });
         } catch (e) { showCustomAlert("Saved to Documents & History!"); }
     } else {
+        // ANDROID DOWNLOAD BUG FIX
         const blob = new Blob([bytes], { type });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = filename;
+        a.href = url; 
+        a.download = filename;
         document.body.appendChild(a); 
         a.click(); 
         
-        // Android Bug Fix: Delay memory cleanup so Download Manager has time to fetch the file
+        // Android Bug Fix: Extended delay to 120 seconds so Download Manager has enough time
         setTimeout(() => {
             document.body.removeChild(a); 
             URL.revokeObjectURL(url);
-        }, 3000); 
+        }, 120000); 
     }
     
     document.getElementById('global-preview-modal').style.display = 'none';
     pendingDownloadData = null;
-    document.getElementById('global-preview-iframe').src = ""; // Clear memory
+    document.getElementById('global-preview-iframe').src = ""; 
     document.getElementById('global-preview-pdf-container').innerHTML = ""; 
 }
 
@@ -389,9 +390,7 @@ function setupSingleFileLogic(id, actionCallback) {
 
     if (!dropZone || !input) return;
 
-    // Direct click to dropzone or specific browse button handles this seamlessly
     dropZone.addEventListener('click', (e) => {
-        // Prevent double trigger if button inside is clicked
         if(e.target.tagName !== 'BUTTON') input.click();
     });
 
@@ -400,10 +399,9 @@ function setupSingleFileLogic(id, actionCallback) {
         if (file && file.type === 'application/pdf') {
             currentFile = file;
 
-            // DIRECT ROUTE TO VISUAL ENGINE
             if (['crop', 'addmargins', 'pagenumbers', 'sign', 'watermark', 'addtext'].includes(id) || (id === 'extract' && document.getElementById('extract-mode').value === 'visual')) {
                 openVisualWorkspace(currentFile, id);
-                input.value = ''; // Reset for next time
+                input.value = ''; 
                 return;
             }
 
@@ -667,7 +665,7 @@ if (ui.htmltopdf) {
     });
 }
 
-// BINDING VISUAL TOOLS (Action callback null since they launch workspace)
+// BINDING VISUAL TOOLS
 setupSingleFileLogic('crop', null);
 setupSingleFileLogic('addmargins', null);
 setupSingleFileLogic('pagenumbers', null);
@@ -676,7 +674,6 @@ setupSingleFileLogic('watermark', null);
 setupSingleFileLogic('addtext', null);
 
 setupSingleFileLogic('extract', async (file) => {
-    // Only triggers if fallback standard mode is used
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
     let fullText = "";
     for (let i = 1; i <= pdf.numPages; i++) {
@@ -706,7 +703,6 @@ if (ui.merge) {
         renderMergeList();
     }
     
-    // Attach to window so HTML inline onclick works
     window.moveMergeItem = moveMergeItem;
 
     function renderMergeList() {
@@ -763,7 +759,6 @@ if (ui.merge) {
                 const file = mergeFiles[i];
                 const pdf = await PDFDocument.load(await file.arrayBuffer()); 
                 
-                // Advanced Merge logic to prevent margins ghosting
                 if (sizeSetting === 'original' && marginSetting === 0) {
                     const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
                     copiedPages.forEach(p => mergedPdf.addPage(p));
@@ -785,7 +780,6 @@ if (ui.merge) {
                         
                         const newPage = mergedPdf.addPage([targetW, targetH]);
                         
-                        // Centered perfect scaling
                         const innerW = targetW - marginSetting * 2;
                         const innerH = targetH - marginSetting * 2;
                         const scale = Math.min(innerW / embeddedPage.width, innerH / embeddedPage.height);
@@ -802,7 +796,6 @@ if (ui.merge) {
                     }
                 }
                 
-                // Gap logic
                 if (gapSetting > 0 && i < mergeFiles.length - 1) {
                     for(let g = 0; g < gapSetting; g++) {
                         mergedPdf.addPage([595.28, 841.89]); 
@@ -815,9 +808,7 @@ if (ui.merge) {
             mergeFiles = []; 
             renderMergeList(); 
             
-            // Calls our new global preview logic!
             await processAndDownload(bytes, outputName, 'application/pdf');
-            
             if(typeof AdManager !== 'undefined' && AdManager) await AdManager.showInterstitial();
         } catch (e) { 
             handleError(e); 
@@ -1016,7 +1007,6 @@ function openUrlModal(linkEdit) {
 
 document.getElementById('btn-url-cancel')?.addEventListener('click', () => {
     if (pendingLinkEdit && !pendingLinkEdit.url) {
-        // If it's a new empty box, remove it
         const idx = pageEdits[editPageNum].indexOf(pendingLinkEdit);
         if (idx > -1) pageEdits[editPageNum].splice(idx, 1);
     }
@@ -1033,14 +1023,12 @@ document.getElementById('btn-url-save')?.addEventListener('click', () => {
             finalUrl = 'https://' + finalUrl;
         }
         pendingLinkEdit.url = finalUrl;
-        // Normalize box size so width/height are positive
         const nBox = normalizeBox(pendingLinkEdit);
         pendingLinkEdit.x = nBox.x;
         pendingLinkEdit.y = nBox.y;
         pendingLinkEdit.w = nBox.w;
         pendingLinkEdit.h = nBox.h;
     } else if (pendingLinkEdit) {
-        // If saved without URL, discard the box
         const idx = pageEdits[editPageNum].indexOf(pendingLinkEdit);
         if (idx > -1) pageEdits[editPageNum].splice(idx, 1);
     }
@@ -1114,7 +1102,6 @@ function openVisualWorkspace(file, mode) {
     headerHelp.style.display = 'none';
     document.body.classList.add('is-editing'); 
     
-    // Set Apply Mode Default
     if (mode === 'pagenumbers' || mode === 'watermark') applyModeSelector.value = 'all';
     else applyModeSelector.value = 'current';
 
@@ -1125,7 +1112,6 @@ function openVisualWorkspace(file, mode) {
                           '<i class="fas fa-edit"></i> Pro PDF Editor';
         btnText.style.display = 'inline-flex'; btnDraw.style.display = 'inline-flex'; btnErase.style.display = 'inline-flex'; btnImage.style.display = 'inline-flex'; btnLink.style.display = 'inline-flex'; toolSettings.style.display = 'flex'; btnClear.style.display = 'inline-flex';
         
-        // Auto-select tool to help user
         if (mode === 'sign' || mode === 'watermark' || mode === 'addtext') {
             setToolActive('btn-edit-text', 'text');
         } else {
@@ -1210,7 +1196,7 @@ function drawOverlay() {
             overlayCtx.fillStyle = 'white'; overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
             if (currentTool === 'whiteout') { overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)'; overlayCtx.lineWidth = 1; overlayCtx.setLineDash([4, 4]); overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h); overlayCtx.setLineDash([]); }
         } else if (edit.type === 'link') {
-            // Visual feedback for Hyperlink tool (Magenta theme) - Clean Look
+            // Clean Link Box
             overlayCtx.fillStyle = 'rgba(236, 72, 153, 0.2)'; 
             overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
             overlayCtx.strokeStyle = '#ec4899';
@@ -1219,7 +1205,7 @@ function drawOverlay() {
             overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
             overlayCtx.setLineDash([]);
             
-            // Draw a subtle link icon in the corner, not the full text
+            // Draw subtle link icon
             overlayCtx.fillStyle = '#be185d';
             overlayCtx.font = "bold 14px Arial";
             overlayCtx.fillText("🔗", edit.x + edit.w - 18, edit.y + 16);
@@ -1565,12 +1551,10 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 const cropW = nBox.w / editScale;
                 const cropH = nBox.h / editScale;
                 
-                // Advanced Crop Fix (Translates content back to 0,0 to fix merge ghosts)
                 copiedPage.translateContent(-cropX, -cropY);
                 copiedPage.setMediaBox(0, 0, cropW, cropH);
                 copiedPage.setCropBox(0, 0, cropW, cropH); 
                 
-                // Optimization flag injected here
                 finalBytes = await smartDoc.save({ useObjectStreams: false });
             } else {
                 const pages = originalDoc.getPages();
