@@ -310,12 +310,14 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
             // Fallback to iframe if pdf.js fails internally
             pdfContainer.style.display = 'none';
             const blob = new Blob([bytes], { type });
-            iframe.src = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
+            iframe.src = url;
             iframe.style.display = 'block';
         }
     } else if (type === 'text/plain') {
         const blob = new Blob([bytes], { type });
-        iframe.src = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
+        iframe.src = url;
         iframe.style.display = 'block';
         modal.style.display = 'flex';
     } else {
@@ -339,7 +341,14 @@ async function executeFinalDownload() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url; a.download = filename;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        document.body.appendChild(a); 
+        a.click(); 
+        
+        // Android Bug Fix: Delay memory cleanup so Download Manager has time to fetch the file
+        setTimeout(() => {
+            document.body.removeChild(a); 
+            URL.revokeObjectURL(url);
+        }, 3000); 
     }
     
     document.getElementById('global-preview-modal').style.display = 'none';
@@ -1201,7 +1210,7 @@ function drawOverlay() {
             overlayCtx.fillStyle = 'white'; overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
             if (currentTool === 'whiteout') { overlayCtx.strokeStyle = 'rgba(0,0,0,0.15)'; overlayCtx.lineWidth = 1; overlayCtx.setLineDash([4, 4]); overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h); overlayCtx.setLineDash([]); }
         } else if (edit.type === 'link') {
-            // Visual feedback for Hyperlink tool (Magenta theme)
+            // Visual feedback for Hyperlink tool (Magenta theme) - Clean Look
             overlayCtx.fillStyle = 'rgba(236, 72, 153, 0.2)'; 
             overlayCtx.fillRect(edit.x, edit.y, edit.w, edit.h);
             overlayCtx.strokeStyle = '#ec4899';
@@ -1210,10 +1219,10 @@ function drawOverlay() {
             overlayCtx.strokeRect(edit.x, edit.y, edit.w, edit.h);
             overlayCtx.setLineDash([]);
             
-            // Draw link icon/text
+            // Draw a subtle link icon in the corner, not the full text
             overlayCtx.fillStyle = '#be185d';
-            overlayCtx.font = "bold 12px Arial";
-            overlayCtx.fillText("🔗 " + (edit.url || "Empty Link"), edit.x + 5, edit.y + 16);
+            overlayCtx.font = "bold 14px Arial";
+            overlayCtx.fillText("🔗", edit.x + edit.w - 18, edit.y + 16);
             
             if (i === selectedEditIndex) { 
                 overlayCtx.strokeStyle = 'blue'; overlayCtx.lineWidth = 1; 
@@ -1485,6 +1494,15 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                                 page.node.set(PDFName.of('Annots'), pdfDoc.context.obj([]));
                             }
                             page.node.Annots().push(linkAnnotationRef);
+                            
+                            // Add a subtle blue underline in the PDF to indicate it is a hyperlink
+                            page.drawLine({
+                                start: { x: pdfX, y: pdfY - pdfH + 2 },
+                                end: { x: pdfX + pdfW, y: pdfY - pdfH + 2 },
+                                thickness: 1,
+                                color: rgb(0, 0.3, 0.8),
+                                opacity: 0.6
+                            });
                         } catch(e) { console.error("Link creation error: ", e); }
                     }
                     else if (edit.type === 'text') { 
