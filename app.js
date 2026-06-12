@@ -130,8 +130,18 @@ if (ui.merge) ui.merge.innerHTML = brandHeaderHtml + `<div id="merge-drop-zone" 
 if (ui.jpgtopdf) ui.jpgtopdf.innerHTML = brandHeaderHtml + `<div id="jpgtopdf-drop-zone" style="${dropZoneStyle.replace('var(--accent)', '#eab308')}"><i class="fas fa-images" style="font-size: 3rem; color: #eab308; margin-bottom: 15px;"></i><h3>Drag & Drop Images</h3><button onclick="document.getElementById('jpgtopdf-file-input').click()" style="padding: 10px 20px; background: #eab308; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: 600;">Browse Images</button><input type="file" id="jpgtopdf-file-input" multiple accept="image/*" style="display: none;"></div><div id="jpgtopdf-file-list" style="${fileListStyle}"></div><button id="btn-jpgtopdf-action" style="${btnStyle.replace('var(--accent)', '#eab308')}; display: none;"><i class="fas fa-file-pdf"></i> Convert to PDF</button>`;
 if (ui.htmltopdf) ui.htmltopdf.innerHTML = brandHeaderHtml + `<div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border);"><label style="color: var(--text-secondary);">Paste your HTML Code here:</label><textarea id="html-input" rows="10" style="${inputStyle}" placeholder="<h1>Hello</h1>"></textarea><button id="btn-htmltopdf-action" style="${btnStyle.replace('var(--accent)', '#f97316')}"><i class="fas fa-code"></i> Convert to PDF</button></div>`;
 
-if (ui.protect) ui.protect.innerHTML = generateMultipleFileUI('protect', 'fa-lock', '#8b5cf6', 'Protect', 'Encrypt Files', `<input type="password" id="protect-password" placeholder="Set Password for all files" style="${inputStyle}">`);
-if (ui.unlock) ui.unlock.innerHTML = generateMultipleFileUI('unlock', 'fa-unlock', '#06b6d4', 'Unlock', 'Unlock Files', `<input type="password" id="unlock-password" placeholder="Current Password (applied to all)" style="${inputStyle}">`);
+if (ui.protect) ui.protect.innerHTML = generateMultipleFileUI('protect', 'fa-lock', '#8b5cf6', 'Protect', 'Encrypt', `
+    <div style="position: relative; width: 100%;">
+        <input type="password" id="protect-password" placeholder="Set Password for all files" style="${inputStyle} padding-right: 45px;">
+        <i class="fas fa-eye" onclick="let inp = document.getElementById('protect-password'); if(inp.type==='password'){inp.type='text';this.className='fas fa-eye-slash'}else{inp.type='password';this.className='fas fa-eye'}" style="position: absolute; right: 15px; top: 14px; color: var(--text-secondary); cursor: pointer; font-size: 1.1rem; z-index: 10;"></i>
+    </div>
+`);
+if (ui.unlock) ui.unlock.innerHTML = generateMultipleFileUI('unlock', 'fa-unlock', '#06b6d4', 'Unlock', 'Unlock', `
+    <div style="position: relative; width: 100%;">
+        <input type="password" id="unlock-password" placeholder="Current Password (applied to all)" style="${inputStyle} padding-right: 45px;">
+        <i class="fas fa-eye" onclick="let inp = document.getElementById('unlock-password'); if(inp.type==='password'){inp.type='text';this.className='fas fa-eye-slash'}else{inp.type='password';this.className='fas fa-eye'}" style="position: absolute; right: 15px; top: 14px; color: var(--text-secondary); cursor: pointer; font-size: 1.1rem; z-index: 10;"></i>
+    </div>
+`);
 if (ui.compress) ui.compress.innerHTML = generateMultipleFileUI('compress', 'fa-compress-arrows-alt', '#10b981', 'Compress', 'Compress Files');
 
 if (ui.split) ui.split.innerHTML = generateSingleFileUI('split', 'fa-cut', '#f59e0b', 'Split', 'Split & Download', `<input type="text" id="split-ranges" placeholder="e.g. 1-3" style="${inputStyle}">`);
