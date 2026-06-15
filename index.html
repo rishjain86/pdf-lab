@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- PDF.js Library for Rendering PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -335,6 +334,11 @@
         <div class="nav-btn" onclick="switchView('history')">
             <i class="fas fa-history"></i> My History
         </div>
+
+        <div class="menu-label">AI Features</div>
+        <div class="nav-btn" onclick="if(window.openSmartScanner) window.openSmartScanner()" style="background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; color: white;">
+            <i class="fas fa-camera" style="color: #10b981;"></i> Smart Scanner
+        </div>
         
         <div class="menu-label">Main Tools</div>
         <div class="nav-btn" onclick="switchView('edit')"><i class="fas fa-edit"></i> Edit PDF</div>
@@ -377,6 +381,13 @@
             </div>
             
             <div class="dashboard-grid">
+                <div class="tool-card" onclick="if(window.openSmartScanner) window.openSmartScanner()" style="border-color: #10b981; background: rgba(16, 185, 129, 0.05); position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 10px; right: 10px; background: #10b981; color: white; font-size: 0.65rem; padding: 3px 8px; border-radius: 10px; font-weight: bold;">NEW</div>
+                    <i class="fas fa-camera tool-icon" style="color: #10b981;"></i>
+                    <h3>Smart Scanner</h3>
+                    <p>Auto-crop, enhance & scan.</p>
+                </div>
+
                 <div class="tool-card" onclick="switchView('history')">
                     <i class="fas fa-history tool-icon" style="color: #3b82f6;"></i>
                     <h3>My History</h3>
@@ -532,7 +543,6 @@
             <div id="history-list"></div>
         </div>
 
-        <!-- FULL-SCREEN EDIT PDF SECTION -->
         <div id="view-edit" class="view-section">
             <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
             
@@ -578,7 +588,6 @@
 
                     <div id="visual-tool-header" style="display:none; color: #f59e0b; font-weight: 600;">Draw a box on the PDF</div>
 
-                    <!-- NEW: APPLY MODE SELECTOR -->
                     <select id="edit-apply-mode" style="padding: 6px; border-radius: 6px; border: 1px solid var(--glass-border); background: #334155; color: white; outline: none; font-size: 0.9rem; cursor: pointer; margin-left: 10px;">
                         <option value="current">Current Page Only</option>
                         <option value="all">Apply to All Pages</option>
@@ -603,7 +612,6 @@
             </div>
         </div>
 
-        <!-- NEW ADVANCED TEXT MODAL (With Size and Improved BG Logic) -->
         <div id="custom-text-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
             <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 350px; max-width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                 <h3 style="color: white; margin-bottom: 15px;" id="text-modal-title">Text Editor</h3>
@@ -651,7 +659,6 @@
             <i class="fas fa-trash-alt" style="font-size: 1.3rem;"></i> Drop here to delete
         </div>
 
-        <!-- Tool Containers -->
         <div id="view-merge" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="merge-ui-container"></div></div>
         <div id="view-split" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="split-ui-container"></div></div>
         <div id="view-compress" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="compress-ui-container"></div></div>
