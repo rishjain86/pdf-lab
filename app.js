@@ -62,7 +62,7 @@ if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         const activeView = document.querySelector('.view-section.active')?.id;
         
         if (activeView && activeView !== 'view-dashboard') {
-            switchView('dashboard');
+            window.switchView('dashboard');
         } else {
             const now = new Date().getTime();
             if (now - lastBackPress < 2000) {
@@ -74,7 +74,7 @@ if (window.Capacitor && window.Capacitor.isNativePlatform()) {
     });
 }
 
-function switchView(viewId) {
+window.switchView = (viewId) => {
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
@@ -97,9 +97,9 @@ function switchView(viewId) {
     }
 
     if(viewId === 'history') {
-        renderHistory();
+        window.renderHistory();
     }
-}
+};
 
 const getBaseName = (filename) => filename.substring(0, filename.lastIndexOf('.')) || filename;
 
@@ -133,7 +133,7 @@ async function saveToHistory(bytes, filename, type) {
     return new Promise(resolve => tx.oncomplete = resolve);
 }
 
-async function getHistory() {
+window.getHistory = async () => {
     const db = await initDB();
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).getAll();
@@ -141,22 +141,22 @@ async function getHistory() {
     return new Promise(resolve => {
         req.onsuccess = () => resolve(req.result.sort((a,b) => b.date - a.date));
     });
-}
+};
 
-async function deleteHistory(id) {
+window.deleteHistory = async (id) => {
     const db = await initDB();
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).delete(id);
     
     return new Promise(resolve => tx.oncomplete = resolve);
-}
+};
 
-async function renderHistory() {
+window.renderHistory = async () => {
     const list = document.getElementById('history-list');
     if (!list) return;
     
     list.innerHTML = '<p>Loading...</p>';
-    const items = await getHistory();
+    const items = await window.getHistory();
     
     if (!items.length) {
         list.innerHTML = '<p style="color:var(--text-secondary);">No downloads history found.</p>';
@@ -182,21 +182,21 @@ async function renderHistory() {
             </div>
         `;
     });
-}
+};
 
-async function removeHistoryItem(id) { 
-    await deleteHistory(id); 
-    renderHistory(); 
-}
+window.removeHistoryItem = async (id) => { 
+    await window.deleteHistory(id); 
+    window.renderHistory(); 
+};
 
-async function triggerHistoryDownload(id) {
-    const items = await getHistory();
+window.triggerHistoryDownload = async (id) => {
+    const items = await window.getHistory();
     const item = items.find(i => i.id === id);
     
     if(item) {
         await processAndDownload(item.data, item.filename, item.type, false);
     }
-}
+};
 
 function bytesToBase64(bytes) {
     let binary = ''; 
@@ -287,11 +287,10 @@ const scanCtx = scanCanvas ? scanCanvas.getContext('2d') : null;
 const cropCanvas = document.getElementById('scanner-crop-canvas');
 const cropCtx = cropCanvas ? cropCanvas.getContext('2d') : null;
 
-const handleScanInput = (e) => {
+window.handleScanInput = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     
-    // Save original name for download
     scannerOriginalName = file.name.substring(0, file.name.lastIndexOf('.')) || "Scanned_Document";
     
     if (scannerModal) scannerModal.style.display = 'none';
@@ -309,8 +308,8 @@ const handleScanInput = (e) => {
     e.target.value = ""; 
 };
 
-document.getElementById('hidden-camera-input')?.addEventListener('change', handleScanInput);
-document.getElementById('hidden-gallery-input')?.addEventListener('change', handleScanInput);
+document.getElementById('hidden-camera-input')?.addEventListener('change', window.handleScanInput);
+document.getElementById('hidden-gallery-input')?.addEventListener('change', window.handleScanInput);
 
 function renderScannerWorkspace() {
     if (currentScannerIndex === -1 || !scanCtx || isCroppingMode) return;
@@ -435,7 +434,6 @@ function drawCropPolygon() {
     cropCtx.stroke();
     cropCtx.fillStyle = '#10b981';
     
-    // Smart Point Radius (Small for desktop, big for touch)
     const isMobile = window.innerWidth <= 768;
     const radius = isMobile ? Math.max(25, cropCanvas.width * 0.035) : Math.max(10, cropCanvas.width * 0.015);
     
@@ -517,7 +515,6 @@ document.getElementById('btn-cancel-crop')?.addEventListener('click', () => {
     renderScannerWorkspace(); 
 });
 
-// Warp Perspective Math
 document.getElementById('btn-apply-crop')?.addEventListener('click', () => {
     const tl = cropPoints[0], tr = cropPoints[1], br = cropPoints[2], bl = cropPoints[3];
     
@@ -667,7 +664,6 @@ document.getElementById('btn-preview-back')?.addEventListener('click', () => {
     document.getElementById('scanner-preview-modal').style.display = 'none'; 
 });
 
-// Scanner Export
 document.getElementById('btn-scanner-export')?.addEventListener('click', async () => {
     if (scannerPages.length === 0) return;
     
@@ -854,7 +850,6 @@ if (ui.htmltopdf) {
     `;
 }
 
-// CORPORATE FIX: Password Auto-fill block and Local Storage Remember option
 if (ui.protect) {
     ui.protect.innerHTML = generateMultipleFileUI('protect', 'fa-lock', '#8b5cf6', 'Protect', 'Encrypt', `
         <div style="position: relative; width: 100%;">
@@ -881,7 +876,6 @@ if (ui.unlock) {
     `);
 }
 
-// Auto-fill passwords from local storage on load
 setTimeout(() => {
     const savedProtectPass = localStorage.getItem('amazingpdf_protect_pass');
     if (savedProtectPass) {
@@ -1400,7 +1394,6 @@ setupMultipleFileLogic('unlock', async (files) => {
     
     if (!password) throw new Error("Please enter a password to unlock the file.");
     
-    // Save to LocalStorage if checked
     if (rememberCheck && rememberCheck.checked) {
         localStorage.setItem('amazingpdf_unlock_pass', password);
     } else {
@@ -1453,7 +1446,6 @@ setupMultipleFileLogic('protect', async (files) => {
     if (!password) throw new Error("Password required"); 
     if (!navigator.onLine) throw new Error("Online required for Secure Cloud Protect.");
     
-    // Save to LocalStorage if checked
     if (rememberCheck && rememberCheck.checked) {
         localStorage.setItem('amazingpdf_protect_pass', password);
     } else {
@@ -2108,7 +2100,7 @@ function openVisualWorkspace(file, mode) {
             const countObj = document.getElementById('page-count'); 
             if(countObj) countObj.textContent = pdf.numPages;
             
-            switchView('edit'); 
+            window.switchView('edit'); 
             const upl = document.getElementById('edit-upload-section'); 
             if(upl) upl.style.display = 'none'; 
             
@@ -2121,14 +2113,12 @@ function openVisualWorkspace(file, mode) {
             pdf.getPage(1).then(page => {
                  const baseViewport = page.getViewport({ scale: 1 });
                  
-                 // PERFECT FIT-TO-SCREEN LOGIC
                  const cWidth = cont ? cont.clientWidth - padding : window.innerWidth - padding;
                  const cHeight = cont ? cont.clientHeight - 150 : window.innerHeight - 150;
                  
                  const scaleW = cWidth / baseViewport.width;
                  const scaleH = cHeight / baseViewport.height;
                  
-                 // Math.min makes sure it fully fits in height OR width, whichever is smaller, max zoom 2.5
                  editScale = Math.min(scaleW, scaleH, 2.5); 
                  
                  renderEditPage(editPageNum);
@@ -2164,7 +2154,7 @@ document.getElementById('btn-close-editor')?.addEventListener('click', () => {
     const upl = document.getElementById('edit-upload-section'); 
     if(upl) upl.style.display='block'; 
     
-    switchView('dashboard');
+    window.switchView('dashboard');
 });
 
 document.getElementById('edit-pdf-input')?.addEventListener('change', function(e) { 
@@ -2888,7 +2878,7 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
         const upl = document.getElementById('edit-upload-section'); 
         if(upl) upl.style.display='block'; 
         
-        switchView('dashboard');
+        window.switchView('dashboard');
         
         if(typeof AdManager !== 'undefined' && AdManager) {
             await AdManager.showInterstitial();
