@@ -39,6 +39,7 @@
             color: var(--text-main);
             display: flex;
             height: 100vh;
+            height: 100dvh; 
             overflow: hidden;
             overscroll-behavior-y: none;
         }
@@ -48,9 +49,17 @@
             touch-action: none;
         }
 
+        /* Ad Safe Area Fixes */
+        .ad-safe-area { padding-bottom: calc(max(15px, env(safe-area-inset-bottom)) + 70px) !important; }
+
+        /* Utility classes for clean scrollbars */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
         /* --- SIDEBAR --- */
         .sidebar {
             width: 260px;
+            flex-shrink: 0; 
             background-color: var(--surface-color);
             border-right: 1px solid var(--glass-border);
             display: flex;
@@ -127,8 +136,9 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            height: 100dvh;
             overflow-y: auto;
-            padding-bottom: env(safe-area-inset-bottom);
+            padding-bottom: calc(env(safe-area-inset-bottom) + 70px); /* Ad Banner Pad */
         }
 
         .mobile-header {
@@ -225,11 +235,6 @@
             width: fit-content;
         }
 
-        .back-btn:hover {
-            background: rgba(59, 130, 246, 0.2);
-            transform: translateX(-3px);
-        }
-
         .seo-section {
             margin-top: 50px; 
             padding: 40px 10px; 
@@ -260,63 +265,70 @@
             gap: 6px;
             transition: 0.2s;
             font-size: 0.9rem;
-        }
-        
-        .edit-toolbar-btn:hover {
-            transform: translateY(-2px);
-            opacity: 0.9;
+            background: transparent;
+            color: white;
         }
         
         .edit-tool-active {
             box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
             transform: translateY(-2px);
             background: var(--accent) !important;
+            color: white !important;
         }
 
         .desktop-search-container { display: block; }
 
-        /* Mobile & PC Safe Canvas Container */
-        #pdf-overlay-canvas {
-            touch-action: none; 
-        }
+        #pdf-overlay-canvas { touch-action: none; }
         .canvas-container {
-            flex: 1; 
-            width: 100%; 
-            overflow: auto; 
-            background: #cbd5e1; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column;
-            align-items: center;
-            -webkit-overflow-scrolling: touch;
+            flex: 1; width: 100%; overflow: auto; background: #cbd5e1; padding: 20px; display: flex; flex-direction: column; align-items: center; -webkit-overflow-scrolling: touch;
         }
 
+        /* Scanner CSS */
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .scanned-thumb { 
+            width: 60px; height: 80px; object-fit: cover; border-radius: 6px; 
+            border: 2px solid transparent; transition: 0.2s; cursor: pointer; flex-shrink: 0;
+        }
+        .scanned-thumb.active { border-color: #3b82f6; transform: scale(1.05); }
+
+        .scanner-top-btn {
+            background: rgba(255,255,255,0.1); border: none; color: white; padding: 8px 15px; 
+            border-radius: 8px; cursor: pointer; font-size: 1.1rem; transition: 0.2s;
+        }
+        .scanner-top-btn:hover { background: rgba(255,255,255,0.2); }
+
+        .preview-img { width: 90%; max-width: 500px; height: auto; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+
+        /* --- MOBILE RESPONSIVENESS FIXES --- */
         @media (max-width: 768px) {
             .sidebar { display: none; }
             .mobile-header { display: flex; }
             .desktop-search-container { display: none; }
             .view-section { padding: 20px; }
             .page-header h1 { font-size: 1.5rem; }
-            
             .dashboard-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
             .tool-card { padding: 15px 12px; }
             .tool-icon { font-size: 1.5rem; margin-bottom: 10px; }
             .tool-card h3 { font-size: 0.9rem; margin-bottom: 5px; }
             .tool-card p { font-size: 0.75rem; }
-            
-            .seo-section { padding: 20px 0; margin-top: 30px; }
-            .seo-section h2 { font-size: 1.3rem; }
-            .seo-section h3 { font-size: 1.1rem; }
-            .seo-section p, .seo-section ul { font-size: 0.85rem; }
             .download-btn { margin: 10px 15px; font-size: 0.9rem; padding: 10px; }
             
             #edit-toolbar { flex-wrap: wrap; justify-content: space-between; }
             .edit-toolbar-btn { flex: 1 1 22%; justify-content: center; margin-bottom: 5px; }
             .tool-settings { width: 100%; justify-content: center; border-left: none !important; border-top: 1px solid var(--glass-border); padding-top: 10px; margin-top: 5px; }
+            
+            /* Visual Editor Mobile Header Fixes (Issue #1 overlap) */
+            .editor-header-btn span { display: none; } /* Hide text, keep icons */
+            .editor-header-title { font-size: 0.9rem !important; }
+            .editor-header-select { width: 110px !important; font-size: 0.8rem !important; padding: 5px !important; }
         }
     </style>
 </head>
 <body>
+
+    <input type="file" id="hidden-camera-input" accept="image/*" capture="environment" style="display: none;">
+    <input type="file" id="hidden-gallery-input" accept="image/*" style="display: none;">
 
     <div class="sidebar">
         <div class="brand-logo" onclick="switchView('dashboard')" style="cursor: pointer;">
@@ -324,7 +336,7 @@
             <span>Amazing PDF</span>
         </div>
 
-        <a href="assets/AmazingPDF.apk" download class="nav-btn download-btn">
+        <a href="https://github.com/rishjain86/Amazing-Pdf-Tool/releases/download/v1.0/AmazingPDF.apk" class="nav-btn download-btn">
             <i class="fab fa-android" style="font-size: 1.2rem;"></i> Download App
         </a>
 
@@ -336,7 +348,7 @@
         </div>
 
         <div class="menu-label">AI Features</div>
-        <div class="nav-btn" onclick="if(window.openSmartScanner) window.openSmartScanner()" style="background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; color: white;">
+        <div class="nav-btn" onclick="document.getElementById('scanner-source-modal').style.display='flex'" style="background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981; color: white;">
             <i class="fas fa-camera" style="color: #10b981;"></i> Smart Scanner
         </div>
         
@@ -381,11 +393,11 @@
             </div>
             
             <div class="dashboard-grid">
-                <div class="tool-card" onclick="if(window.openSmartScanner) window.openSmartScanner()" style="border-color: #10b981; background: rgba(16, 185, 129, 0.05); position: relative; overflow: hidden;">
+                <div class="tool-card" onclick="document.getElementById('scanner-source-modal').style.display='flex'" style="border-color: #10b981; background: rgba(16, 185, 129, 0.05); position: relative; overflow: hidden;">
                     <div style="position: absolute; top: 10px; right: 10px; background: #10b981; color: white; font-size: 0.65rem; padding: 3px 8px; border-radius: 10px; font-weight: bold;">NEW</div>
                     <i class="fas fa-camera tool-icon" style="color: #10b981;"></i>
                     <h3>Smart Scanner</h3>
-                    <p>Auto-crop, enhance & scan.</p>
+                    <p>Auto-enhance, size compress & scan.</p>
                 </div>
 
                 <div class="tool-card" onclick="switchView('history')">
@@ -543,122 +555,7 @@
             <div id="history-list"></div>
         </div>
 
-        <div id="view-edit" class="view-section">
-            <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
-            
-            <div class="page-header">
-                <h2><i class="fas fa-edit"></i> Edit PDF</h2>
-                <p>Add text, draw, insert images or erase content.</p>
-            </div>
-
-            <div id="edit-upload-section" style="text-align: center; padding: 40px; border: 2px dashed var(--glass-border); border-radius: 12px; margin-bottom: 20px;">
-                <input type="file" id="edit-pdf-input" accept="application/pdf" style="display: none;">
-                <button onclick="document.getElementById('edit-pdf-input').click()" style="padding: 12px 24px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem;">
-                    Select PDF File
-                </button>
-            </div>
-
-            <div id="edit-workspace" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100%; z-index: 9999; background: var(--bg-color); flex-direction: column; overflow: hidden;">
-                
-                <div style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: max(10px, env(safe-area-inset-top)) 20px 10px 20px; background: var(--surface-color); border-bottom: 1px solid var(--glass-border);">
-                    <div id="workspace-title" style="color: white; font-weight: 600; font-size: 1.1rem;"><i class="fas fa-edit" style="color: var(--accent);"></i> Pro PDF Editor</div>
-                    <button id="btn-close-editor" style="background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 500;"><i class="fas fa-times"></i> Exit</button>
-                </div>
-
-                <div id="edit-toolbar" style="flex-shrink: 0; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; background: rgba(0,0,0,0.2); padding: 10px; width: 100%; align-items: center; border-bottom: 1px solid var(--glass-border);">
-                    <button class="edit-toolbar-btn" id="btn-edit-text" style="background: #3b82f6; color: white;" title="Add Text"><i class="fas fa-font"></i></button>
-                    <button class="edit-toolbar-btn" id="btn-edit-draw" style="background: #f59e0b; color: white;" title="Draw"><i class="fas fa-pen"></i></button>
-                    <button class="edit-toolbar-btn" id="btn-edit-whiteout" style="background: #f8fafc; color: #0f172a;" title="Eraser"><i class="fas fa-eraser"></i></button>
-                    <button class="edit-toolbar-btn" id="btn-edit-image" style="background: #8b5cf6; color: white;" title="Add Image"><i class="fas fa-image"></i></button>
-                    <input type="file" id="edit-image-input" accept="image/png, image/jpeg" style="display: none;">
-
-                    <div style="display: flex; gap: 5px; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
-                        <button class="edit-toolbar-btn" id="btn-zoom-out" style="background: #475569; color: white;" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
-                        <button class="edit-toolbar-btn" id="btn-zoom-fit" style="background: #475569; color: white;" title="Fit to Screen"><i class="fas fa-expand"></i></button>
-                        <button class="edit-toolbar-btn" id="btn-zoom-in" style="background: #475569; color: white;" title="Zoom In"><i class="fas fa-search-plus"></i></button>
-                    </div>
-
-                    <div class="tool-settings" style="display: flex; gap: 8px; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 10px;">
-                        <input type="color" id="edit-color-picker" value="#000000" style="width: 30px; height: 30px; border: none; cursor: pointer; background: transparent; padding: 0;" title="Brush/Text Base Color">
-                        <div style="display: flex; align-items: center; background: var(--surface-color); border: 1px solid var(--glass-border); border-radius: 4px; padding: 2px 5px;">
-                            <i class="fas fa-text-height" style="color: var(--text-secondary); font-size: 0.8rem; margin-right: 5px;"></i>
-                            <input type="number" id="edit-size-picker" value="20" min="5" max="150" style="width: 45px; border: none; background: transparent; color: white; outline: none; font-size: 0.9rem;" title="Size (Brush)">
-                        </div>
-                    </div>
-
-                    <div id="visual-tool-header" style="display:none; color: #f59e0b; font-weight: 600;">Draw a box on the PDF</div>
-
-                    <select id="edit-apply-mode" style="padding: 6px; border-radius: 6px; border: 1px solid var(--glass-border); background: #334155; color: white; outline: none; font-size: 0.9rem; cursor: pointer; margin-left: 10px;">
-                        <option value="current">Current Page Only</option>
-                        <option value="all">Apply to All Pages</option>
-                    </select>
-
-                    <div style="display: flex; gap: 10px; align-items: center; margin-left: 10px; border-left: 1px solid var(--glass-border); padding-left: 10px;">
-                        <button id="prev-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-left"></i></button>
-                        <span style="font-size: 0.9rem;">Page <span id="page-num">1</span> / <span id="page-count">--</span></span>
-                        <button id="next-page" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; border-radius: 4px;"><i class="fas fa-chevron-right"></i></button>
-                    </div>
-
-                    <button class="edit-toolbar-btn" id="btn-edit-clear" style="background: #ef4444; color: white; margin-left: auto;"><i class="fas fa-trash-alt"></i> Clear</button>
-                    <button class="edit-toolbar-btn" id="btn-edit-save" style="background: #10b981; color: white;"><i class="fas fa-save"></i> Save</button>
-                </div>
-
-                <div class="canvas-container">
-                    <div style="position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.5); background: white; margin: 0 auto;">
-                        <canvas id="pdf-render-canvas" style="display: block;"></canvas>
-                        <canvas id="pdf-overlay-canvas" style="position: absolute; top: 0; left: 0; z-index: 10; cursor: crosshair;"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="custom-text-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); z-index: 100000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-            <div style="background: var(--surface-color); padding: 25px; border-radius: 12px; border: 1px solid var(--glass-border); width: 350px; max-width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                <h3 style="color: white; margin-bottom: 15px;" id="text-modal-title">Text Editor</h3>
-                
-                <textarea id="custom-text-input" rows="3" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; margin-bottom: 15px; outline: none; font-size: 1rem; resize: none;" placeholder="Type your text here..."></textarea>
-                
-                <div style="display: flex; gap: 5px; margin-bottom: 15px; justify-content: center;">
-                    <button id="tm-bold" class="edit-toolbar-btn" style="background:#334155; color:white;"><i class="fas fa-bold"></i></button>
-                    <button id="tm-italic" class="edit-toolbar-btn" style="background:#334155; color:white;"><i class="fas fa-italic"></i></button>
-                    <button id="tm-underline" class="edit-toolbar-btn" style="background:#334155; color:white;"><i class="fas fa-underline"></i></button>
-                    <button id="tm-align-left" class="edit-toolbar-btn" style="background:#334155; color:white;"><i class="fas fa-align-left"></i></button>
-                    <button id="tm-align-center" class="edit-toolbar-btn" style="background:#334155; color:white;"><i class="fas fa-align-center"></i></button>
-                    <button id="tm-align-right" class="edit-toolbar-btn" style="background:#334155; color:white;"><i class="fas fa-align-right"></i></button>
-                </div>
-                
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px;">
-                    <div style="display:flex; flex-direction:column; align-items:flex-start;">
-                        <label style="color:var(--text-secondary); font-size:0.8rem;">Size</label>
-                        <input type="number" id="tm-size" value="20" min="5" max="150" style="width:50px; height:30px; border-radius:4px; border:none; padding:2px; background:rgba(0,0,0,0.3); color:white;">
-                    </div>
-                    <div style="display:flex; flex-direction:column; align-items:flex-start;">
-                        <label style="color:var(--text-secondary); font-size:0.8rem;">Color</label>
-                        <input type="color" id="tm-color" value="#000000" style="width:40px; height:30px; border:none; cursor:pointer; background:transparent;">
-                    </div>
-                    <div style="display:flex; flex-direction:column; align-items:flex-start;">
-                        <label style="color:var(--text-secondary); font-size:0.8rem; display:flex; gap:5px; align-items:center;">
-                            Background <i class="fas fa-ban" id="tm-clear-bg" style="cursor:pointer; color:#ef4444;" title="Transparent"></i>
-                        </label>
-                        <input type="color" id="tm-bg-color" value="#ffffff" style="width:40px; height:30px; border:none; cursor:pointer; background:transparent;">
-                    </div>
-                    <div style="display:flex; flex-direction:column; align-items:flex-start; flex: 1;">
-                        <label style="color:var(--text-secondary); font-size:0.8rem;">Opacity</label>
-                        <input type="range" id="tm-opacity" min="0.1" max="1" step="0.1" value="1" style="width: 100%;">
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 10px;">
-                    <button id="btn-text-cancel" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #ef4444; color: white; font-weight: 600;">Cancel</button>
-                    <button id="btn-text-save" style="flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; background: #10b981; color: white; font-weight: 600;">Save</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="drag-trash-zone" style="display: none; position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(239, 68, 68, 0.95); color: white; padding: 15px 30px; border-radius: 50px; z-index: 99999; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.6); align-items: center; gap: 10px; font-weight: 600; font-size: 1.1rem; transition: 0.2s; pointer-events: none;">
-            <i class="fas fa-trash-alt" style="font-size: 1.3rem;"></i> Drop here to delete
-        </div>
-
+        <div id="view-edit" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="edit-ui-container"></div></div>
         <div id="view-merge" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="merge-ui-container"></div></div>
         <div id="view-split" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="split-ui-container"></div></div>
         <div id="view-compress" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="compress-ui-container"></div></div>
@@ -688,6 +585,197 @@
 
     </div>
 
-    <script type="module" src="app.js?v=21"></script>
+    <div id="scanner-source-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.7); z-index: 100001; align-items: flex-end;">
+        <div style="background: var(--surface-color); width: 100%; max-width: 500px; margin: 0 auto; padding: 20px; border-top-left-radius: 20px; border-top-right-radius: 20px; animation: slideUp 0.3s ease-out; padding-bottom: max(20px, env(safe-area-inset-bottom));">
+            <h3 style="color: white; margin-bottom: 20px; text-align: center;">Scan Document</h3>
+            <div style="display: flex; gap: 15px;">
+                <button onclick="document.getElementById('hidden-camera-input').click()" style="flex: 1; padding: 20px 10px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-size: 1.1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+                    <i class="fas fa-camera" style="font-size: 2rem;"></i>
+                    <span style="font-size: 1rem; font-weight: 500;">Camera</span>
+                </button>
+                <button onclick="document.getElementById('hidden-gallery-input').click()" style="flex: 1; padding: 20px 10px; background: #8b5cf6; color: white; border: none; border-radius: 12px; font-size: 1.1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+                    <i class="fas fa-images" style="font-size: 2rem;"></i>
+                    <span style="font-size: 1rem; font-weight: 500;">Gallery</span>
+                </button>
+            </div>
+            <button onclick="document.getElementById('scanner-source-modal').style.display='none'" style="width: 100%; padding: 15px; background: transparent; color: var(--text-secondary); border: none; margin-top: 15px; font-size: 1rem; cursor: pointer;">Cancel</button>
+        </div>
+    </div>
+
+    <div id="scanner-workspace" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: #000; z-index: 100000; flex-direction: column;">
+        
+        <div id="scanner-default-top-bar" style="display: flex; justify-content: space-between; align-items: center; padding: max(15px, env(safe-area-inset-top)) 20px 15px 20px; background: #111; color: white; border-bottom: 1px solid #333;">
+            <button id="btn-scanner-close" style="background: transparent; color: white; border: none; font-size: 1.2rem; cursor: pointer;"><i class="fas fa-times"></i></button>
+            <div style="display: flex; gap: 15px;">
+                <button id="btn-scanner-rotate-left" class="scanner-top-btn"><i class="fas fa-undo"></i></button>
+                <button id="btn-scanner-crop-trigger" class="scanner-top-btn"><i class="fas fa-crop-alt"></i></button>
+                <button id="btn-scanner-rotate-right" class="scanner-top-btn"><i class="fas fa-redo"></i></button>
+            </div>
+            <span style="font-weight: 600;" id="scanner-page-counter">Page 1</span>
+        </div>
+
+        <div id="scanner-crop-top-bar" style="display: none; justify-content: space-between; align-items: center; padding: max(15px, env(safe-area-inset-top)) 20px 15px 20px; background: #111; color: white; border-bottom: 1px solid #333;">
+            <button id="btn-cancel-crop" style="background: transparent; color: var(--text-secondary); border: none; font-size: 1rem; font-weight: 500; cursor: pointer;">Cancel</button>
+            <span style="font-weight: 600;">Crop Image</span>
+            <button id="btn-apply-crop" style="background: transparent; color: #10b981; border: none; font-size: 1.1rem; font-weight: bold; cursor: pointer;">Done</button>
+        </div>
+
+        <div id="scanner-canvas-container" style="flex: 1; min-height: 0; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; background: #222;">
+            <canvas id="scanner-main-canvas" style="max-width: 100%; max-height: 100%; width: auto; height: auto; position: absolute;"></canvas>
+            <canvas id="scanner-crop-canvas" style="max-width: 100%; max-height: 100%; width: auto; height: auto; position: absolute; z-index: 10; touch-action: none; display: none;"></canvas>
+        </div>
+
+        <div class="no-scrollbar" style="display: flex; justify-content: flex-start; gap: 10px; padding: 15px; background: #111; overflow-x: auto; white-space: nowrap;">
+            <button class="scanner-filter-btn" data-filter="original" style="background: #333; color: white; border: 2px solid transparent; padding: 8px 15px; border-radius: 20px; cursor: pointer; flex-shrink: 0;">Original</button>
+            <button class="scanner-filter-btn" data-filter="lighten" style="background: #333; color: white; border: 2px solid transparent; padding: 8px 15px; border-radius: 20px; cursor: pointer; flex-shrink: 0;">Lighten</button>
+            <button class="scanner-filter-btn active" data-filter="magic" style="background: #333; color: white; border: 2px solid #10b981; padding: 8px 15px; border-radius: 20px; cursor: pointer; flex-shrink: 0;">Magic Color</button>
+            <button class="scanner-filter-btn" data-filter="grayscale" style="background: #333; color: white; border: 2px solid transparent; padding: 8px 15px; border-radius: 20px; cursor: pointer; flex-shrink: 0;">Grayscale</button>
+            <button class="scanner-filter-btn" data-filter="bw" style="background: #333; color: white; border: 2px solid transparent; padding: 8px 15px; border-radius: 20px; cursor: pointer; flex-shrink: 0;">B&W</button>
+            <button class="scanner-filter-btn" data-filter="eco" style="background: #333; color: white; border: 2px solid transparent; padding: 8px 15px; border-radius: 20px; cursor: pointer; flex-shrink: 0;">Eco</button>
+        </div>
+
+        <div class="no-scrollbar ad-safe-area" style="display: flex; align-items: center; padding: 15px; background: #0f172a; border-top: 1px solid #333; gap: 15px; overflow-x: auto;">
+            <div id="scanner-page-list" style="display: flex; gap: 10px; flex: 1; min-height: 80px; align-items: center;"></div>
+            <button id="btn-scanner-add" onclick="document.getElementById('scanner-source-modal').style.display='flex'" style="background: rgba(255,255,255,0.1); color: white; border: 1px dashed #aaa; width: 60px; height: 80px; border-radius: 8px; flex-shrink: 0; cursor: pointer;"><i class="fas fa-plus"></i></button>
+            <button id="btn-scanner-preview" style="background: #3b82f6; color: white; border: none; padding: 0 20px; height: 80px; border-radius: 8px; font-weight: bold; flex-shrink: 0; cursor: pointer;"><i class="fas fa-eye"></i> Preview PDF</button>
+        </div>
+    </div>
+
+    <div id="scanner-preview-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: var(--bg-color); z-index: 100005; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: max(15px, env(safe-area-inset-top)) 20px 15px 20px; background: var(--surface-color); border-bottom: 1px solid var(--glass-border);">
+            <button id="btn-preview-back" style="background: transparent; color: white; border: none; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 8px; flex-shrink: 0; white-space: nowrap;"><i class="fas fa-arrow-left"></i> Back</button>
+            <span style="font-weight: 600; color: white; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px;">Document Preview</span>
+            <div style="width: 60px; flex-shrink: 0;"></div>
+        </div>
+        
+        <div id="scanner-preview-list" style="flex: 1; min-height: 0; overflow-y: auto; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; background: #cbd5e1;"></div>
+
+        <div class="ad-safe-area" style="padding: 20px; background: var(--surface-color); border-top: 1px solid var(--glass-border);">
+            <button id="btn-scanner-export" style="background: #10b981; color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; font-weight: bold; font-size: 1.1rem; cursor: pointer;"><i class="fas fa-download"></i> Save & Download PDF</button>
+        </div>
+    </div>
+
+    <div id="edit-workspace" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: var(--bg-color); z-index: 100000; flex-direction: column;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: max(15px, env(safe-area-inset-top)) 20px 15px 20px; background: var(--surface-color); border-bottom: 1px solid var(--glass-border);">
+            <button id="btn-close-editor" class="editor-header-btn" style="background: transparent; color: white; border: none; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 5px;"><i class="fas fa-times"></i> <span>Cancel</span></button>
+            <span id="workspace-title" class="editor-header-title" style="font-weight: 600; font-size: 1.1rem;"><i class="fas fa-edit"></i> Visual Editor</span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <select id="edit-apply-mode" class="editor-header-select" style="background: rgba(0,0,0,0.3); color: white; border: 1px solid var(--glass-border); padding: 8px; border-radius: 6px; outline: none;">
+                    <option value="current">Current Page</option>
+                    <option value="all">All Pages</option>
+                </select>
+                <button id="btn-edit-save" class="editor-header-btn" style="background: #10b981; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px;"><i class="fas fa-check"></i> <span>Save</span></button>
+            </div>
+        </div>
+
+        <div id="visual-tool-header" style="display: none; text-align: center; padding: 10px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.9rem; font-weight: 500;">
+            </div>
+
+        <div id="edit-toolbar" style="display: flex; gap: 10px; padding: 15px 20px; background: #1e293b; border-bottom: 1px solid var(--glass-border); flex-wrap: wrap; align-items: center; justify-content: center;">
+            
+            <button id="btn-edit-text" class="edit-toolbar-btn"><i class="fas fa-font"></i> Text</button>
+            <button id="btn-edit-draw" class="edit-toolbar-btn"><i class="fas fa-pen"></i> Draw</button>
+            <button id="btn-edit-whiteout" class="edit-toolbar-btn"><i class="fas fa-eraser"></i> Whiteout</button>
+            
+            <button id="btn-edit-image" class="edit-toolbar-btn"><i class="fas fa-image"></i> Image</button>
+            <input type="file" id="edit-image-input" accept="image/png, image/jpeg" style="display: none;">
+            
+            <button id="btn-rotate-left" class="edit-toolbar-btn" style="display: none;"><i class="fas fa-undo"></i> Left</button>
+            <button id="btn-rotate-right" class="edit-toolbar-btn" style="display: none;"><i class="fas fa-redo"></i> Right</button>
+
+            <button id="btn-flatten-apply" class="edit-toolbar-btn" style="display: none; background: #f59e0b; color: white;"><i class="fas fa-layer-group"></i> Flatten Content</button>
+
+            <div class="tool-settings" style="display: flex; gap: 10px; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 15px;">
+                <input type="color" id="edit-color-picker" value="#000000" style="width: 30px; height: 30px; border: none; cursor: pointer; border-radius: 4px; padding: 0; outline: none;">
+                <input type="range" id="edit-size-picker" min="1" max="100" value="20" style="width: 80px;">
+            </div>
+
+            <div id="watermark-settings" style="display: none; gap: 10px; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 15px;">
+                <label style="font-size: 0.8rem; color: #94a3b8;">Opacity:</label>
+                <input type="range" id="watermark-opacity" min="0.1" max="1" step="0.1" value="0.5" style="width: 80px;">
+            </div>
+
+            <button id="btn-edit-clear" class="edit-toolbar-btn" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; margin-left: auto;"><i class="fas fa-trash-alt"></i> Clear</button>
+        </div>
+
+        <div class="canvas-container" style="flex: 1; overflow: auto; background: #0f172a; position: relative; display: flex; flex-direction: column; align-items: center; padding: 20px;">
+            <div style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+                <canvas id="pdf-render-canvas" style="display: block; background: white;"></canvas>
+                <canvas id="pdf-overlay-canvas" style="position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair;"></canvas>
+            </div>
+            
+            <div id="drag-trash-zone" style="display: none; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(239, 68, 68, 0.9); color: white; padding: 15px 30px; border-radius: 30px; align-items: center; justify-content: center; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-weight: bold; transition: 0.2s;">
+                <i class="fas fa-trash-alt" style="margin-right: 10px;"></i> Drag here to delete
+            </div>
+        </div>
+
+        <div class="ad-safe-area" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--surface-color); border-top: 1px solid var(--glass-border);">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <button id="prev-page" style="background: transparent; color: white; border: 1px solid var(--glass-border); padding: 5px 12px; border-radius: 6px; cursor: pointer;"><i class="fas fa-chevron-left"></i></button>
+                <span style="font-size: 0.9rem;">Page <span id="page-num">1</span> of <span id="page-count">--</span></span>
+                <button id="next-page" style="background: transparent; color: white; border: 1px solid var(--glass-border); padding: 5px 12px; border-radius: 6px; cursor: pointer;"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-zoom-out" style="background: transparent; color: white; border: none; font-size: 1.1rem; cursor: pointer;"><i class="fas fa-search-minus"></i></button>
+                <button id="btn-zoom-fit" style="background: transparent; color: white; border: none; font-size: 1.1rem; cursor: pointer;"><i class="fas fa-expand"></i></button>
+                <button id="btn-zoom-in" style="background: transparent; color: white; border: none; font-size: 1.1rem; cursor: pointer;"><i class="fas fa-search-plus"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-text-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.8); z-index: 100005; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: var(--surface-color); width: 90%; max-width: 400px; padding: 25px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <h3 id="text-modal-title" style="color: white; margin-bottom: 15px;">Add Text</h3>
+            <textarea id="custom-text-input" rows="3" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; outline: none; resize: none; margin-bottom: 15px; font-size: 1rem;"></textarea>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <div style="display: flex; gap: 5px;">
+                    <button id="tm-bold" class="edit-toolbar-btn" style="padding: 5px 10px; background: rgba(255,255,255,0.1);"><i class="fas fa-bold"></i></button>
+                    <button id="tm-italic" class="edit-toolbar-btn" style="padding: 5px 10px; background: rgba(255,255,255,0.1);"><i class="fas fa-italic"></i></button>
+                    <button id="tm-underline" class="edit-toolbar-btn" style="padding: 5px 10px; background: rgba(255,255,255,0.1);"><i class="fas fa-underline"></i></button>
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <button id="tm-align-left" class="edit-toolbar-btn" style="padding: 5px 10px; background: rgba(255,255,255,0.1);"><i class="fas fa-align-left"></i></button>
+                    <button id="tm-align-center" class="edit-toolbar-btn" style="padding: 5px 10px; background: rgba(255,255,255,0.1);"><i class="fas fa-align-center"></i></button>
+                    <button id="tm-align-right" class="edit-toolbar-btn" style="padding: 5px 10px; background: rgba(255,255,255,0.1);"><i class="fas fa-align-right"></i></button>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center;">
+                <div>
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Color</label>
+                    <input type="color" id="tm-color" value="#000000" style="width: 40px; height: 40px; border: none; border-radius: 8px; cursor: pointer; outline: none;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Bg Color</label>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <input type="color" id="tm-bg-color" value="#ffffff" style="width: 40px; height: 40px; border: none; border-radius: 8px; cursor: pointer; outline: none;">
+                        <button id="tm-clear-bg" style="background: transparent; color: #ef4444; border: 1px solid var(--glass-border); padding: 5px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;"><i class="fas fa-times"></i> Clear</button>
+                    </div>
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Size & Opacity</label>
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <input type="number" id="tm-size" value="20" style="width: 100%; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; outline: none;">
+                        <input type="range" id="tm-opacity" min="0.1" max="1" step="0.1" value="1" style="width: 100%;">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-text-cancel" style="flex: 1; padding: 12px; background: transparent; color: white; border: 1px solid var(--glass-border); border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
+                <button id="btn-text-save" style="flex: 1; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Apply Text</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as app from './app.js?v=42';
+        window.switchView = app.switchView;
+        window.renderHistory = app.renderHistory;
+        window.triggerHistoryDownload = app.triggerHistoryDownload;
+        window.removeHistoryItem = app.removeHistoryItem;
+    </script>
 </body>
 </html>
