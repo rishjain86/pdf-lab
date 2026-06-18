@@ -74,7 +74,7 @@ if (window.Capacitor && window.Capacitor.isNativePlatform()) {
     });
 }
 
-export function switchView(viewId) {
+function switchView(viewId) {
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
@@ -151,7 +151,7 @@ async function deleteHistory(id) {
     return new Promise(resolve => tx.oncomplete = resolve);
 }
 
-export async function renderHistory() {
+async function renderHistory() {
     const list = document.getElementById('history-list');
     if (!list) return;
     
@@ -184,12 +184,12 @@ export async function renderHistory() {
     });
 }
 
-export async function removeHistoryItem(id) { 
+async function removeHistoryItem(id) { 
     await deleteHistory(id); 
     renderHistory(); 
 }
 
-export async function triggerHistoryDownload(id) {
+async function triggerHistoryDownload(id) {
     const items = await getHistory();
     const item = items.find(i => i.id === id);
     
