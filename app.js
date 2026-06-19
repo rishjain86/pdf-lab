@@ -2119,13 +2119,15 @@ function openVisualWorkspace(file, mode) {
             pdf.getPage(1).then(page => {
                  const baseViewport = page.getViewport({ scale: 1 });
                  
-                 const cWidth = cont ? cont.clientWidth - padding : window.innerWidth - padding;
-                 const cHeight = cont ? cont.clientHeight - 150 : window.innerHeight - 150;
+                 // Initial load par bhi same perfect "Fit to Page" math chalega
+                 const sidebarWidth = window.innerWidth > 768 ? 280 : 20;
+                 const cWidth = window.innerWidth - sidebarWidth;
+                 const cHeight = window.innerHeight - 200;
                  
                  const scaleW = cWidth / baseViewport.width;
                  const scaleH = cHeight / baseViewport.height;
                  
-                 editScale = Math.min(scaleW, scaleH, 2.5); 
+                 editScale = Math.min(scaleW, scaleH, 2.0); 
                  
                  renderEditPage(editPageNum);
             });
