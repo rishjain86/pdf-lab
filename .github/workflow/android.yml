@@ -1,0 +1,84 @@
+name: Build Signed Release APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Auto-Copy Files to Public for App Build
+      run: |
+        mkdir -p public
+        cp *.html public/ || true
+        cp *.js public/ || true
+        cp *.css public/ || true
+        cp -r assets public/ || true
+
+    - name: Create Android Project
+      run: npx cap add android || true
+
+    - name: Generate App Icons & Splash
+      run: npx @capacitor/assets generate || true
+
+    - name: Sync App Code
+      run: npx cap sync android
+
+    - name: Inject AdMob App ID Automatically
+      run: |
+        sed -i '/<\/application>/i \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-6519206650027176~4620229874"/>' android/app/src/main/AndroidManifest.xml
+
+    - name: Enable App Security & Anti-Modding (ProGuard)
+      run: |
+        sed -i 's/minifyEnabled false/minifyEnabled true\n            shrinkResources true/g' android/app/build.gradle
+
+    - name: Grant Execute Permission for Gradle
+      run: chmod +x android/gradlew
+
+    - name: Build Unsigned Release APK
+      run: |
+        cd android
+        ./gradlew assembleRelease
+        cd ..
+
+    - name: Auto-Generate Keystore & Sign APK (Mobile Friendly Method)
+      run: |
+        # 1. Create a Keystore automatically (Password: amazing123)
+        keytool -genkey -v -keystore amazingpdf.jks -keyalg RSA -keysize 2048 -validity 10000 -alias amazingpdf -dname "CN=Amazing PDF, OU=App, O=Developer, L=India, ST=India, C=IN" -storepass "amazing123" -keypass "amazing123"
+        
+        # 2. Find Android Build Tools
+        APK_PATH="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+        ZIPALIGN=$(find $ANDROID_SDK_ROOT/build-tools -name zipalign | sort -r | head -n 1)
+        APKSIGNER=$(find $ANDROID_SDK_ROOT/build-tools -name apksigner | sort -r | head -n 1)
+        
+        # 3. Zipalign (Required by Amazon & Play Store)
+        $ZIPALIGN -v -p 4 $APK_PATH app-release-aligned.apk
+        
+        # 4. Sign the APK
+        $APKSIGNER sign --ks amazingpdf.jks --ks-pass pass:amazing123 --ks-key-alias amazingpdf --out Amazing_PDF_Store_Ready.apk app-release-aligned.apk
+
+    - name: Upload Store Ready APK & Keystore File
+      uses: actions/upload-artifact@v4
+      with:
+        name: Amazing-PDF-Signed-Release
+        path: |
+          Amazing_PDF_Store_Ready.apk
+          amazingpdf.jks
