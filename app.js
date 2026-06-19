@@ -1742,16 +1742,22 @@ document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
 
 document.getElementById('btn-zoom-fit')?.addEventListener('click', () => {
     if (!editPdfDoc) return;
-    const containerWidth = document.querySelector('.canvas-container').clientWidth;
-    const padding = window.innerWidth > 768 ? 60 : 20;
-    
     editPdfDoc.getPage(editPageNum).then(page => {
         const baseViewport = page.getViewport({ scale: 1 });
-        editScale = (containerWidth - padding) / baseViewport.width;
+        
+        // Accurate screen size calculation (Sidebar + Toolbars minus karke)
+        const sidebarWidth = window.innerWidth > 768 ? 280 : 20;
+        const cWidth = window.innerWidth - sidebarWidth;
+        const cHeight = window.innerHeight - 200; 
+        
+        const scaleW = cWidth / baseViewport.width;
+        const scaleH = cHeight / baseViewport.height;
+        
+        // Jo sabse chhota scale hoga, wo PDF ko 100% fit kar dega
+        editScale = Math.min(scaleW, scaleH, 2.0);
         renderEditPage(editPageNum);
     });
 });
-
 let pendingTextAction = null; 
 let tmState = { bold: false, italic: false, underline: false, align: 'left', bgColor: 'transparent' };
 
