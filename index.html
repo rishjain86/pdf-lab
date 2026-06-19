@@ -280,6 +280,7 @@
 
         #pdf-overlay-canvas { touch-action: none; }
         
+        /* Zoom Fix 1: Removed justify-content: center from here */
         .canvas-container {
             flex: 1; 
             width: 100%; 
@@ -289,8 +290,6 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            /* Fix added here for vertical centering */
-            justify-content: center; 
             min-height: min-content;
             -webkit-overflow-scrolling: touch;
         }
@@ -326,9 +325,34 @@
             .tool-card p { font-size: 0.75rem; }
             .download-btn { margin: 10px 15px; font-size: 0.9rem; padding: 10px; }
             
-            #edit-toolbar { flex-wrap: wrap; justify-content: space-between; }
-            .edit-toolbar-btn { flex: 1 1 22%; justify-content: center; margin-bottom: 5px; }
-            .tool-settings { width: 100%; justify-content: center; border-left: none !important; border-top: 1px solid var(--glass-border); padding-top: 10px; margin-top: 5px; }
+            /* MOBILE TOOLBAR FIX: 1 Line Horizontal Scroll */
+            #edit-toolbar { 
+                flex-wrap: nowrap !important; 
+                overflow-x: auto !important; 
+                justify-content: flex-start !important; 
+                padding: 10px 15px !important; 
+                scrollbar-width: none; 
+                -ms-overflow-style: none; 
+            }
+            #edit-toolbar::-webkit-scrollbar { display: none; }
+            
+            .edit-toolbar-btn { 
+                flex: 0 0 auto !important; 
+                margin-bottom: 0 !important; 
+                padding: 6px 12px !important; 
+                font-size: 0.85rem !important; 
+            }
+            .tool-settings { 
+                width: auto !important; 
+                flex: 0 0 auto !important;
+                border-top: none !important; 
+                border-left: 1px solid var(--glass-border) !important; 
+                padding-top: 0 !important; 
+                padding-left: 10px !important; 
+                margin-top: 0 !important; 
+                margin-left: 5px !important; 
+            }
+            #btn-edit-clear { margin-left: 5px !important; flex: 0 0 auto !important; }
             
             .editor-header-btn span { display: none; } 
             .editor-header-title { font-size: 0.9rem !important; }
@@ -710,8 +734,8 @@
             <button id="btn-edit-clear" class="edit-toolbar-btn" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; margin-left: auto;"><i class="fas fa-trash-alt"></i> Clear</button>
         </div>
 
-        <div class="canvas-container" style="flex: 1; width: 100%; overflow: auto; background: var(--bg-color); padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: min-content; -webkit-overflow-scrolling: touch;">
-            <div style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+        <div class="canvas-container" style="flex: 1; width: 100%; overflow: auto; background: var(--bg-color); padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: min-content; -webkit-overflow-scrolling: touch;">
+            <div style="position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.8); margin: auto;">
                 <canvas id="pdf-render-canvas" style="display: block; background: white;"></canvas>
                 <canvas id="pdf-overlay-canvas" style="position: absolute; top: 0; left: 0; touch-action: none; cursor: crosshair;"></canvas>
             </div>
@@ -781,6 +805,6 @@
         </div>
     </div>
 
-    <script type="module" src="app.js?v=107"></script>
+    <script type="module" src="app.js?v=108"></script>
 </body>
 </html>
