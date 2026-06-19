@@ -2899,3 +2899,97 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
         btn.innerHTML = oldText; 
     }
 });
+
+// ==========================================
+// MOBILE SMART SCROLL & PINCH-TO-ZOOM FIX
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- 1. SMART SCROLL (Only block scroll when Drawing) ---
+    // User jab koi Tool button click karega tab scroll check hoga
+    const toolbarButtons = document.querySelectorAll('.edit-toolbar-btn');
+    
+    toolbarButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Thoda timeout lagaya hai taaki pehle button "Active" ho jaye uske baad check ho
+            setTimeout(() => {
+                const overlayCanvas = document.getElementById('pdf-overlay-canvas');
+                if (!overlayCanvas) return;
+
+                // Check karo ki kya user ne 'Draw' ya 'Whiteout' (Pen) select kiya hai
+                const isDrawActive = document.getElementById('btn-edit-draw').classList.contains('edit-tool-active');
+                const isWhiteoutActive = document.getElementById('btn-edit-whiteout').classList.contains('edit-tool-active');
+                
+                if (isDrawActive || isWhiteoutActive) {
+                    // Agar pen chalana hai toh Screen ka scroll block kardo (taaki ungli chalane se screen na hile)
+                    overlayCanvas.style.touchAction = 'none';
+                } else {
+                    // Agar koi doosra tool hai ya tool hata diya gaya hai, toh scroll enable kardo (mobile default scroll)
+                    overlayCanvas.style.touchAction = 'pan-x pan-y';
+                }
+            }, 100); 
+        });
+    });
+
+
+    // --- 2. PINCH TO ZOOM LOGIC (2 fingers zooming) ---
+    const overlayCanvas = document.getElementById('pdf-overlay-canvas');
+    let initialPinchDistance = null; // Dono ungliyon ki shuruvaati doori
+
+    if (overlayCanvas) {
+        // Jab ungliyan screen par lagengi
+        overlayCanvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                // Agar 2 ungli hain toh browser ka default behavior rok do taaki page ajeeb sa zoom na ho
+                e.preventDefault(); 
+                
+                // Dono ungliyon ke beech ki doori calculate karo
+                initialPinchDistance = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+            }
+        }, { passive: false });
+
+        // Jab ungliyan screen par chalengi
+        overlayCanvas.addEventListener('touchmove', (e) => {
+            // Check ki dono ungli touch kar rahi hain aur humne shuruvaati distance liya hua hai
+            if (e.touches.length === 2 && initialPinchDistance !== null) {
+                e.preventDefault(); 
+                
+                // Current ungliyon ki doori calculate karo
+                const currentDistance = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+
+                // Check karo kitni doori tay ki
+                const distanceDifference = currentDistance - initialPinchDistance;
+                
+                // 40px ka gap rakha hai taaki halke se hilne par ekdum se bahut zyada zoom na ho jaye
+                if (Math.abs(distanceDifference) > 40) {
+                    if (distanceDifference > 0) {
+                        // Ungliyan door jaa rahi hain = Zoom In
+                        const zoomInButton = document.getElementById('btn-zoom-in');
+                        if(zoomInButton) zoomInButton.click();
+                    } else {
+                        // Ungliyan paas aa rahi hain = Zoom Out
+                        const zoomOutButton = document.getElementById('btn-zoom-out');
+                        if(zoomOutButton) zoomOutButton.click();
+                    }
+                    
+                    // Dobara trigger karne ke liye purane distance ko naye wale se update kardo
+                    initialPinchDistance = currentDistance; 
+                }
+            }
+        }, { passive: false });
+
+        // Jab koi ek ya dono ungli screen se hatayega toh calculation wapas zero (reset) kardo
+        overlayCanvas.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                initialPinchDistance = null;
+            }
+        });
+    }
+});
+
