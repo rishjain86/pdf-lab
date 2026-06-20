@@ -10,11 +10,11 @@ import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.0/+esm';
 // ==========================================
 // APP VERSION CHECKER
 // ==========================================
-const CURRENT_APP_VERSION = 1.4; // Har update par ise badhana hoga (jaise abhi 1.2 set hai)
+const CURRENT_APP_VERSION = 1.4; // Ise 1.4 kar diya hai
 
 function checkForUpdates() {
-    // Apna live version.json ka sahi URL check kar lena (Vercel ya GitHub Pages)
-    const versionUrl = 'https://rishjain86.github.io/Amazing-Pdf-Tool/version.json?time=' + new Date().getTime();
+    // Direct amazingpdf.in ka URL use karein (Fast update ke liye)
+    const versionUrl = 'https://amazingpdf.in/version.json?time=' + new Date().getTime();
     
     fetch(versionUrl)
         .then(response => response.json())
@@ -22,19 +22,18 @@ function checkForUpdates() {
             const liveVersion = parseFloat(data.version);
             
             if (liveVersion > CURRENT_APP_VERSION) {
-                // Default confirm box
-                let userWantsToUpdate = confirm("New Update Available! 🚀 Please update the app to use the latest features and bug fixes.");
+                // Message bhi JSON se aayega
+                let userWantsToUpdate = confirm(data.message || "New update available! Please update the app to use new features.");
                 
                 if (userWantsToUpdate) {
-                    // Seedha Play Store par bhejega
-                    window.location.href = "https://play.google.com/store/apps/details?id=com.rishit.amazingpdf";
+                    // Play store ki jagah direct JSON wala download link
+                    window.location.href = data.download_url || "https://amazingpdf.in";
                 }
             }
         })
-        .catch(error => console.log("Error checking for updates:", error));
+        .catch(error => console.log("Update check failed:", error));
 }
 
-// App start hote hi update check karega
 checkForUpdates();
 
 // ==========================================
