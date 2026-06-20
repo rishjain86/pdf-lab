@@ -10,7 +10,7 @@ import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.0/+esm';
 // ==========================================
 // APP VERSION CHECKER
 // ==========================================
-const CURRENT_APP_VERSION = 1.2; // Har update par ise badhana hoga (jaise abhi 1.2 set hai)
+const CURRENT_APP_VERSION = 1.4; // Har update par ise badhana hoga (jaise abhi 1.2 set hai)
 
 function checkForUpdates() {
     // Apna live version.json ka sahi URL check kar lena (Vercel ya GitHub Pages)
