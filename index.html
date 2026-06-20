@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NHLHPRHZSW"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NHLHPRHZSW');
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <title>Amazing PDF Tool</title>
@@ -463,6 +472,16 @@
 </head>
 <body>
 
+    <!-- Offline Block Screen -->
+    <div id="offline-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 99999; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white;">
+        <i class="fas fa-wifi" style="font-size: 4rem; color: #ef4444; margin-bottom: 20px;"></i>
+        <h2 style="font-family: 'Poppins', sans-serif; font-weight: 600;">No Internet Connection</h2>
+        <p style="font-family: 'Poppins', sans-serif; font-size: 1rem; color: #94a3b8; margin-top: 10px; max-width: 80%;">Please turn on your Wi-Fi or Mobile Data to use Amazing PDF Tool.</p>
+    </div>
+
+    <input type="file" id="hidden-camera-input" accept="image/*" capture="environment" style="display: none;">
+    <input type="file" id="hidden-gallery-input" accept="image/*" style="display: none;">
+
     <input type="file" id="hidden-camera-input" accept="image/*" capture="environment" style="display: none;">
     <input type="file" id="hidden-gallery-input" accept="image/*" style="display: none;">
 
@@ -474,9 +493,9 @@
             <span>Amazing PDF</span>
         </div>
 
-        <a href="https://github.com/rishjain86/Amazing-Pdf-Tool/releases/download/v1.0/AmazingPDF.apk" class="nav-btn download-btn">
-            <i class="fab fa-android" style="font-size: 1.2rem;"></i> Download App
-        </a>
+        <a href="https://github.com/rishjain86/Amazing-Pdf-Tool/releases/download/1.1/AmazingPDF.apk" class="nav-btn download-btn">
+    <i class="fab fa-android" style="font-size: 1.2rem;"></i> Download App
+</a>
 
         <div class="nav-btn active" onclick="switchView('dashboard')">
             <i class="fas fa-home"></i> Dashboard
