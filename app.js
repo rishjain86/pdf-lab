@@ -2993,3 +2993,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Network Connectivity Checker & Ad Reloader
+function checkNetworkStatus() {
+    const offlineScreen = document.getElementById('offline-screen');
+    
+    if (navigator.onLine) {
+        // Internet is ON - Hide the block screen
+        offlineScreen.style.display = 'none';
+        
+        // Auto-reload AdMob Banner when internet comes back
+        if (typeof AdManager !== 'undefined' && typeof AdManager.showBanner === 'function') {
+            console.log("Internet restored. Reloading AdMob Banner...");
+            AdManager.showBanner();
+        }
+    } else {
+        // Internet is OFF - Show the block screen
+        offlineScreen.style.display = 'flex';
+    }
+}
+
+// Listen for real-time network changes
+window.addEventListener('online', checkNetworkStatus);
+window.addEventListener('offline', checkNetworkStatus);
+
+// Run the check automatically as soon as the app opens
+setTimeout(checkNetworkStatus, 1000);
