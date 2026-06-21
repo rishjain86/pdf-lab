@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NHLHPRHZSW"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NHLHPRHZSW"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -58,11 +57,6 @@
         body.is-editing {
             overflow: hidden !important;
             touch-action: none;
-        }
-
-        /* Ad Safe Area Fixes */
-        .ad-safe-area { 
-            padding-bottom: calc(max(15px, env(safe-area-inset-bottom)) + 70px) !important; 
         }
 
         /* Utility classes for clean scrollbars */
@@ -156,7 +150,6 @@
             height: 100vh;
             height: 100dvh;
             overflow-y: auto;
-            padding-bottom: calc(env(safe-area-inset-bottom) + 70px); 
         }
 
         .mobile-header {
@@ -401,7 +394,13 @@
 
             .mobile-header { display: flex; }
             .desktop-search-container { display: none; }
-            .view-section { padding: 20px; }
+            
+            /* FIXED: Force Deep Padding so tool buttons stop above the AdMob banner */
+            .view-section { 
+                padding: 20px !important; 
+                padding-bottom: 120px !important; 
+            } 
+            
             .page-header h1 { font-size: 1.5rem; }
             .dashboard-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
             .tool-card { padding: 15px 12px; }
@@ -410,12 +409,12 @@
             .tool-card p { font-size: 0.75rem; }
             .download-btn { margin: 10px 15px; font-size: 0.9rem; padding: 10px; }
             
-            /* MOBILE TOOLBAR FIX: 1 Line Horizontal Scroll */
+            /* FIXED MOBILE TOOLBAR: Made thicker and more premium */
             #edit-toolbar { 
                 flex-wrap: nowrap !important; 
                 overflow-x: auto !important; 
                 justify-content: flex-start !important; 
-                padding: 10px 15px !important; 
+                padding: 16px 15px !important; /* Increased vertical padding to make bar thicker */
                 scrollbar-width: none; 
                 -ms-overflow-style: none; 
             }
@@ -424,8 +423,9 @@
             .edit-toolbar-btn { 
                 flex: 0 0 auto !important; 
                 margin-bottom: 0 !important; 
-                padding: 6px 12px !important; 
-                font-size: 0.85rem !important; 
+                padding: 10px 16px !important; /* Made buttons larger and touch-friendly */
+                font-size: 0.95rem !important; /* Slightly bigger font */
+                font-weight: 600 !important; 
             }
             .tool-settings { 
                 width: auto !important; 
@@ -433,7 +433,7 @@
                 border-top: none !important; 
                 border-left: 1px solid var(--glass-border) !important; 
                 padding-top: 0 !important; 
-                padding-left: 10px !important; 
+                padding-left: 15px !important; 
                 margin-top: 0 !important; 
                 margin-left: 5px !important; 
             }
@@ -450,7 +450,7 @@
             .canvas-container {
                 display: block !important;
                 text-align: center !important;
-                padding-bottom: 120px !important; /* Space for the sticky toolbar */
+                padding-bottom: 185px !important; 
             }
             
             .canvas-wrapper {
@@ -461,7 +461,7 @@
 
             .bottom-edit-toolbar {
                 position: fixed !important;
-                bottom: 0 !important;
+                bottom: 65px !important; 
                 left: 0 !important;
                 width: 100vw !important;
                 z-index: 9999 !important;
@@ -472,7 +472,6 @@
 </head>
 <body>
 
-    <!-- Offline Block Screen -->
     <div id="offline-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 99999; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white;">
         <i class="fas fa-wifi" style="font-size: 4rem; color: #ef4444; margin-bottom: 20px;"></i>
         <h2 style="font-family: 'Poppins', sans-serif; font-weight: 600;">No Internet Connection</h2>
@@ -482,20 +481,17 @@
     <input type="file" id="hidden-camera-input" accept="image/*" capture="environment" style="display: none;">
     <input type="file" id="hidden-gallery-input" accept="image/*" style="display: none;">
 
-    <input type="file" id="hidden-camera-input" accept="image/*" capture="environment" style="display: none;">
-    <input type="file" id="hidden-gallery-input" accept="image/*" style="display: none;">
-
     <div id="sidebar-overlay" onclick="toggleMenu()"></div>
 
     <div class="sidebar">
         <div class="brand-logo" onclick="switchView('dashboard')" style="cursor: pointer;">
-            <img src="assets/icon.png?v=5" style="width: 32px; height: 32px; border-radius: 6px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain;">
-            <span>Amazing PDF</span>
+     <img src="assets/icon.png?v=5" style="width: 60px !important; height: 60px !important; min-width: 60px !important; min-height: 60px !important; flex-shrink: 0 !important; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain; margin-right: 10px;">
+     <span>Amazing PDF</span>
         </div>
 
-        <a href="https://github.com/rishjain86/Amazing-Pdf-Tool/releases/download/1.1/AmazingPDF.apk" class="nav-btn download-btn">
+       <a href="https://github.com/rishjain86/Amazing-Pdf-Tool/releases/latest/download/AmazingPDF.apk" class="nav-btn download-btn">
     <i class="fab fa-android" style="font-size: 1.2rem;"></i> Download App
-</a>
+</a> 
 
         <div class="nav-btn active" onclick="switchView('dashboard')">
             <i class="fas fa-home"></i> Dashboard
@@ -526,6 +522,10 @@
         <a href="contact.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-envelope"></i> Contact Us</a>
         <a href="privacy.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-user-shield"></i> Privacy Policy</a>
         <a href="terms.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-file-contract"></i> Terms & Cond.</a>
+        <div style="text-align: center; margin-top: 30px; padding-bottom: 20px; color: #888; font-size: 0.95rem; font-weight: bold; letter-spacing: 1px;">
+        <span id="app-version-text">Version 1.8</span>
+   </div> 
+        
     </div>
 
     <div class="main-wrapper">
@@ -534,7 +534,7 @@
             <div style="display: flex; align-items: center; gap: 15px;">
                 <button onclick="toggleMenu()" style="background: transparent; color: white; border: none; font-size: 1.4rem; cursor: pointer; padding: 5px;"><i class="fas fa-bars"></i></button>
                 <div class="brand-logo" onclick="switchView('dashboard')" style="padding: 0; border: none; cursor: pointer;">
-                    <img src="assets/icon.png?v=5" style="width: 38px; height: 38px; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain;">
+                 <img src="assets/icon.png?v=5" style="width: 48px; height: 48px; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain; margin-right: 10px;">   
                 </div>
             </div>
             <input type="text" id="mobile-search" placeholder="Search..." style="width: 45%; padding: 10px; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; font-size: 0.85rem; padding-left: 15px; outline: none;">
@@ -927,6 +927,14 @@
         </div>
     </div>
 
+    <div id="update-modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); z-index: 999999; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 20px; box-sizing: border-box; backdrop-filter: blur(5px);">
+        <div style="font-size: 5rem; margin-bottom: 20px; filter: drop-shadow(0px 10px 15px rgba(16, 185, 129, 0.4));">🚀</div>
+        <h2 style="font-size: 2rem; margin-bottom: 10px; font-family: 'Poppins', sans-serif;">Update Required!</h2>
+        <p style="margin-bottom: 30px; color: var(--text-secondary); font-size: 1.1rem; max-width: 300px; font-family: 'Poppins', sans-serif;">A new version of Amazing PDF Tool is available. Please update the app to continue using it securely.</p>
+        
+        <button onclick="window.open('https://github.com/rishjain86/Amazing-Pdf-Tool/releases/latest/download/AmazingPDF.apk', '_blank')" style="background: linear-gradient(45deg, #10b981, #3b82f6); color: white; border: none; padding: 15px 30px; font-size: 1.2rem; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); font-family: 'Poppins', sans-serif; transition: 0.3s;">Update App Now</button>
+    </div>
+
     <script>
         function toggleMenu() {
             const sidebar = document.querySelector('.sidebar');
@@ -949,6 +957,77 @@
         });
     </script>
 
-    <script type="module" src="app.js?v=111"></script>
+    <script type="module" src="app.js?v=8"></script>
+
+    <script>
+    // 1. Disable Right Click (Context Menu)
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // 2. Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U for PC Browsers
+    document.onkeydown = function(e) {
+        if (
+            e.keyCode === 123 || // Block F12
+            (e.ctrlKey && e.shiftKey && e.keyCode === 73) || // Block Ctrl+Shift+I
+            (e.ctrlKey && e.shiftKey && e.keyCode === 74) || // Block Ctrl+Shift+J
+            (e.ctrlKey && e.keyCode === 85) // Block Ctrl+U
+        ) {
+            return false;
+        }
+    };
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyByFZl5tFoRh3MasrISCpMTDeYutQitV1I",
+            authDomain: "amazing-pdf-tool.firebaseapp.com",
+            projectId: "amazing-pdf-tool",
+            storageBucket: "amazing-pdf-tool.firebasestorage.app",
+            messagingSenderId: "608437496158",
+            appId: "1:608437496158:web:06e0f4bc83dbfceb93c7cf",
+            measurementId: "G-CW6WGXDCSS"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Version variable for auto-update via sed
+        const CURRENT_APP_VERSION = 1.8;
+
+        async function checkAppVersion() {
+            try {
+                const docRef = doc(db, "amazingpdf_settings", "app_config");
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const latestVersionFromDB = parseFloat(data.latest_version);
+                    
+                    const versionTextElement = document.getElementById('app-version-text');
+                    if(versionTextElement) {
+                        versionTextElement.innerText = "Version " + latestVersionFromDB;
+                    }
+
+                    const hostname = window.location.hostname;
+                    const isWebsite = hostname.includes("amazingpdf.in") || hostname.includes("vercel.app") || hostname.includes("github.io");
+
+                    if (isWebsite) {
+                        console.log("Website detected. Update modal blocked.");
+                        return; 
+                    }
+
+                    if (latestVersionFromDB > CURRENT_APP_VERSION) {
+                        document.getElementById('update-modal').style.display = 'flex';
+                    }
+                }
+            } catch(error) {
+                console.error("Version fetch error:", error);
+            }
+        }
+
+        setTimeout(checkAppVersion, 2000);
+    </script>
 </body>
 </html>
