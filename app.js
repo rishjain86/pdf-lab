@@ -10,10 +10,9 @@ import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.0/+esm';
 // ==========================================
 // APP VERSION CHECKER
 // ==========================================
-const CURRENT_APP_VERSION = 1.4; // Ise 1.4 kar diya hai
+const CURRENT_APP_VERSION = 1.8;
 
 function checkForUpdates() {
-    // Direct amazingpdf.in ka URL use karein (Fast update ke liye)
     const versionUrl = 'https://amazingpdf.in/version.json?time=' + new Date().getTime();
     
     fetch(versionUrl)
@@ -22,11 +21,8 @@ function checkForUpdates() {
             const liveVersion = parseFloat(data.version);
             
             if (liveVersion > CURRENT_APP_VERSION) {
-                // Message bhi JSON se aayega
                 let userWantsToUpdate = confirm(data.message || "New update available! Please update the app to use new features.");
-                
                 if (userWantsToUpdate) {
-                    // Play store ki jagah direct JSON wala download link
                     window.location.href = data.download_url || "https://amazingpdf.in";
                 }
             }
@@ -36,9 +32,6 @@ function checkForUpdates() {
 
 checkForUpdates();
 
-// ==========================================
-// UTILITY & ALERT FUNCTIONS
-// ==========================================
 // ==========================================
 // UTILITY & ALERT FUNCTIONS
 // ==========================================
@@ -692,10 +685,6 @@ document.getElementById('btn-scanner-preview')?.addEventListener('click', async 
     }
 });
 
-document.getElementById('btn-preview-back')?.addEventListener('click', () => { 
-    document.getElementById('scanner-preview-modal').style.display = 'none'; 
-});
-
 document.getElementById('btn-scanner-export')?.addEventListener('click', async () => {
     if (scannerPages.length === 0) return;
     
@@ -741,6 +730,11 @@ document.getElementById('btn-scanner-export')?.addEventListener('click', async (
         }
         
         const bytes = await pdfDoc.save();
+
+        if(typeof AdManager !== 'undefined' && AdManager) {
+            await AdManager.showInterstitial();
+        }
+
         await processAndDownload(bytes, `${scannerOriginalName}_Scanned.pdf`, 'application/pdf');
         
         document.getElementById('scanner-preview-modal').style.display = 'none'; 
@@ -780,15 +774,7 @@ const inputStyle = "width: 100%; padding: 12px; border-radius: 8px; border: 1px 
 const fileListStyle = "display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;";
 const fileItemStyle = "display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid var(--glass-border); gap: 10px;";
 
-const brandHeaderHtml = `
-    <div class="app-brand-header" style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px; padding-bottom: 12px; border-bottom: 1px solid var(--glass-border);">
-        <img src="assets/icon.png?v=5" style="width: 40px; height: 40px; object-fit: contain; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);">
-        <span style="font-size: 1.2rem; font-weight: 700; color: white; letter-spacing: 0.5px; background: linear-gradient(to right, #10b981, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Amazing PDF Tool</span>
-    </div>
-`;
-
 const generateSingleFileUI = (id, icon, color, title, btnText, extraHtml = "", acceptType = "application/pdf") => `
-    ${brandHeaderHtml}
     <div id="${id}-drop-zone" style="${dropZoneStyle.replace('var(--accent)', color)}">
         <i class="fas ${icon}" style="font-size: 3rem; color: ${color}; margin-bottom: 15px;"></i>
         <h3>Select PDF to ${title}</h3>
@@ -803,7 +789,6 @@ const generateSingleFileUI = (id, icon, color, title, btnText, extraHtml = "", a
 `;
 
 const generateMultipleFileUI = (id, icon, color, title, btnText, extraHtml = "", acceptType = "application/pdf") => `
-    ${brandHeaderHtml}
     <div id="${id}-drop-zone" style="${dropZoneStyle.replace('var(--accent)', color)}">
         <i class="fas ${icon}" style="font-size: 3rem; color: ${color}; margin-bottom: 15px;"></i>
         <h3>Drag & Drop PDFs to ${title}</h3>
@@ -847,7 +832,7 @@ if (ui.extract) ui.extract.innerHTML = generateSingleFileUI('extract', 'fa-file-
 
 // Standard Tools
 if (ui.merge) {
-    ui.merge.innerHTML = brandHeaderHtml + `
+    ui.merge.innerHTML = `
         <div id="merge-drop-zone" style="${dropZoneStyle}">
             <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: var(--accent); margin-bottom: 15px;"></i>
             <h3>Drag & Drop PDFs or ZIP</h3>
@@ -860,7 +845,7 @@ if (ui.merge) {
 }
 
 if (ui.jpgtopdf) {
-    ui.jpgtopdf.innerHTML = brandHeaderHtml + `
+    ui.jpgtopdf.innerHTML = `
         <div id="jpgtopdf-drop-zone" style="${dropZoneStyle.replace('var(--accent)', '#eab308')}">
             <i class="fas fa-images" style="font-size: 3rem; color: #eab308; margin-bottom: 15px;"></i>
             <h3>Drag & Drop Images</h3>
@@ -873,7 +858,7 @@ if (ui.jpgtopdf) {
 }
 
 if (ui.htmltopdf) {
-    ui.htmltopdf.innerHTML = brandHeaderHtml + `
+    ui.htmltopdf.innerHTML = `
         <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border);">
             <label style="color: var(--text-secondary);">Paste your HTML Code here:</label>
             <textarea id="html-input" rows="10" style="${inputStyle}" placeholder="<h1>Hello</h1>"></textarea>
@@ -1078,11 +1063,13 @@ function setupSingleFileLogic(id, actionCallback) {
             try {
                 const result = await actionCallback(currentFile); 
                 document.getElementById(`reset-${id}`)?.click();
-                await processAndDownload(result.bytes, result.filename, result.type); 
-                
+
                 if(typeof AdManager !== 'undefined' && AdManager) {
                     await AdManager.showInterstitial();
                 }
+
+                await processAndDownload(result.bytes, result.filename, result.type); 
+                
             } catch (error) { 
                 handleError(error); 
             } finally { 
@@ -1169,11 +1156,12 @@ function setupMultipleFileLogic(id, actionCallback) {
             currentFiles = []; 
             renderList(); 
             
-            await processAndDownload(result.bytes, result.filename, result.type); 
-            
             if(typeof AdManager !== 'undefined' && AdManager) {
                 await AdManager.showInterstitial();
             }
+
+            await processAndDownload(result.bytes, result.filename, result.type); 
+            
         } catch (error) { 
             handleError(error); 
         } finally { 
@@ -1394,26 +1382,67 @@ setupSingleFileLogic('extract', async (file) => {
     
     return { bytes: new TextEncoder().encode(fullText), filename: `${getBaseName(file.name)}_Extracted.txt`, type: 'text/plain' };
 });
-
 setupMultipleFileLogic('compress', async (files) => {
-    if (files.length === 1) {
-        const pdfDoc = await PDFDocument.load(await files[0].arrayBuffer(), { updateMetadata: false }); 
-        const newPdf = await PDFDocument.create();
+    
+    // Smart Hybrid Engine
+    const compressSingleFile = async (file) => {
+        const originalSize = file.size;
+        const THRESHOLD = 1.5 * 1024 * 1024; // 1.5 MB
         
-        const copiedPages = await newPdf.copyPages(pdfDoc, pdfDoc.getPageIndices()); 
-        copiedPages.forEach(p => newPdf.addPage(p));
-        
-        return { bytes: await newPdf.save({ useObjectStreams: true }), filename: `${getBaseName(files[0].name)}_Compressed.pdf`, type: 'application/pdf' };
-    } else {
-        const zip = new JSZip();
-        for (const file of files) {
+        // 1. STANDARD METHOD (For small text-based files)
+        if (originalSize < THRESHOLD) { 
             const pdfDoc = await PDFDocument.load(await file.arrayBuffer(), { updateMetadata: false }); 
             const newPdf = await PDFDocument.create();
-            
             const copiedPages = await newPdf.copyPages(pdfDoc, pdfDoc.getPageIndices()); 
             copiedPages.forEach(p => newPdf.addPage(p));
             
-            zip.file(`${getBaseName(file.name)}_Compressed.pdf`, await newPdf.save({ useObjectStreams: true }));
+            let standardBytes = await newPdf.save({ useObjectStreams: true, compress: true });
+            
+            // Agar standard method se size badh gaya, toh original return karo
+            if (standardBytes.length >= originalSize) {
+                return new Uint8Array(await file.arrayBuffer()); 
+            }
+            return standardBytes;
+        }
+
+        // 2. EXTREME CANVAS METHOD (For large image-heavy files)
+        const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const newPdf = await PDFDocument.create();
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 1.25 }); 
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+
+            await page.render({ canvasContext: ctx, viewport }).promise;
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+            const pdfImage = await newPdf.embedJpg(imgData);
+
+            const newPage = newPdf.addPage([viewport.width, viewport.height]);
+            newPage.drawImage(pdfImage, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+        }
+        
+        let extremeBytes = await newPdf.save();
+        
+        // Safety Check: Agar heavy hone ke bawajood size badh jaye, toh original wapas do
+        if (extremeBytes.length >= originalSize) {
+            return new Uint8Array(await file.arrayBuffer());
+        }
+        return extremeBytes;
+    };
+
+    if (files.length === 1) {
+        const bytes = await compressSingleFile(files[0]);
+        return { bytes, filename: `${getBaseName(files[0].name)}_Compressed.pdf`, type: 'application/pdf' };
+    } else {
+        const zip = new JSZip();
+        for (const file of files) {
+            const bytes = await compressSingleFile(file);
+            zip.file(`${getBaseName(file.name)}_Compressed.pdf`, bytes);
         }
         return { bytes: await zip.generateAsync({type: 'uint8array'}), filename: `Batch_Compressed.zip`, type: 'application/zip' };
     }
@@ -1539,11 +1568,12 @@ if (ui.htmltopdf) {
             document.getElementById('html-input').value = '';
             document.body.removeChild(iframe);
             
-            await processAndDownload(bytes, 'HTML_Converted.pdf', 'application/pdf'); 
-            
             if(typeof AdManager !== 'undefined' && AdManager) {
                 await AdManager.showInterstitial();
             }
+
+            await processAndDownload(bytes, 'HTML_Converted.pdf', 'application/pdf'); 
+            
         } catch(e) { 
             handleError(e); 
         } finally { 
@@ -1616,6 +1646,10 @@ if (ui.merge) {
             mergeFiles = []; 
             renderMergeList(); 
             
+            if(typeof AdManager !== 'undefined' && AdManager) {
+                await AdManager.showInterstitial();
+            }
+
             await processAndDownload(bytes, outputName, 'application/pdf');
         } catch (e) { 
             handleError(e); 
@@ -1707,6 +1741,10 @@ if (ui.jpgtopdf) {
             imageFiles = []; 
             renderImgList(); 
             
+            if(typeof AdManager !== 'undefined' && AdManager) {
+                await AdManager.showInterstitial();
+            }
+
             await processAndDownload(bytes, outputName, 'application/pdf');
         } catch (e) { 
             handleError(e); 
@@ -1777,7 +1815,6 @@ document.getElementById('btn-zoom-fit')?.addEventListener('click', () => {
     editPdfDoc.getPage(editPageNum).then(page => {
         const baseViewport = page.getViewport({ scale: 1 });
         
-        // Accurate screen size calculation (Sidebar + Toolbars minus karke)
         const sidebarWidth = window.innerWidth > 768 ? 280 : 20;
         const cWidth = window.innerWidth - sidebarWidth;
         const cHeight = window.innerHeight - 200; 
@@ -1785,7 +1822,6 @@ document.getElementById('btn-zoom-fit')?.addEventListener('click', () => {
         const scaleW = cWidth / baseViewport.width;
         const scaleH = cHeight / baseViewport.height;
         
-        // Jo sabse chhota scale hoga, wo PDF ko 100% fit kar dega
         editScale = Math.min(scaleW, scaleH, 2.0);
         renderEditPage(editPageNum);
     });
@@ -2151,7 +2187,6 @@ function openVisualWorkspace(file, mode) {
             pdf.getPage(1).then(page => {
                  const baseViewport = page.getViewport({ scale: 1 });
                  
-                 // Initial load par bhi same perfect "Fit to Page" math chalega
                  const sidebarWidth = window.innerWidth > 768 ? 280 : 20;
                  const cWidth = window.innerWidth - sidebarWidth;
                  const cHeight = window.innerHeight - 200;
@@ -2664,6 +2699,10 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
         const applyModeObj = document.getElementById('edit-apply-mode'); 
         const applyMode = applyModeObj ? applyModeObj.value : 'current';
 
+        if(typeof AdManager !== 'undefined' && AdManager) {
+            await AdManager.showInterstitial();
+        }
+
         if (['edit', 'sign', 'watermark', 'imagewatermark', 'addtext'].includes(currentVisualMode)) {
             const pdfDoc = await PDFDocument.load(freshBuffer);
             const pages = pdfDoc.getPages();
@@ -2920,10 +2959,6 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
         
         window.switchView('dashboard');
         
-        if(typeof AdManager !== 'undefined' && AdManager) {
-            await AdManager.showInterstitial();
-        }
-        
     } catch (error) { 
         handleError(error); 
         document.body.classList.remove('is-editing'); 
@@ -2943,20 +2978,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     toolbarButtons.forEach(button => {
         button.addEventListener('click', () => {
-            // Thoda timeout lagaya hai taaki pehle button "Active" ho jaye uske baad check ho
             setTimeout(() => {
                 const overlayCanvas = document.getElementById('pdf-overlay-canvas');
                 if (!overlayCanvas) return;
 
-                // Check karo ki kya user ne 'Draw' ya 'Whiteout' (Pen) select kiya hai
                 const isDrawActive = document.getElementById('btn-edit-draw').classList.contains('edit-tool-active');
                 const isWhiteoutActive = document.getElementById('btn-edit-whiteout').classList.contains('edit-tool-active');
                 
                 if (isDrawActive || isWhiteoutActive) {
-                    // Agar pen chalana hai toh Screen ka scroll block kardo (taaki ungli chalane se screen na hile)
                     overlayCanvas.style.touchAction = 'none';
                 } else {
-                    // Agar koi doosra tool hai ya tool hata diya gaya hai, toh scroll enable kardo (mobile default scroll)
                     overlayCanvas.style.touchAction = 'pan-x pan-y';
                 }
             }, 100); 
@@ -2966,16 +2997,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 2. PINCH TO ZOOM LOGIC (2 fingers zooming) ---
     const overlayCanvas = document.getElementById('pdf-overlay-canvas');
-    let initialPinchDistance = null; // Dono ungliyon ki shuruvaati doori
+    let initialPinchDistance = null;
 
     if (overlayCanvas) {
-        // Jab ungliyan screen par lagengi
         overlayCanvas.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
-                // Agar 2 ungli hain toh browser ka default behavior rok do taaki page ajeeb sa zoom na ho
                 e.preventDefault(); 
-                
-                // Dono ungliyon ke beech ki doori calculate karo
                 initialPinchDistance = Math.hypot(
                     e.touches[0].pageX - e.touches[1].pageX,
                     e.touches[0].pageY - e.touches[1].pageY
@@ -2983,40 +3010,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, { passive: false });
 
-        // Jab ungliyan screen par chalengi
         overlayCanvas.addEventListener('touchmove', (e) => {
-            // Check ki dono ungli touch kar rahi hain aur humne shuruvaati distance liya hua hai
             if (e.touches.length === 2 && initialPinchDistance !== null) {
                 e.preventDefault(); 
                 
-                // Current ungliyon ki doori calculate karo
                 const currentDistance = Math.hypot(
                     e.touches[0].pageX - e.touches[1].pageX,
                     e.touches[0].pageY - e.touches[1].pageY
                 );
 
-                // Check karo kitni doori tay ki
                 const distanceDifference = currentDistance - initialPinchDistance;
                 
-                // 40px ka gap rakha hai taaki halke se hilne par ekdum se bahut zyada zoom na ho jaye
                 if (Math.abs(distanceDifference) > 40) {
                     if (distanceDifference > 0) {
-                        // Ungliyan door jaa rahi hain = Zoom In
                         const zoomInButton = document.getElementById('btn-zoom-in');
                         if(zoomInButton) zoomInButton.click();
                     } else {
-                        // Ungliyan paas aa rahi hain = Zoom Out
                         const zoomOutButton = document.getElementById('btn-zoom-out');
                         if(zoomOutButton) zoomOutButton.click();
                     }
-                    
-                    // Dobara trigger karne ke liye purane distance ko naye wale se update kardo
                     initialPinchDistance = currentDistance; 
                 }
             }
         }, { passive: false });
 
-        // Jab koi ek ya dono ungli screen se hatayega toh calculation wapas zero (reset) kardo
         overlayCanvas.addEventListener('touchend', (e) => {
             if (e.touches.length < 2) {
                 initialPinchDistance = null;
@@ -3030,23 +3047,18 @@ function checkNetworkStatus() {
     const offlineScreen = document.getElementById('offline-screen');
     
     if (navigator.onLine) {
-        // Internet is ON - Hide the block screen
         offlineScreen.style.display = 'none';
         
-        // Auto-reload AdMob Banner when internet comes back
         if (typeof AdManager !== 'undefined' && typeof AdManager.showBanner === 'function') {
             console.log("Internet restored. Reloading AdMob Banner...");
             AdManager.showBanner();
         }
     } else {
-        // Internet is OFF - Show the block screen
         offlineScreen.style.display = 'flex';
     }
 }
 
-// Listen for real-time network changes
 window.addEventListener('online', checkNetworkStatus);
 window.addEventListener('offline', checkNetworkStatus);
 
-// Run the check automatically as soon as the app opens
 setTimeout(checkNetworkStatus, 1000);
