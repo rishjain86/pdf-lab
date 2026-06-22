@@ -21,10 +21,10 @@ body {
     background-color: var(--bg-main);
     color: var(--text-primary);
     height: 100vh;
-    height: 100dvh; /* Mobile browser bottom bar fix */
     display: flex;
     overflow: hidden;
-    overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
+    /* ADMOB BANNER OVERLAP FIX */
+    padding-bottom: 65px !important; 
 }
 
 /* Glassmorphism Classes */
@@ -41,19 +41,13 @@ body {
     height: 100%;
 }
 
-/* =========================================
-   SIDEBAR & NAVIGATION
-   ========================================= */
-
+/* Sidebar */
 .sidebar {
     width: var(--sidebar-width);
     height: 100%;
     display: flex;
     flex-direction: column;
     padding: 20px;
-    /* Capacitor Notch / Safe Area Support */
-    padding-top: max(20px, env(safe-area-inset-top)); 
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
     border-right: 1px solid var(--glass-border);
     z-index: 10;
 }
@@ -118,16 +112,11 @@ body {
     border-left: 3px solid var(--accent);
 }
 
-/* =========================================
-   WORKSPACE & DASHBOARD
-   ========================================= */
-
+/* Workspace & Dashboard */
 .workspace {
     flex: 1;
     overflow-y: auto;
     padding: 30px;
-    /* Capacitor Bottom Safe Area Support (for gesture bars) */
-    padding-bottom: max(30px, env(safe-area-inset-bottom)); 
     position: relative;
 }
 
@@ -209,66 +198,14 @@ body {
     display: none;
 }
 
-/* =========================================
-   ADD LINK TOOL & VISUAL EDITOR STYLES
-   ========================================= */
-
-/* Base style for Edit PDF Toolbar Buttons */
-.edit-toolbar-btn {
-    padding: 8px 12px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: 0.2s;
-    font-size: 0.9rem;
-}
-
-.edit-toolbar-btn:hover {
-    transform: translateY(-2px);
-    opacity: 0.9;
-}
-
-/* Default Active State (For Text, Crop, Margin, Draw etc) */
-.edit-tool-active {
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
-    transform: translateY(-2px);
-    background: var(--accent) !important;
-}
-
-/* Add Link Specific Button Style (Magenta/Pink Theme) */
-.btn-edit-link {
-    background: #ec4899 !important; /* Standard Pink */
-    color: white !important;
-    transition: all 0.3s ease;
-}
-
-.btn-edit-link:hover {
-    background: #db2777 !important; /* Darker Pink on Hover */
-}
-
-/* Custom Active State for Link Tool ONLY */
-.link-tool-active {
-    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.4) !important; /* Pink Glow */
-    transform: translateY(-2px);
-    background: #be185d !important; /* Deep Magenta */
-    color: white !important;
-}
-
-/* =========================================
-   MOBILE RESPONSIVENESS (NATIVE APP FEEL)
-   ========================================= */
-
+/* Mobile Responsiveness */
 @media (max-width: 768px) {
     .app-layout {
         flex-direction: column;
     }
     
     .sidebar {
-        display: none; /* Hide sidebar on mobile by default */
+        display: none; 
     }
     
     .hidden-desktop {
@@ -276,19 +213,179 @@ body {
     }
     
     .mobile-header {
-        /* Capacitor Notch Padding injected into Header */
-        padding: max(15px, env(safe-area-inset-top)) 20px 15px 20px; 
+        padding: 15px 20px;
         margin-bottom: 20px;
         border-radius: 12px;
     }
     
     .workspace {
         padding: 15px;
-        /* Padding to prevent content hiding behind gesture bars */
-        padding-bottom: max(15px, env(safe-area-inset-bottom));
     }
     
     .hero-header h1 {
         font-size: 1.5rem;
     }
+}
+
+/* PASSWORD SHOW/HIDE EYE ICON STYLES */
+.password-input-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.pwd-eye-icon {
+    position: absolute;
+    right: 15px;
+    top: 15px; 
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: color 0.2s ease;
+}
+
+.pwd-eye-icon:hover {
+    color: var(--accent);
+}
+
+/* ==========================================
+   ADMOB FIX FOR FIXED BOTTOM ELEMENTS
+========================================== */
+.bottom-nav,
+.editor-toolbar,
+.toolbar,
+footer,
+[style*="bottom: 0"],
+[style*="bottom:0"] {
+    margin-bottom: 65px !important;
+}
+
+/* ==========================================
+   DYNAMIC PROCESSING & SUCCESS UI (CUSTOM THEME)
+========================================== */
+#dynamic-ui-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(17, 24, 39, 0.85); /* Dark transparent based on var(--bg-main) */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: none; /* Flex when active */
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.dynamic-ui-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 40px 30px;
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    animation: scaleIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.dynamic-ui-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 24px;
+}
+
+/* Stylish Accent Loader */
+.accent-loader {
+    border: 4px solid rgba(255, 255, 255, 0.05);
+    border-top: 4px solid var(--accent);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.dynamic-ui-text {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Success Result Stats */
+#success-state {
+    display: none;
+}
+
+.percent-saved-circle {
+    width: 110px;
+    height: 110px;
+    border: 6px solid var(--accent);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px auto;
+    background: rgba(59, 130, 246, 0.05); /* Light accent background */
+}
+
+.percent-saved-circle h3 {
+    margin: 0;
+    font-size: 2rem;
+    color: var(--text-primary);
+}
+
+.percent-saved-circle p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.size-comparison-box {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 20px;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.size-comparison-box span {
+    color: var(--text-secondary);
+}
+
+.size-comparison-box b {
+    color: var(--accent);
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 14px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 24px;
+    transition: background 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
 }
