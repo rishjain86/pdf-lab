@@ -468,6 +468,136 @@
                 padding-bottom: calc(15px + env(safe-area-inset-bottom)) !important;
             }
         }
+
+        /* ==========================================
+           DYNAMIC PROCESSING & SUCCESS UI (CUSTOM THEME)
+           ========================================== */
+        #dynamic-ui-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85); /* Based on var(--bg-color) */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 999999; 
+            display: none; 
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .dynamic-ui-box {
+            background: var(--surface-color);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 40px 30px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .dynamic-ui-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 24px;
+        }
+
+        /* Stylish Accent Loader */
+        .accent-loader {
+            border: 4px solid rgba(255, 255, 255, 0.05);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spinDynamic 1s linear infinite;
+            margin: 0 auto 20px auto;
+        }
+
+        @keyframes spinDynamic {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .dynamic-ui-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Success Result Stats */
+        #success-state {
+            display: none;
+        }
+
+        .percent-saved-circle {
+            width: 110px;
+            height: 110px;
+            border: 6px solid var(--accent);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .percent-saved-circle h3 {
+            margin: 0;
+            font-size: 2rem;
+            color: var(--text-main);
+        }
+
+        .percent-saved-circle p {
+            margin: 0;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .size-comparison-box {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.95rem;
+            color: var(--text-main);
+        }
+
+        .size-comparison-box span {
+            color: var(--text-secondary);
+        }
+
+        .size-comparison-box b {
+            color: var(--accent);
+        }
+
+        .btn-primary-dynamic {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 24px;
+            transition: background 0.3s ease;
+        }
+
+        .btn-primary-dynamic:hover {
+            background: #2563eb;
+        }
     </style>
 </head>
 <body>
@@ -477,6 +607,50 @@
         <h2 style="font-family: 'Poppins', sans-serif; font-weight: 600;">No Internet Connection</h2>
         <p style="font-family: 'Poppins', sans-serif; font-size: 1rem; color: #94a3b8; margin-top: 10px; max-width: 80%;">Please turn on your Wi-Fi or Mobile Data to use Amazing PDF Tool.</p>
     </div>
+
+        <!-- DYNAMIC PROGRESS & RESULT UI -->
+    <div id="dynamic-ui-overlay">
+        <div class="dynamic-ui-box glass" style="position: relative;">
+            
+            <!-- ❌ NEW CLOSE BUTTON YAHAN HAI -->
+            <i class="fas fa-times" id="dynamic-ui-close" style="position: absolute; top: 15px; right: 20px; color: var(--text-secondary); font-size: 1.3rem; cursor: pointer;"></i>
+
+            <!-- 🔄 STATE 1: Processing (Includes Loading Bar & Spinner) -->
+            <div id="processing-state" style="width: 100%;">
+                <h2 class="dynamic-ui-title" id="action-title">Reading Files...</h2>
+                
+                <!-- Loading / Uploading Bar -->
+                <div id="loading-bar-container" style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin: 15px 0;">
+                    <div id="loading-bar-fill" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.1s linear;"></div>
+                </div>
+                <p id="loading-text" class="dynamic-ui-text" style="margin-bottom: 20px;">0%</p>
+
+                <!-- Processing Spinner -->
+                <div id="processing-spinner" class="accent-loader" style="display: none;"></div>
+                <p id="processing-msg" class="dynamic-ui-text" style="display: none;">Please keep the app open.<br>This might take a moment.</p>
+            </div>
+
+            <!-- ✅ STATE 2: Success Result -->
+            <div id="success-state">
+                <h2 class="dynamic-ui-title" id="success-title">Task Completed!</h2>
+                
+                <div class="percent-saved-circle" id="percent-circle-ui">
+                    <h3 id="saved-percent">0%</h3>
+                    <p>SAVED</p>
+                </div>
+                
+                <p class="dynamic-ui-text" id="success-message" style="display: none;">Your file has been processed successfully.</p>
+
+                <div class="size-comparison-box" id="size-stats-ui">
+                    <span id="old-size">0 MB</span> ➔ <b id="new-size">0 MB</b>
+                </div>
+
+                <button class="btn-primary-dynamic" id="final-download-btn">Download Now</button>
+            </div>
+
+        </div>
+    </div>
+    <!-- END DYNAMIC UI -->
 
     <input type="file" id="hidden-camera-input" accept="image/*" capture="environment" style="display: none;">
     <input type="file" id="hidden-gallery-input" accept="image/*" style="display: none;">
@@ -523,7 +697,7 @@
         <a href="privacy.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-user-shield"></i> Privacy Policy</a>
         <a href="terms.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-file-contract"></i> Terms & Cond.</a>
         <div style="text-align: center; margin-top: 30px; padding-bottom: 20px; color: #888; font-size: 0.95rem; font-weight: bold; letter-spacing: 1px;">
-        <span id="app-version-text">Version 1.8</span>
+        <span id="app-version-text">Version 1.9</span>
    </div> 
         
     </div>
@@ -957,7 +1131,7 @@
         });
     </script>
 
-    <script type="module" src="app.js?v=8"></script>
+    <script type="module" src="app.js?v=10"></script>
 
     <script>
     // 1. Disable Right Click (Context Menu)
@@ -994,7 +1168,7 @@
         const db = getFirestore(app);
 
         // Version variable for auto-update via sed
-        const CURRENT_APP_VERSION = 1.8;
+        const CURRENT_APP_VERSION = 1.9;
 
         async function checkAppVersion() {
             try {
