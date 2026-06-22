@@ -10,7 +10,7 @@ import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.0/+esm';
 // ==========================================
 // APP VERSION CHECKER
 // ==========================================
-const CURRENT_APP_VERSION = 1.8;
+const CURRENT_APP_VERSION = 1.9;
 
 function checkForUpdates() {
     const versionUrl = 'https://amazingpdf.in/version.json?time=' + new Date().getTime();
@@ -80,6 +80,144 @@ function handleError(error) {
         showCustomAlert(`Error: ${error.message}`);
     }
 }
+
+// ==========================================
+// DYNAMIC 3-STEP UI HELPERS 
+// ==========================================
+function formatBytes(bytes, decimals = 2) {
+    if (!+bytes) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+
+async function simulateLoadingAndProcess(title, processCallback) {
+    const overlay = document.getElementById('dynamic-ui-overlay');
+    const processingState = document.getElementById('processing-state');
+    const successState = document.getElementById('success-state');
+    const actionTitle = document.getElementById('action-title');
+    const barContainer = document.getElementById('loading-bar-container');
+    const barFill = document.getElementById('loading-bar-fill');
+    const loadingText = document.getElementById('loading-text');
+    const spinner = document.getElementById('processing-spinner');
+    const procMsg = document.getElementById('processing-msg');
+
+    if (overlay && processingState && successState) {
+        overlay.style.display = 'flex';
+        processingState.style.display = 'block';
+        successState.style.display = 'none';
+        
+        actionTitle.innerText = "Reading Files...";
+        barContainer.style.display = 'block';
+        loadingText.style.display = 'block';
+        spinner.style.display = 'none';
+        procMsg.style.display = 'none';
+        barFill.style.width = '0%';
+
+        // Simulate reading progress to improve UX
+        for(let i = 0; i <= 100; i += 15) {
+            barFill.style.width = i + '%';
+            loadingText.innerText = `${i}%`;
+            await new Promise(r => setTimeout(r, 60)); 
+        }
+
+        // Switch to Processing Mode
+        actionTitle.innerText = title + '...';
+        barContainer.style.display = 'none';
+        loadingText.style.display = 'none';
+        spinner.style.display = 'block';
+        procMsg.style.display = 'block';
+
+        await new Promise(r => setTimeout(r, 50)); 
+    }
+
+    try {
+        await processCallback();
+    } catch(e) {
+        hideProcessingUI();
+        handleError(e);
+    }
+}
+
+function showProcessingUI(title = "Processing") {
+    // Only used for places where simulateLoadingAndProcess is not ideal
+    const overlay = document.getElementById('dynamic-ui-overlay');
+    const processingState = document.getElementById('processing-state');
+    const successState = document.getElementById('success-state');
+    const actionTitle = document.getElementById('action-title');
+    const barContainer = document.getElementById('loading-bar-container');
+    const loadingText = document.getElementById('loading-text');
+    const spinner = document.getElementById('processing-spinner');
+    const procMsg = document.getElementById('processing-msg');
+    
+    if (overlay && processingState && successState && actionTitle) {
+        overlay.style.display = 'flex';
+        processingState.style.display = 'block';
+        successState.style.display = 'none';
+        actionTitle.innerText = title + '...';
+        barContainer.style.display = 'none';
+        loadingText.style.display = 'none';
+        spinner.style.display = 'block';
+        procMsg.style.display = 'block';
+    }
+}
+
+function hideProcessingUI() {
+    const overlay = document.getElementById('dynamic-ui-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function showSuccessResult(originalBytes, compressedBytes, successTitle, downloadCallback, forceShowStats = false) {
+    const overlay = document.getElementById('dynamic-ui-overlay');
+    const processingState = document.getElementById('processing-state');
+    const successState = document.getElementById('success-state');
+    const successTitleEl = document.getElementById('success-title');
+    const percentCircleUi = document.getElementById('percent-circle-ui');
+    const sizeStatsUi = document.getElementById('size-stats-ui');
+    const successMsgUi = document.getElementById('success-message');
+    const downloadBtn = document.getElementById('final-download-btn');
+    
+    if (!overlay || !successState || !downloadBtn) {
+        downloadCallback();
+        return;
+    }
+
+    overlay.style.display = 'flex';
+    processingState.style.display = 'none';
+    successState.style.display = 'block';
+    if(successTitleEl) successTitleEl.innerText = successTitle;
+
+    let savedBytes = originalBytes - compressedBytes;
+    let percentSaved = 0;
+    
+    if (originalBytes > 0 && (savedBytes > 0 || forceShowStats)) {
+        percentSaved = savedBytes > 0 ? Math.round((savedBytes / originalBytes) * 100) : 0;
+        
+        percentCircleUi.style.display = 'flex';
+        sizeStatsUi.style.display = 'block';
+        successMsgUi.style.display = 'none'; 
+        
+        document.getElementById('saved-percent').innerText = percentSaved + '%';
+        document.getElementById('old-size').innerText = formatBytes(originalBytes);
+        document.getElementById('new-size').innerText = formatBytes(compressedBytes);
+    } else {
+        percentCircleUi.style.display = 'none';
+        sizeStatsUi.style.display = 'none';
+        successMsgUi.style.display = 'block'; 
+        successMsgUi.innerText = "Your file is ready to download!";
+    }
+
+    const newBtn = downloadBtn.cloneNode(true);
+    downloadBtn.parentNode.replaceChild(newBtn, downloadBtn);
+    
+    newBtn.onclick = () => {
+        overlay.style.display = 'none'; 
+        downloadCallback(); 
+    };
+}
+// ==========================================
 
 let lastBackPress = 0;
 if (window.Capacitor && window.Capacitor.isNativePlatform()) {
@@ -692,7 +830,7 @@ document.getElementById('btn-scanner-export')?.addEventListener('click', async (
     const oldText = btn.innerHTML; 
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading PDF...';
     
-    try {
+    simulateLoadingAndProcess("Generating PDF", async () => {
         const pdfDoc = await PDFDocument.create();
         for (let page of scannerPages) {
             const tempImg = new Image(); 
@@ -731,11 +869,12 @@ document.getElementById('btn-scanner-export')?.addEventListener('click', async (
         
         const bytes = await pdfDoc.save();
 
-        if(typeof AdManager !== 'undefined' && AdManager) {
-            await AdManager.showInterstitial();
-        }
-
-        await processAndDownload(bytes, `${scannerOriginalName}_Scanned.pdf`, 'application/pdf');
+        showSuccessResult(0, bytes.length, "Scan Completed!", async () => {
+            if(typeof AdManager !== 'undefined' && AdManager) {
+                await AdManager.showInterstitial();
+            }
+            await processAndDownload(bytes, `${scannerOriginalName}_Scanned.pdf`, 'application/pdf');
+        });
         
         document.getElementById('scanner-preview-modal').style.display = 'none'; 
         if (scannerWorkspace) {
@@ -743,12 +882,8 @@ document.getElementById('btn-scanner-export')?.addEventListener('click', async (
         }
         document.body.classList.remove('is-editing'); 
         scannerPages = [];
-        
-    } catch (e) { 
-        handleError(e); 
-    } finally { 
-        btn.innerHTML = oldText; 
-    }
+        btn.innerHTML = oldText;
+    });
 });
 
 
@@ -1060,21 +1195,24 @@ function setupSingleFileLogic(id, actionCallback) {
             const originalText = btn.innerHTML; 
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
             
-            try {
+            const totalOriginalSize = currentFile.size;
+            
+            simulateLoadingAndProcess(`Processing File`, async () => {
                 const result = await actionCallback(currentFile); 
                 document.getElementById(`reset-${id}`)?.click();
 
-                if(typeof AdManager !== 'undefined' && AdManager) {
-                    await AdManager.showInterstitial();
-                }
+                // Un tools ke liye true jo size badalte hain
+                const forceStats = ['split'].includes(id);
 
-                await processAndDownload(result.bytes, result.filename, result.type); 
+                showSuccessResult(totalOriginalSize, result.bytes.length, "Task Completed!", async () => {
+                    if(typeof AdManager !== 'undefined' && AdManager) {
+                        await AdManager.showInterstitial();
+                    }
+                    await processAndDownload(result.bytes, result.filename, result.type); 
+                }, forceStats);
                 
-            } catch (error) { 
-                handleError(error); 
-            } finally { 
-                btn.innerHTML = originalText; 
-            }
+            });
+            btn.innerHTML = originalText;
         });
     }
 }
@@ -1151,22 +1289,24 @@ function setupMultipleFileLogic(id, actionCallback) {
         const originalText = btn.innerHTML; 
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
         
-        try {
+        const totalOriginalSize = currentFiles.reduce((acc, f) => acc + f.size, 0);
+        
+        simulateLoadingAndProcess(`Processing ${currentFiles.length} File(s)`, async () => {
             const result = await actionCallback(currentFiles); 
             currentFiles = []; 
             renderList(); 
             
-            if(typeof AdManager !== 'undefined' && AdManager) {
-                await AdManager.showInterstitial();
-            }
+            const forceStats = id === 'compress';
 
-            await processAndDownload(result.bytes, result.filename, result.type); 
+            showSuccessResult(totalOriginalSize, result.bytes.length, "Task Completed!", async () => {
+                if(typeof AdManager !== 'undefined' && AdManager) {
+                    await AdManager.showInterstitial();
+                }
+                await processAndDownload(result.bytes, result.filename, result.type); 
+            }, forceStats);
             
-        } catch (error) { 
-            handleError(error); 
-        } finally { 
-            btn.innerHTML = originalText; 
-        }
+        });
+        btn.innerHTML = originalText;
     });
 }
 
@@ -1382,57 +1522,75 @@ setupSingleFileLogic('extract', async (file) => {
     
     return { bytes: new TextEncoder().encode(fullText), filename: `${getBaseName(file.name)}_Extracted.txt`, type: 'text/plain' };
 });
+
+// ===============================================
+// 🔥 AGGRESSIVE HYBRID COMPRESSION ENGINE (FIXED)
+// ===============================================
 setupMultipleFileLogic('compress', async (files) => {
     
-    // Smart Hybrid Engine
     const compressSingleFile = async (file) => {
         const originalSize = file.size;
-        const THRESHOLD = 1.5 * 1024 * 1024; // 1.5 MB
         
-        // 1. STANDARD METHOD (For small text-based files)
-        if (originalSize < THRESHOLD) { 
-            const pdfDoc = await PDFDocument.load(await file.arrayBuffer(), { updateMetadata: false }); 
-            const newPdf = await PDFDocument.create();
-            const copiedPages = await newPdf.copyPages(pdfDoc, pdfDoc.getPageIndices()); 
-            copiedPages.forEach(p => newPdf.addPage(p));
-            
-            let standardBytes = await newPdf.save({ useObjectStreams: true, compress: true });
-            
-            // Agar standard method se size badh gaya, toh original return karo
-            if (standardBytes.length >= originalSize) {
-                return new Uint8Array(await file.arrayBuffer()); 
-            }
-            return standardBytes;
-        }
+        // Convert to PDF-lib for safety & basic compression check
+        let standardBytes = new Uint8Array();
+        try {
+            const tempDoc = await PDFDocument.load(await file.arrayBuffer(), { updateMetadata: false });
+            standardBytes = await tempDoc.save({ useObjectStreams: true, compress: true });
+        } catch(e) { }
 
-        // 2. EXTREME CANVAS METHOD (For large image-heavy files)
+        // --- AGGRESSIVE CANVAS ENGINE ---
+        // This will ALWAYS shrink the file size by converting vector data into highly compressed JPEGs
         const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
         const newPdf = await PDFDocument.create();
 
+        let dynamicScale = 1.0;
+        let quality = 0.7;
+
+        // Auto-Scale Logic (Shrink heavily for large files, preserve quality for small text files)
+        if (originalSize > 50 * 1024 * 1024) { dynamicScale = 0.4; quality = 0.5; } 
+        else if (originalSize > 15 * 1024 * 1024) { dynamicScale = 0.6; quality = 0.6; } 
+        else if (originalSize > 5 * 1024 * 1024) { dynamicScale = 0.8; quality = 0.65; } 
+        else if (originalSize > 1 * 1024 * 1024) { dynamicScale = 1.0; quality = 0.7; } 
+        else { dynamicScale = 1.2; quality = 0.6; } // < 1MB files need to be squashed aggressively if converted to image
+
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 1.25 }); 
+            const baseViewport = page.getViewport({ scale: 1.0 });
+            
+            // Critical Fix: Prevent canvas from blowing up on huge A4 DPI pages
+            let finalScale = dynamicScale;
+            if (baseViewport.width * dynamicScale > 1500) {
+                finalScale = 1500 / baseViewport.width;
+            }
+
+            const viewport = page.getViewport({ scale: finalScale }); 
             const canvas = document.createElement('canvas');
             canvas.width = viewport.width;
             canvas.height = viewport.height;
             const ctx = canvas.getContext('2d');
 
+            // Force White Background (PDF transparent base causes black blocks in JPEG)
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
             await page.render({ canvasContext: ctx, viewport }).promise;
 
-            const imgData = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+            const imgData = canvas.toDataURL('image/jpeg', quality).split(',')[1];
             const pdfImage = await newPdf.embedJpg(imgData);
 
-            const newPage = newPdf.addPage([viewport.width, viewport.height]);
-            newPage.drawImage(pdfImage, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+            // Re-create page to original dimensions
+            const newPage = newPdf.addPage([baseViewport.width, baseViewport.height]);
+            newPage.drawImage(pdfImage, { x: 0, y: 0, width: baseViewport.width, height: baseViewport.height });
         }
         
         let extremeBytes = await newPdf.save();
         
-        // Safety Check: Agar heavy hone ke bawajood size badh jaye, toh original wapas do
-        if (extremeBytes.length >= originalSize) {
-            return new Uint8Array(await file.arrayBuffer());
-        }
-        return extremeBytes;
+        // Pick the smallest among (Original, Standard, Canvas)
+        let bestBytes = new Uint8Array(await file.arrayBuffer());
+        if (standardBytes.length > 0 && standardBytes.length < bestBytes.length) bestBytes = standardBytes;
+        if (extremeBytes.length > 0 && extremeBytes.length < bestBytes.length) bestBytes = extremeBytes;
+
+        return bestBytes;
     };
 
     if (files.length === 1) {
@@ -1551,7 +1709,7 @@ if (ui.htmltopdf) {
         const btn = document.getElementById('btn-htmltopdf-action'); 
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Converting...';
         
-        try {
+        simulateLoadingAndProcess("Converting HTML", async () => {
             const iframe = document.createElement('iframe');
             iframe.style.position = 'absolute'; 
             iframe.style.top = '-9999px'; 
@@ -1568,17 +1726,15 @@ if (ui.htmltopdf) {
             document.getElementById('html-input').value = '';
             document.body.removeChild(iframe);
             
-            if(typeof AdManager !== 'undefined' && AdManager) {
-                await AdManager.showInterstitial();
-            }
-
-            await processAndDownload(bytes, 'HTML_Converted.pdf', 'application/pdf'); 
+            showSuccessResult(0, bytes.length, "PDF Generated!", async () => {
+                if(typeof AdManager !== 'undefined' && AdManager) {
+                    await AdManager.showInterstitial();
+                }
+                await processAndDownload(bytes, 'HTML_Converted.pdf', 'application/pdf'); 
+            }, true);
             
-        } catch(e) { 
-            handleError(e); 
-        } finally { 
-            btn.innerHTML = '<i class="fas fa-code"></i> Convert to PDF'; 
-        }
+        });
+        btn.innerHTML = '<i class="fas fa-code"></i> Convert to PDF';
     });
 }
 
@@ -1632,7 +1788,9 @@ if (ui.merge) {
         const btn = document.getElementById('btn-merge-action'); 
         btn.innerHTML = 'Processing...';
         
-        try {
+        const totalOriginalSize = mergeFiles.reduce((acc, f) => acc + f.size, 0);
+        
+        simulateLoadingAndProcess("Merging Files", async () => {
             const mergedPdf = await PDFDocument.create();
             for (const file of mergeFiles) { 
                 const pdf = await PDFDocument.load(await file.arrayBuffer()); 
@@ -1646,16 +1804,15 @@ if (ui.merge) {
             mergeFiles = []; 
             renderMergeList(); 
             
-            if(typeof AdManager !== 'undefined' && AdManager) {
-                await AdManager.showInterstitial();
-            }
-
-            await processAndDownload(bytes, outputName, 'application/pdf');
-        } catch (e) { 
-            handleError(e); 
-        } finally { 
-            btn.innerHTML = 'Merge Files Now'; 
-        }
+            showSuccessResult(totalOriginalSize, bytes.length, "PDF Merged!", async () => {
+                if(typeof AdManager !== 'undefined' && AdManager) {
+                    await AdManager.showInterstitial();
+                }
+                await processAndDownload(bytes, outputName, 'application/pdf');
+            }, true);
+            
+        });
+        btn.innerHTML = 'Merge Files Now';
     });
 }
 
@@ -1708,7 +1865,9 @@ if (ui.jpgtopdf) {
         const btn = document.getElementById('btn-jpgtopdf-action'); 
         btn.innerHTML = 'Converting...';
         
-        try {
+        const totalOriginalSize = imageFiles.reduce((acc, f) => acc + f.size, 0);
+        
+        simulateLoadingAndProcess("Converting Images", async () => {
             const pdfDoc = await PDFDocument.create();
             for (const file of imageFiles) {
                 const dataUrl = await new Promise(resolve => { 
@@ -1741,16 +1900,15 @@ if (ui.jpgtopdf) {
             imageFiles = []; 
             renderImgList(); 
             
-            if(typeof AdManager !== 'undefined' && AdManager) {
-                await AdManager.showInterstitial();
-            }
-
-            await processAndDownload(bytes, outputName, 'application/pdf');
-        } catch (e) { 
-            handleError(e); 
-        } finally { 
-            btn.innerHTML = 'Convert to PDF'; 
-        }
+            showSuccessResult(totalOriginalSize, bytes.length, "PDF Generated!", async () => {
+                if(typeof AdManager !== 'undefined' && AdManager) {
+                    await AdManager.showInterstitial();
+                }
+                await processAndDownload(bytes, outputName, 'application/pdf');
+            }, true);
+            
+        });
+        btn.innerHTML = 'Convert to PDF';
     });
 }
 
@@ -2688,20 +2846,18 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
     const oldText = btn.innerHTML; 
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
     
-    try {
+    const totalOriginalSize = currentEditFile.size;
+    
+    simulateLoadingAndProcess("Applying Changes", async () => {
         const freshBuffer = await currentEditFile.arrayBuffer();
         if (freshBuffer.byteLength < 100) { 
+            hideProcessingUI();
             showCustomAlert("File error."); 
-            btn.innerHTML = oldText; 
             return; 
         }
 
         const applyModeObj = document.getElementById('edit-apply-mode'); 
         const applyMode = applyModeObj ? applyModeObj.value : 'current';
-
-        if(typeof AdManager !== 'undefined' && AdManager) {
-            await AdManager.showInterstitial();
-        }
 
         if (['edit', 'sign', 'watermark', 'imagewatermark', 'addtext'].includes(currentVisualMode)) {
             const pdfDoc = await PDFDocument.load(freshBuffer);
@@ -2799,12 +2955,21 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                     }
                 }
             }
+            
             let outputSuffix = currentVisualMode === 'sign' ? '_Signed' : currentVisualMode.includes('watermark') ? '_Watermark' : '_Edited';
-            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + outputSuffix + '.pdf', 'application/pdf');
+            const finalBytes = await pdfDoc.save();
+            
+            showSuccessResult(totalOriginalSize, finalBytes.length, "PDF Updated!", async () => {
+                if(typeof AdManager !== 'undefined' && AdManager) {
+                    await AdManager.showInterstitial();
+                }
+                await processAndDownload(finalBytes, getBaseName(editOriginalFileName) + outputSuffix + '.pdf', 'application/pdf');
+            }, true);
 
         } else if (currentVisualMode === 'crop') {
             const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
             if(!boxData) { 
+                hideProcessingUI();
                 showCustomAlert("Draw a crop box first!"); 
                 btn.innerHTML = oldText; 
                 return; 
@@ -2830,11 +2995,18 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 });
             }
             
-            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Cropped.pdf', 'application/pdf');
+            const finalBytes = await pdfDoc.save();
+            showSuccessResult(totalOriginalSize, finalBytes.length, "PDF Cropped!", async () => {
+                if(typeof AdManager !== 'undefined' && AdManager) {
+                    await AdManager.showInterstitial();
+                }
+                await processAndDownload(finalBytes, getBaseName(editOriginalFileName) + '_Cropped.pdf', 'application/pdf');
+            }, true);
 
         } else if (currentVisualMode === 'addmargins') {
             const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
             if(!boxData) { 
+                hideProcessingUI();
                 showCustomAlert("Draw a content box first!"); 
                 btn.innerHTML = oldText; 
                 return; 
@@ -2857,11 +3029,18 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 p.translateContent(mL, mB); 
             });
             
-            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Margined.pdf', 'application/pdf');
+            const finalBytes = await pdfDoc.save();
+            showSuccessResult(totalOriginalSize, finalBytes.length, "Margins Added!", async () => {
+                if(typeof AdManager !== 'undefined' && AdManager) {
+                    await AdManager.showInterstitial();
+                }
+                await processAndDownload(finalBytes, getBaseName(editOriginalFileName) + '_Margined.pdf', 'application/pdf');
+            }, true);
 
         } else if (currentVisualMode === 'extract') {
             const boxData = pageEdits[editPageNum]?.find(e => e.type === 'visual-box');
             if(!boxData) { 
+                hideProcessingUI();
                 showCustomAlert("Draw a selection box first!"); 
                 btn.innerHTML = oldText; 
                 return; 
@@ -2889,14 +3068,22 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
             }
             
             if(!fullText) {
+                hideProcessingUI();
                 showCustomAlert("No text found in that area."); 
             } else {
-                await processAndDownload(new TextEncoder().encode(fullText), getBaseName(editOriginalFileName) + '_Extracted.txt', 'text/plain');
+                const finalBytes = new TextEncoder().encode(fullText);
+                showSuccessResult(0, finalBytes.length, "Text Extracted!", async () => {
+                    if(typeof AdManager !== 'undefined' && AdManager) {
+                        await AdManager.showInterstitial();
+                    }
+                    await processAndDownload(finalBytes, getBaseName(editOriginalFileName) + '_Extracted.txt', 'text/plain');
+                }, false);
             }
 
         } else if (currentVisualMode === 'pagenumbers') {
             const dummy = pageEdits[1]?.find(e => e.type === 'pagenum-dummy');
             if(!dummy) { 
+                hideProcessingUI();
                 showCustomAlert("Position the number first."); 
                 btn.innerHTML = oldText; 
                 return; 
@@ -2928,7 +3115,13 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 });
             });
             
-            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Numbered.pdf', 'application/pdf');
+            const finalBytes = await pdfDoc.save();
+            showSuccessResult(totalOriginalSize, finalBytes.length, "Numbers Added!", async () => {
+                if(typeof AdManager !== 'undefined' && AdManager) {
+                    await AdManager.showInterstitial();
+                }
+                await processAndDownload(finalBytes, getBaseName(editOriginalFileName) + '_Numbered.pdf', 'application/pdf');
+            }, true);
             
         } else if (currentVisualMode === 'rotate') {
             const pdfDoc = await PDFDocument.load(freshBuffer);
@@ -2939,7 +3132,14 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                     p.setRotation(degrees(p.getRotation().angle + rot));
                 }
             });
-            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Rotated.pdf', 'application/pdf');
+            
+            const finalBytes = await pdfDoc.save();
+            showSuccessResult(totalOriginalSize, finalBytes.length, "PDF Rotated!", async () => {
+                if(typeof AdManager !== 'undefined' && AdManager) {
+                    await AdManager.showInterstitial();
+                }
+                await processAndDownload(finalBytes, getBaseName(editOriginalFileName) + '_Rotated.pdf', 'application/pdf');
+            }, true);
             
         } else if (currentVisualMode === 'flatten') {
             const pdfDoc = await PDFDocument.load(freshBuffer);
@@ -2947,7 +3147,14 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
             if (form) {
                 form.flatten();
             }
-            await processAndDownload(await pdfDoc.save(), getBaseName(editOriginalFileName) + '_Flattened.pdf', 'application/pdf');
+            
+            const finalBytes = await pdfDoc.save();
+            showSuccessResult(totalOriginalSize, finalBytes.length, "PDF Flattened!", async () => {
+                if(typeof AdManager !== 'undefined' && AdManager) {
+                    await AdManager.showInterstitial();
+                }
+                await processAndDownload(finalBytes, getBaseName(editOriginalFileName) + '_Flattened.pdf', 'application/pdf');
+            }, true);
         }
 
         document.body.classList.remove('is-editing');
@@ -2958,13 +3165,8 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
         if(upl) upl.style.display='block'; 
         
         window.switchView('dashboard');
-        
-    } catch (error) { 
-        handleError(error); 
-        document.body.classList.remove('is-editing'); 
-    } finally { 
-        btn.innerHTML = oldText; 
-    }
+        btn.innerHTML = oldText;
+    });
 });
 
 // ==========================================
@@ -3062,3 +3264,8 @@ window.addEventListener('online', checkNetworkStatus);
 window.addEventListener('offline', checkNetworkStatus);
 
 setTimeout(checkNetworkStatus, 1000);
+
+// Close Button Logic for Dynamic UI
+document.getElementById('dynamic-ui-close')?.addEventListener('click', () => {
+    document.getElementById('dynamic-ui-overlay').style.display = 'none';
+});
