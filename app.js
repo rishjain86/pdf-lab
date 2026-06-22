@@ -3197,53 +3197,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // --- 2. PINCH TO ZOOM LOGIC (2 fingers zooming) ---
-    const overlayCanvas = document.getElementById('pdf-overlay-canvas');
-    let initialPinchDistance = null;
+   // --- 2. PINCH TO ZOOM LOGIC (STABLE) ---
+const overlayCanvas = document.getElementById('pdf-overlay-canvas');
+let initialPinchDistance = null;
 
-    if (overlayCanvas) {
-        overlayCanvas.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 2) {
-                e.preventDefault(); 
-                initialPinchDistance = Math.hypot(
-                    e.touches[0].pageX - e.touches[1].pageX,
-                    e.touches[0].pageY - e.touches[1].pageY
-                );
-            }
-        }, { passive: false });
+if (overlayCanvas) {
+    overlayCanvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault(); 
+            initialPinchDistance = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+        }
+    }, { passive: false });
 
-        overlayCanvas.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 2 && initialPinchDistance !== null) {
-                e.preventDefault(); 
-                
-                const currentDistance = Math.hypot(
-                    e.touches[0].pageX - e.touches[1].pageX,
-                    e.touches[0].pageY - e.touches[1].pageY
-                );
+    overlayCanvas.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && initialPinchDistance !== null) {
+            e.preventDefault(); 
+            e.stopPropagation(); // Yeh line flicker aur click conflict roke gi
+            
+            const currentDistance = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
 
-                const distanceDifference = currentDistance - initialPinchDistance;
-                
-                if (Math.abs(distanceDifference) > 40) {
-                    if (distanceDifference > 0) {
-                        const zoomInButton = document.getElementById('btn-zoom-in');
-                        if(zoomInButton) zoomInButton.click();
-                    } else {
-                        const zoomOutButton = document.getElementById('btn-zoom-out');
-                        if(zoomOutButton) zoomOutButton.click();
-                    }
-                    initialPinchDistance = currentDistance; 
+            const distanceDifference = currentDistance - initialPinchDistance;
+            
+            // Sensitivity (40px)
+            if (Math.abs(distanceDifference) > 40) {
+                if (distanceDifference > 0) {
+                    // ZOOM IN
+                    editScale += 0.2;
+                    renderEditPage(editPageNum);
+                } else {
+                    // ZOOM OUT
+                    editScale = Math.max(0.4, editScale - 0.2);
+                    renderEditPage(editPageNum);
                 }
+                initialPinchDistance = currentDistance; 
             }
-        }, { passive: false });
+        }
+    }, { passive: false });
 
-        overlayCanvas.addEventListener('touchend', (e) => {
-            if (e.touches.length < 2) {
-                initialPinchDistance = null;
-            }
-        });
-    }
-});
-
+    overlayCanvas.addEventListener('touchend', (e) => {
+        initialPinchDistance = null;
+    }, { passive: false });
+}
+ 
 // Network Connectivity Checker & Ad Reloader
 function checkNetworkStatus() {
     const offlineScreen = document.getElementById('offline-screen');
