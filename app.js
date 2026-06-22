@@ -3196,8 +3196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-
-   // --- 2. PINCH TO ZOOM LOGIC (STABLE) ---
+// --- 2. PINCH TO ZOOM LOGIC (FIXED: BUTTON CONFLICT) ---
 const overlayCanvas = document.getElementById('pdf-overlay-canvas');
 let initialPinchDistance = null;
 
@@ -3213,37 +3212,38 @@ if (overlayCanvas) {
     }, { passive: false });
 
     overlayCanvas.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2 && initialPinchDistance !== null) {
+        if (e.touches.length === 2) {
             e.preventDefault(); 
-            e.stopPropagation(); // Yeh line flicker aur click conflict roke gi
+            // SIRF tabhi stopPropagation karo jab 2 fingers ho
+            e.stopPropagation(); 
             
             const currentDistance = Math.hypot(
                 e.touches[0].pageX - e.touches[1].pageX,
                 e.touches[0].pageY - e.touches[1].pageY
             );
 
-            const distanceDifference = currentDistance - initialPinchDistance;
-            
-            // Sensitivity (40px)
-            if (Math.abs(distanceDifference) > 40) {
-                if (distanceDifference > 0) {
-                    // ZOOM IN
-                    editScale += 0.2;
+            if (initialPinchDistance !== null) {
+                const distanceDifference = currentDistance - initialPinchDistance;
+                if (Math.abs(distanceDifference) > 40) {
+                    if (distanceDifference > 0) {
+                        editScale += 0.2;
+                    } else {
+                        editScale = Math.max(0.4, editScale - 0.2);
+                    }
                     renderEditPage(editPageNum);
-                } else {
-                    // ZOOM OUT
-                    editScale = Math.max(0.4, editScale - 0.2);
-                    renderEditPage(editPageNum);
+                    initialPinchDistance = currentDistance; 
                 }
-                initialPinchDistance = currentDistance; 
             }
         }
+        // AGAR 1 FINGER HAI, toh e.stopPropagation mat karo, 
+        // taaki drawing/buttons kaam karte rahein
     }, { passive: false });
 
     overlayCanvas.addEventListener('touchend', (e) => {
         initialPinchDistance = null;
     }, { passive: false });
 }
+
  
 // Network Connectivity Checker & Ad Reloader
 function checkNetworkStatus() {
