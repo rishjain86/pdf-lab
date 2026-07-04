@@ -7,10 +7,6 @@ import { Filesystem, Directory } from 'https://cdn.jsdelivr.net/npm/@capacitor/f
 import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@6.0.0/+esm';
 import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.0/+esm';
 
-// 👇 NAYE IMPORTS WORD CONVERSIONS KE LIYE 👇
-import * as docx from 'https://cdn.jsdelivr.net/npm/docx@8.5.0/+esm';
-import mammoth from 'https://cdn.jsdelivr.net/npm/mammoth@1.6.0/+esm';
-
 // ==========================================
 // FORCE SCROLL PATCH (Overrides any CSS bugs)
 // ==========================================
@@ -910,7 +906,6 @@ document.getElementById('btn-scanner-export')?.addEventListener('click', async (
 // ==========================================
 // UI GENERATION FOR TOOLS
 // ==========================================
-// Added pdftoword & wordtopdf
 const views = [
     'pdftoword', 'wordtopdf', 'edit', 'merge', 'split', 'delete', 'compress', 'rotate', 'pdftojpg', 'pagenumbers', 
     'jpgtopdf', 'extract', 'watermark', 'sign', 'protect', 'unlock', 'flatten', 
@@ -1361,6 +1356,9 @@ setupSingleFileLogic('addtext', null);
 
 // --- NEW: PDF TO WORD ---
 setupSingleFileLogic('pdftoword', async (file) => {
+    // 1. Dynamic Import se crash bach jayega
+    const docx = await import('https://esm.sh/docx@8.2.3');
+
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
     let paragraphs = [];
     
@@ -1404,13 +1402,17 @@ setupSingleFileLogic('pdftoword', async (file) => {
 
 // --- NEW: WORD TO PDF ---
 setupSingleFileLogic('wordtopdf', async (file) => {
+    // 1. Dynamic Import for Mammoth
+    const mammothModule = await import('https://esm.sh/mammoth@1.6.0');
+    const mammothLib = mammothModule.default || mammothModule;
+
     const arrayBuffer = await file.arrayBuffer();
     
-    // 1. Convert Word to HTML
-    const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
+    // 2. Convert Word to HTML
+    const result = await mammothLib.convertToHtml({arrayBuffer: arrayBuffer});
     const htmlContent = result.value || "<p>Blank Document</p>"; 
     
-    // 2. Create wrapper WITHOUT adding to document body (fixes blank page bug)
+    // 3. Create wrapper WITHOUT adding to document body (fixes blank page bug)
     const wrapper = document.createElement('div');
     wrapper.innerHTML = htmlContent;
     wrapper.style.padding = '30px';
@@ -1418,7 +1420,7 @@ setupSingleFileLogic('wordtopdf', async (file) => {
     wrapper.style.background = '#ffffff'; // Force white background
     wrapper.style.width = '800px'; 
     
-    // 3. Convert HTML to PDF
+    // 4. Convert HTML to PDF
     const opt = {
         margin:       10,
         filename:     'temp.pdf',
@@ -1427,10 +1429,11 @@ setupSingleFileLogic('wordtopdf', async (file) => {
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
-    const pdfBlob = await window.html2pdf().set(opt).from(wrapper).output('blob');
+    const pdfBlob = await html2pdf().set(opt).from(wrapper).output('blob');
     
     return { bytes: new Uint8Array(await pdfBlob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.pdf`, type: 'application/pdf' };
 });
+
 
 setupSingleFileLogic('split', async (file) => {
     const pagesToExtract = parseRange(document.getElementById('split-ranges').value);
