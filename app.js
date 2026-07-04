@@ -1371,10 +1371,9 @@ setupSingleFileLogic('pdftoword', async (file) => {
         let currentLine = "";
         
         textContent.items.forEach(item => {
-            // Check if we moved to a new line (Y axis difference)
             if (lastY !== -1 && Math.abs(lastY - item.transform[5]) > 5) {
                 if(currentLine.trim()) {
-                    paragraphs.push(new window.docx.Paragraph({ children: [new window.docx.TextRun(currentLine)] }));
+                    paragraphs.push(new docx.Paragraph({ children: [new docx.TextRun(currentLine)] }));
                 }
                 currentLine = item.str;
             } else {
@@ -1383,23 +1382,22 @@ setupSingleFileLogic('pdftoword', async (file) => {
             lastY = item.transform[5];
         });
         if (currentLine.trim()) {
-            paragraphs.push(new window.docx.Paragraph({ children: [new window.docx.TextRun(currentLine)] }));
+            paragraphs.push(new docx.Paragraph({ children: [new docx.TextRun(currentLine)] }));
         }
         
-        // Add Page Break after each page (except last)
         if (i < pdf.numPages) {
-            paragraphs.push(new window.docx.Paragraph({ children: [new window.docx.PageBreak()] }));
+            paragraphs.push(new docx.Paragraph({ children: [new docx.PageBreak()] }));
         }
     }
     
-    const doc = new window.docx.Document({
+    const docObj = new docx.Document({
         sections: [{
             properties: {},
-            children: paragraphs.length ? paragraphs : [new window.docx.Paragraph("No text found in this PDF.")]
+            children: paragraphs.length ? paragraphs : [new docx.Paragraph("No text found in this PDF.")]
         }]
     });
     
-    const blob = await window.docx.Packer.toBlob(doc);
+    const blob = await docx.Packer.toBlob(docObj);
     return { bytes: new Uint8Array(await blob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.docx`, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
 });
 
