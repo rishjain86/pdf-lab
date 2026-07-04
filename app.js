@@ -7,6 +7,10 @@ import { Filesystem, Directory } from 'https://cdn.jsdelivr.net/npm/@capacitor/f
 import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@6.0.0/+esm';
 import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.0/+esm';
 
+// YAHAN DONO LIBRARIES DIRECT IMPORT KI HAIN (Crash Fix)
+import * as docx from 'https://cdn.jsdelivr.net/npm/docx@8.5.0/+esm';
+import mammoth from 'https://cdn.jsdelivr.net/npm/mammoth@1.6.0/+esm';
+
 // ==========================================
 // FORCE SCROLL PATCH (Overrides any CSS bugs)
 // ==========================================
@@ -23,7 +27,6 @@ forceScrollStyle.innerHTML = `
     #pdf-overlay-canvas { touch-action: auto !important; }
 `;
 document.head.appendChild(forceScrollStyle);
-
 
 // ==========================================
 // APP VERSION CHECKER
@@ -134,14 +137,12 @@ async function simulateLoadingAndProcess(title, processCallback) {
         procMsg.style.display = 'none';
         barFill.style.width = '0%';
 
-        // Simulate reading progress to improve UX
         for(let i = 0; i <= 100; i += 15) {
             barFill.style.width = i + '%';
             loadingText.innerText = `${i}%`;
             await new Promise(r => setTimeout(r, 60)); 
         }
 
-        // Switch to Processing Mode
         actionTitle.innerText = title + '...';
         barContainer.style.display = 'none';
         loadingText.style.display = 'none';
@@ -400,7 +401,7 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
     
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
-            const chunkSize = 256 * 1024; // 256KB Chunks
+            const chunkSize = 256 * 1024; 
             const len = bytes.byteLength; 
             let isFirstChunk = true;
             
@@ -906,7 +907,6 @@ document.getElementById('btn-scanner-export')?.addEventListener('click', async (
 // ==========================================
 // UI GENERATION FOR TOOLS
 // ==========================================
-// Added pdftoword & wordtopdf
 const views = [
     'pdftoword', 'wordtopdf', 'edit', 'merge', 'split', 'delete', 'compress', 'rotate', 'pdftojpg', 'pagenumbers', 
     'jpgtopdf', 'extract', 'watermark', 'sign', 'protect', 'unlock', 'flatten', 
@@ -954,7 +954,6 @@ const generateMultipleFileUI = (id, icon, color, title, btnText, extraHtml = "",
     </div>
 `;
 
-// Initialize New PDF & Word Converters
 if (ui.pdftoword) ui.pdftoword.innerHTML = generateSingleFileUI('pdftoword', 'fa-file-word', '#3b82f6', 'PDF to Word', 'Convert to Word');
 if (ui.wordtopdf) ui.wordtopdf.innerHTML = generateSingleFileUI('wordtopdf', 'fa-file-pdf', '#ef4444', 'Word to PDF', 'Convert to PDF', '', '.docx, application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
@@ -1138,7 +1137,6 @@ function parseRange(rangeStr) {
     return [...new Set(pages)].sort((a, b) => a - b);
 }
 
-// ZIP Parser Helper
 async function handleFilesOrZip(filesArray) {
     let finalFiles = [];
     for(let file of filesArray) {
@@ -1222,7 +1220,6 @@ function setupSingleFileLogic(id, actionCallback) {
                 const result = await actionCallback(currentFile); 
                 document.getElementById(`reset-${id}`)?.click();
 
-                // Un tools ke liye true jo size badalte hain
                 const forceStats = ['split', 'wordtopdf', 'pdftoword'].includes(id);
 
                 showSuccessResult(totalOriginalSize, result.bytes.length, "Task Completed!", async () => {
@@ -1341,7 +1338,7 @@ function hexToRgbPdf(hex) {
     return rgb(r, g, b);
 }
 
-// Visual tool mappings handled inside `openVisualWorkspace`
+// Visual tool mappings
 setupSingleFileLogic('edit', null);
 setupSingleFileLogic('rotate', null);
 setupSingleFileLogic('flatten', null);
@@ -1355,7 +1352,7 @@ setupSingleFileLogic('addtext', null);
 
 // Action Callbacks
 
-// --- NEW: PDF TO WORD ---
+// --- FIXED: PDF TO WORD ---
 setupSingleFileLogic('pdftoword', async (file) => {
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
     let paragraphs = [];
@@ -1370,7 +1367,7 @@ setupSingleFileLogic('pdftoword', async (file) => {
         textContent.items.forEach(item => {
             if (lastY !== -1 && Math.abs(lastY - item.transform[5]) > 5) {
                 if(currentLine.trim()) {
-                    paragraphs.push(new window.docx.Paragraph({ children: [new window.docx.TextRun(currentLine)] }));
+                    paragraphs.push(new docx.Paragraph({ children: [new docx.TextRun(currentLine)] }));
                 }
                 currentLine = item.str;
             } else {
@@ -1379,55 +1376,50 @@ setupSingleFileLogic('pdftoword', async (file) => {
             lastY = item.transform[5];
         });
         if (currentLine.trim()) {
-            paragraphs.push(new window.docx.Paragraph({ children: [new window.docx.TextRun(currentLine)] }));
+            paragraphs.push(new docx.Paragraph({ children: [new docx.TextRun(currentLine)] }));
         }
         
         if (i < pdf.numPages) {
-            paragraphs.push(new window.docx.Paragraph({ children: [new window.docx.PageBreak()] }));
+            paragraphs.push(new docx.Paragraph({ children: [new docx.PageBreak()] }));
         }
     }
     
-    const docObj = new window.docx.Document({
+    const docObj = new docx.Document({
         sections: [{
             properties: {},
-            children: paragraphs.length ? paragraphs : [new window.docx.Paragraph("No text found in this PDF.")]
+            children: paragraphs.length ? paragraphs : [new docx.Paragraph({ children: [new docx.TextRun("No text found in this PDF.")] })]
         }]
     });
     
-    const blob = await window.docx.Packer.toBlob(docObj);
+    const blob = await docx.Packer.toBlob(docObj);
     return { bytes: new Uint8Array(await blob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.docx`, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
 });
 
-// --- NEW: WORD TO PDF ---
+// --- FIXED: WORD TO PDF ---
 setupSingleFileLogic('wordtopdf', async (file) => {
     const arrayBuffer = await file.arrayBuffer();
     
-    // 1. Convert Word to HTML using mammoth.js
-    const result = await window.mammoth.convertToHtml({arrayBuffer: arrayBuffer});
-    const htmlContent = result.value || "<p>Blank Document</p>"; 
+    // Convert Word to HTML using mammoth
+    const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
+    const htmlContent = result.value || "<p>No readable text found in this Word document.</p>"; 
     
-    // 2. Create a hidden container to render HTML safely
-    const container = document.createElement('div');
-    container.innerHTML = htmlContent;
-    container.style.position = 'absolute';
-    container.style.top = '-9999px'; // Hide from user
-    container.style.width = '800px'; // Standard A4 width equivalent for rendering
-    container.style.padding = '40px';
-    container.style.background = 'white';
-    container.style.color = 'black';
-    document.body.appendChild(container);
+    // Wrap HTML with basic clean styling so it's not transparent/invisible
+    const styledHtml = `
+        <div style="padding: 30px; font-family: Arial, sans-serif; color: black; background: white; line-height: 1.6; font-size: 14px;">
+            ${htmlContent}
+        </div>
+    `;
     
-    // 3. Convert HTML to PDF using html2pdf.js
     const opt = {
         margin:       10,
         filename:     'temp.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
+        html2canvas:  { scale: 2, logging: false },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
-    const pdfBlob = await window.html2pdf().set(opt).from(container).output('blob');
-    document.body.removeChild(container); // Clean up
+    // Pass HTML string directly to html2pdf (Avoids DOM clipping/invisible div issues)
+    const pdfBlob = await html2pdf().set(opt).from(styledHtml).output('blob');
     
     return { bytes: new Uint8Array(await pdfBlob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.pdf`, type: 'application/pdf' };
 });
@@ -1631,33 +1623,28 @@ setupMultipleFileLogic('compress', async (files) => {
     const compressSingleFile = async (file) => {
         const originalSize = file.size;
         
-        // Convert to PDF-lib for safety & basic compression check
         let standardBytes = new Uint8Array();
         try {
             const tempDoc = await PDFDocument.load(await file.arrayBuffer(), { updateMetadata: false });
             standardBytes = await tempDoc.save({ useObjectStreams: true, compress: true });
         } catch(e) { }
 
-        // --- AGGRESSIVE CANVAS ENGINE ---
-        // This will ALWAYS shrink the file size by converting vector data into highly compressed JPEGs
         const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
         const newPdf = await PDFDocument.create();
 
         let dynamicScale = 1.0;
         let quality = 0.7;
 
-        // Auto-Scale Logic (Shrink heavily for large files, preserve quality for small text files)
         if (originalSize > 50 * 1024 * 1024) { dynamicScale = 0.4; quality = 0.5; } 
         else if (originalSize > 15 * 1024 * 1024) { dynamicScale = 0.6; quality = 0.6; } 
         else if (originalSize > 5 * 1024 * 1024) { dynamicScale = 0.8; quality = 0.65; } 
         else if (originalSize > 1 * 1024 * 1024) { dynamicScale = 1.0; quality = 0.7; } 
-        else { dynamicScale = 1.2; quality = 0.6; } // < 1MB files need to be squashed aggressively if converted to image
+        else { dynamicScale = 1.2; quality = 0.6; }
 
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const baseViewport = page.getViewport({ scale: 1.0 });
             
-            // Critical Fix: Prevent canvas from blowing up on huge A4 DPI pages
             let finalScale = dynamicScale;
             if (baseViewport.width * dynamicScale > 1500) {
                 finalScale = 1500 / baseViewport.width;
@@ -1669,7 +1656,6 @@ setupMultipleFileLogic('compress', async (files) => {
             canvas.height = viewport.height;
             const ctx = canvas.getContext('2d');
 
-            // Force White Background (PDF transparent base causes black blocks in JPEG)
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1678,14 +1664,12 @@ setupMultipleFileLogic('compress', async (files) => {
             const imgData = canvas.toDataURL('image/jpeg', quality).split(',')[1];
             const pdfImage = await newPdf.embedJpg(imgData);
 
-            // Re-create page to original dimensions
             const newPage = newPdf.addPage([baseViewport.width, baseViewport.height]);
             newPage.drawImage(pdfImage, { x: 0, y: 0, width: baseViewport.width, height: baseViewport.height });
         }
         
         let extremeBytes = await newPdf.save();
         
-        // Pick the smallest among (Original, Standard, Canvas)
         let bestBytes = new Uint8Array(await file.arrayBuffer());
         if (standardBytes.length > 0 && standardBytes.length < bestBytes.length) bestBytes = standardBytes;
         if (extremeBytes.length > 0 && extremeBytes.length < bestBytes.length) bestBytes = extremeBytes;
@@ -1800,7 +1784,7 @@ setupMultipleFileLogic('protect', async (files) => {
     }
 });
 
-// HTML TO PDF FIX (Iframe Method)
+// HTML TO PDF
 if (ui.htmltopdf) {
     document.getElementById('btn-htmltopdf-action')?.addEventListener('click', async () => {
         const htmlContent = document.getElementById('html-input').value; 
@@ -1839,7 +1823,7 @@ if (ui.htmltopdf) {
     });
 }
 
-// MERGE LOGIC (Updated for ZIP)
+// MERGE LOGIC
 let mergeFiles = [];
 if (ui.merge) {
     const mergeInput = document.getElementById('merge-file-input');
@@ -2667,8 +2651,6 @@ function normalizeBox(box) {
 }
 
 overlayCanvas?.addEventListener('touchstart', (e) => { 
-    // Sirf Draw, Whiteout, aur Box banane ke time par scroll block hoga
-    // Text ya Image tool me empty space par touch karke user aaram se Up/Down Scroll kar payega
     if (e.touches.length === 1 && (currentTool === 'draw' || currentTool === 'whiteout' || currentTool === 'visual-box')) {
         e.preventDefault(); 
     }
@@ -3292,7 +3274,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isDrawActive || isWhiteoutActive) {
                     overlayCanvas.style.touchAction = 'none';
                 } else {
-                    overlayCanvas.style.touchAction = 'auto'; // FIXED: Ab yaha 'auto' hai, 'pan-x pan-y' ka jhamela nahi
+                    overlayCanvas.style.touchAction = 'auto'; 
                 }
             }, 100); 
         });
@@ -3301,7 +3283,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 2. PINCH TO ZOOM LOGIC (FIXED: RACE CONDITION & DEBOUNCE) ---
     const overlayCanvas = document.getElementById('pdf-overlay-canvas');
     let initialPinchDistance = null;
-    let zoomTimeout = null; // Flicker aur takrav ko rokne ke liye timer
+    let zoomTimeout = null; 
 
     if (overlayCanvas) {
         overlayCanvas.addEventListener('touchstart', (e) => {
@@ -3315,7 +3297,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         overlayCanvas.addEventListener('touchmove', (e) => {
             if (e.touches.length === 2 && initialPinchDistance !== null) {
-                // Pinching ke waqt hi sirf preventDefault
                 e.preventDefault(); 
                 
                 const currentDistance = Math.hypot(
@@ -3334,8 +3315,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     initialPinchDistance = currentDistance; 
 
-                    // FIX: PDF ab har mili-second mein redraw nahi hogi. 
-                    // Jab user zoom karke slightly rukega (100ms pause), tabhi smooth render hoga.
                     clearTimeout(zoomTimeout);
                     zoomTimeout = setTimeout(() => {
                         if(typeof renderEditPage === 'function') {
