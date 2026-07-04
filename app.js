@@ -7,10 +7,6 @@ import { Filesystem, Directory } from 'https://cdn.jsdelivr.net/npm/@capacitor/f
 import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@6.0.0/+esm';
 import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.0/+esm';
 
-// 👇 YEH 2 NAYE IMPORTS ADD KARNE HAIN 👇
-import * as docx from 'https://cdn.jsdelivr.net/npm/docx@8.5.0/+esm';
-import mammoth from 'https://cdn.jsdelivr.net/npm/mammoth@1.6.0/+esm';
-
 // ==========================================
 // FORCE SCROLL PATCH (Overrides any CSS bugs)
 // ==========================================
@@ -1358,6 +1354,7 @@ setupSingleFileLogic('watermark', null);
 setupSingleFileLogic('addtext', null);
 
 // Action Callbacks
+
 // --- NEW: PDF TO WORD ---
 setupSingleFileLogic('pdftoword', async (file) => {
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
@@ -1400,12 +1397,13 @@ setupSingleFileLogic('pdftoword', async (file) => {
     const blob = await window.docx.Packer.toBlob(docObj);
     return { bytes: new Uint8Array(await blob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.docx`, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
 });
+
 // --- NEW: WORD TO PDF ---
 setupSingleFileLogic('wordtopdf', async (file) => {
     const arrayBuffer = await file.arrayBuffer();
     
     // 1. Convert Word to HTML using mammoth.js
-    const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
+    const result = await window.mammoth.convertToHtml({arrayBuffer: arrayBuffer});
     const htmlContent = result.value || "<p>Blank Document</p>"; 
     
     // 2. Create a hidden container to render HTML safely
@@ -1428,11 +1426,12 @@ setupSingleFileLogic('wordtopdf', async (file) => {
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
-    const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
+    const pdfBlob = await window.html2pdf().set(opt).from(container).output('blob');
     document.body.removeChild(container); // Clean up
     
     return { bytes: new Uint8Array(await pdfBlob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.pdf`, type: 'application/pdf' };
 });
+
 
 setupSingleFileLogic('split', async (file) => {
     const pagesToExtract = parseRange(document.getElementById('split-ranges').value);
@@ -1821,7 +1820,8 @@ if (ui.htmltopdf) {
             iframe.contentDocument.write(htmlContent); 
             iframe.contentDocument.close();
             
-            const blob = await html2pdf().set({ margin: 1, jsPDF: { format: 'letter' } }).from(iframe.contentDocument.body).output('blob');
+            const opt = { margin: 1, jsPDF: { format: 'letter' } };
+            const blob = await window.html2pdf().set(opt).from(iframe.contentDocument.body).output('blob');
             const bytes = new Uint8Array(await blob.arrayBuffer()); 
             
             document.getElementById('html-input').value = '';
