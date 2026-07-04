@@ -8,9 +8,27 @@ import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@6.0.0/+esm'
 import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.0/+esm';
 
 // ==========================================
+// FORCE SCROLL PATCH (Overrides any CSS bugs)
+// ==========================================
+const forceScrollStyle = document.createElement('style');
+forceScrollStyle.innerHTML = `
+    body.is-editing { touch-action: auto !important; }
+    .canvas-container { 
+        touch-action: auto !important; 
+        -webkit-overflow-scrolling: touch !important; 
+        min-height: 0 !important; /* FIX: Container ko infinitely lamba hone se rokega */
+        max-height: 100% !important; /* FIX: Zabardasti internal UP-DOWN scroll on karega */
+        overflow: auto !important;
+    }
+    #pdf-overlay-canvas { touch-action: auto !important; }
+`;
+document.head.appendChild(forceScrollStyle);
+
+
+// ==========================================
 // APP VERSION CHECKER
 // ==========================================
-const CURRENT_APP_VERSION = 1.9;
+const CURRENT_APP_VERSION = 2;
 
 function checkForUpdates() {
     const versionUrl = 'https://amazingpdf.in/version.json?time=' + new Date().getTime();
@@ -142,7 +160,6 @@ async function simulateLoadingAndProcess(title, processCallback) {
 }
 
 function showProcessingUI(title = "Processing") {
-    // Only used for places where simulateLoadingAndProcess is not ideal
     const overlay = document.getElementById('dynamic-ui-overlay');
     const processingState = document.getElementById('processing-state');
     const successState = document.getElementById('success-state');
@@ -217,7 +234,6 @@ function showSuccessResult(originalBytes, compressedBytes, successTitle, downloa
         downloadCallback(); 
     };
 }
-// ==========================================
 
 let lastBackPress = 0;
 if (window.Capacitor && window.Capacitor.isNativePlatform()) {
@@ -890,8 +906,9 @@ document.getElementById('btn-scanner-export')?.addEventListener('click', async (
 // ==========================================
 // UI GENERATION FOR TOOLS
 // ==========================================
+// Added pdftoword & wordtopdf
 const views = [
-    'edit', 'merge', 'split', 'delete', 'compress', 'rotate', 'pdftojpg', 'pagenumbers', 
+    'pdftoword', 'wordtopdf', 'edit', 'merge', 'split', 'delete', 'compress', 'rotate', 'pdftojpg', 'pagenumbers', 
     'jpgtopdf', 'extract', 'watermark', 'sign', 'protect', 'unlock', 'flatten', 
     'crop', 'metadata', 'repair', 'reorder', 'imagewatermark', 'htmltopdf',
     'addtext', 'addblank', 'resizepdf', 'splitevenodd', 'addmargins', 'removeannots',
@@ -912,7 +929,7 @@ const fileItemStyle = "display: flex; justify-content: space-between; align-item
 const generateSingleFileUI = (id, icon, color, title, btnText, extraHtml = "", acceptType = "application/pdf") => `
     <div id="${id}-drop-zone" style="${dropZoneStyle.replace('var(--accent)', color)}">
         <i class="fas ${icon}" style="font-size: 3rem; color: ${color}; margin-bottom: 15px;"></i>
-        <h3>Select PDF to ${title}</h3>
+        <h3>Select File to ${title}</h3>
         <button onclick="document.getElementById('${id}-file-input').click()" style="padding: 10px 20px; background: ${color}; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: 600;">Browse File</button>
         <input type="file" id="${id}-file-input" accept="${acceptType}" style="display: none;">
     </div>
@@ -926,7 +943,7 @@ const generateSingleFileUI = (id, icon, color, title, btnText, extraHtml = "", a
 const generateMultipleFileUI = (id, icon, color, title, btnText, extraHtml = "", acceptType = "application/pdf") => `
     <div id="${id}-drop-zone" style="${dropZoneStyle.replace('var(--accent)', color)}">
         <i class="fas ${icon}" style="font-size: 3rem; color: ${color}; margin-bottom: 15px;"></i>
-        <h3>Drag & Drop PDFs to ${title}</h3>
+        <h3>Drag & Drop Files to ${title}</h3>
         <button onclick="document.getElementById('${id}-file-input').click()" style="padding: 10px 20px; background: ${color}; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: 600;">Browse Files</button>
         <input type="file" id="${id}-file-input" multiple accept="${acceptType}" style="display: none;">
     </div>
@@ -936,6 +953,10 @@ const generateMultipleFileUI = (id, icon, color, title, btnText, extraHtml = "",
         <button id="btn-${id}-action" style="${btnStyle.replace('var(--accent)', color)}"><i class="fas ${icon}"></i> ${btnText}</button>
     </div>
 `;
+
+// Initialize New PDF & Word Converters
+if (ui.pdftoword) ui.pdftoword.innerHTML = generateSingleFileUI('pdftoword', 'fa-file-word', '#3b82f6', 'PDF to Word', 'Convert to Word');
+if (ui.wordtopdf) ui.wordtopdf.innerHTML = generateSingleFileUI('wordtopdf', 'fa-file-pdf', '#ef4444', 'Word to PDF', 'Convert to PDF', '', '.docx, application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
 // Visual Editors Initialize
 if (ui.edit) ui.edit.innerHTML = generateSingleFileUI('edit', 'fa-edit', '#10b981', 'Edit PDF', '');
@@ -1155,7 +1176,7 @@ function setupSingleFileLogic(id, actionCallback) {
 
     input.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (file && (file.type === 'application/pdf' || file.type.startsWith('image/'))) {
+        if (file) {
             currentFile = file;
             
             if (['edit', 'crop', 'addmargins', 'pagenumbers', 'sign', 'watermark', 'addtext', 'rotate', 'flatten', 'imagewatermark'].includes(id) || (id === 'extract' && document.getElementById('extract-mode').value === 'visual')) {
@@ -1168,7 +1189,7 @@ function setupSingleFileLogic(id, actionCallback) {
             info.innerHTML = `
                 <div style="${fileItemStyle}">
                     <div class="text-container" style="display:flex; align-items:center; gap:15px; min-width:0;">
-                        <i class="fas fa-file-pdf" style="color:#ef4444; font-size:1.5rem; flex-shrink:0;"></i>
+                        <i class="fas ${id === 'wordtopdf' ? 'fa-file-word' : 'fa-file-pdf'}" style="color:#ef4444; font-size:1.5rem; flex-shrink:0;"></i>
                         <b class="text-ellipsis">${file.name}</b>
                     </div>
                     <button id="reset-${id}" style="background:var(--glass-border); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; flex-shrink:0;">
@@ -1202,7 +1223,7 @@ function setupSingleFileLogic(id, actionCallback) {
                 document.getElementById(`reset-${id}`)?.click();
 
                 // Un tools ke liye true jo size badalte hain
-                const forceStats = ['split'].includes(id);
+                const forceStats = ['split', 'wordtopdf', 'pdftoword'].includes(id);
 
                 showSuccessResult(totalOriginalSize, result.bytes.length, "Task Completed!", async () => {
                     if(typeof AdManager !== 'undefined' && AdManager) {
@@ -1333,6 +1354,85 @@ setupSingleFileLogic('watermark', null);
 setupSingleFileLogic('addtext', null);
 
 // Action Callbacks
+// --- NEW: PDF TO WORD ---
+setupSingleFileLogic('pdftoword', async (file) => {
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
+    let paragraphs = [];
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i); 
+        const textContent = await page.getTextContent();
+        
+        let lastY = -1;
+        let currentLine = "";
+        
+        textContent.items.forEach(item => {
+            // Check if we moved to a new line (Y axis difference)
+            if (lastY !== -1 && Math.abs(lastY - item.transform[5]) > 5) {
+                if(currentLine.trim()) {
+                    paragraphs.push(new window.docx.Paragraph({ children: [new window.docx.TextRun(currentLine)] }));
+                }
+                currentLine = item.str;
+            } else {
+                currentLine += (currentLine ? " " : "") + item.str;
+            }
+            lastY = item.transform[5];
+        });
+        if (currentLine.trim()) {
+            paragraphs.push(new window.docx.Paragraph({ children: [new window.docx.TextRun(currentLine)] }));
+        }
+        
+        // Add Page Break after each page (except last)
+        if (i < pdf.numPages) {
+            paragraphs.push(new window.docx.Paragraph({ children: [new window.docx.PageBreak()] }));
+        }
+    }
+    
+    const doc = new window.docx.Document({
+        sections: [{
+            properties: {},
+            children: paragraphs.length ? paragraphs : [new window.docx.Paragraph("No text found in this PDF.")]
+        }]
+    });
+    
+    const blob = await window.docx.Packer.toBlob(doc);
+    return { bytes: new Uint8Array(await blob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.docx`, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
+});
+
+// --- NEW: WORD TO PDF ---
+setupSingleFileLogic('wordtopdf', async (file) => {
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // 1. Convert Word to HTML using mammoth.js
+    const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
+    const htmlContent = result.value || "<p>Blank Document</p>"; 
+    
+    // 2. Create a hidden container to render HTML safely
+    const container = document.createElement('div');
+    container.innerHTML = htmlContent;
+    container.style.position = 'absolute';
+    container.style.top = '-9999px'; // Hide from user
+    container.style.width = '800px'; // Standard A4 width equivalent for rendering
+    container.style.padding = '40px';
+    container.style.background = 'white';
+    container.style.color = 'black';
+    document.body.appendChild(container);
+    
+    // 3. Convert HTML to PDF using html2pdf.js
+    const opt = {
+        margin:       10,
+        filename:     'temp.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
+    document.body.removeChild(container); // Clean up
+    
+    return { bytes: new Uint8Array(await pdfBlob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.pdf`, type: 'application/pdf' };
+});
+
 setupSingleFileLogic('split', async (file) => {
     const pagesToExtract = parseRange(document.getElementById('split-ranges').value);
     if (!pagesToExtract.length) throw new Error("Range required");
@@ -2566,7 +2666,9 @@ function normalizeBox(box) {
 }
 
 overlayCanvas?.addEventListener('touchstart', (e) => { 
-    if (e.touches.length === 1 && (currentTool !== 'none' || currentVisualMode === 'pagenumbers')) {
+    // Sirf Draw, Whiteout, aur Box banane ke time par scroll block hoga
+    // Text ya Image tool me empty space par touch karke user aaram se Up/Down Scroll kar payega
+    if (e.touches.length === 1 && (currentTool === 'draw' || currentTool === 'whiteout' || currentTool === 'visual-box')) {
         e.preventDefault(); 
     }
 }, {passive: false});
@@ -3175,7 +3277,6 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
 document.addEventListener('DOMContentLoaded', () => {
     
     // --- 1. SMART SCROLL (Only block scroll when Drawing) ---
-    // User jab koi Tool button click karega tab scroll check hoga
     const toolbarButtons = document.querySelectorAll('.edit-toolbar-btn');
     
     toolbarButtons.forEach(button => {
@@ -3190,30 +3291,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isDrawActive || isWhiteoutActive) {
                     overlayCanvas.style.touchAction = 'none';
                 } else {
-                    overlayCanvas.style.touchAction = 'pan-x pan-y';
+                    overlayCanvas.style.touchAction = 'auto'; // FIXED: Ab yaha 'auto' hai, 'pan-x pan-y' ka jhamela nahi
                 }
             }, 100); 
         });
     });
 
-
-    // --- 2. PINCH TO ZOOM LOGIC (2 fingers zooming) ---
+    // --- 2. PINCH TO ZOOM LOGIC (FIXED: RACE CONDITION & DEBOUNCE) ---
     const overlayCanvas = document.getElementById('pdf-overlay-canvas');
     let initialPinchDistance = null;
+    let zoomTimeout = null; // Flicker aur takrav ko rokne ke liye timer
 
     if (overlayCanvas) {
         overlayCanvas.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
-                e.preventDefault(); 
                 initialPinchDistance = Math.hypot(
                     e.touches[0].pageX - e.touches[1].pageX,
                     e.touches[0].pageY - e.touches[1].pageY
                 );
             }
-        }, { passive: false });
+        }, { passive: true });
 
         overlayCanvas.addEventListener('touchmove', (e) => {
             if (e.touches.length === 2 && initialPinchDistance !== null) {
+                // Pinching ke waqt hi sirf preventDefault
                 e.preventDefault(); 
                 
                 const currentDistance = Math.hypot(
@@ -3225,22 +3326,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (Math.abs(distanceDifference) > 40) {
                     if (distanceDifference > 0) {
-                        const zoomInButton = document.getElementById('btn-zoom-in');
-                        if(zoomInButton) zoomInButton.click();
+                        editScale += 0.2;
                     } else {
-                        const zoomOutButton = document.getElementById('btn-zoom-out');
-                        if(zoomOutButton) zoomOutButton.click();
+                        editScale = Math.max(0.4, editScale - 0.2);
                     }
+                    
                     initialPinchDistance = currentDistance; 
+
+                    // FIX: PDF ab har mili-second mein redraw nahi hogi. 
+                    // Jab user zoom karke slightly rukega (100ms pause), tabhi smooth render hoga.
+                    clearTimeout(zoomTimeout);
+                    zoomTimeout = setTimeout(() => {
+                        if(typeof renderEditPage === 'function') {
+                            renderEditPage(editPageNum);
+                        }
+                    }, 100); 
                 }
             }
         }, { passive: false });
 
         overlayCanvas.addEventListener('touchend', (e) => {
-            if (e.touches.length < 2) {
-                initialPinchDistance = null;
-            }
-        });
+            initialPinchDistance = null;
+        }, { passive: true });
     }
 });
 
