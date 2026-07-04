@@ -7,6 +7,10 @@ import { Filesystem, Directory } from 'https://cdn.jsdelivr.net/npm/@capacitor/f
 import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@6.0.0/+esm';
 import { App } from 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.0/+esm';
 
+// 👇 YEH 2 NAYE IMPORTS ADD KARNE HAIN 👇
+import * as docx from 'https://cdn.jsdelivr.net/npm/docx@8.5.0/+esm';
+import mammoth from 'https://cdn.jsdelivr.net/npm/mammoth@1.6.0/+esm';
+
 // ==========================================
 // FORCE SCROLL PATCH (Overrides any CSS bugs)
 // ==========================================
