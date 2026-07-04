@@ -954,7 +954,12 @@ const generateMultipleFileUI = (id, icon, color, title, btnText, extraHtml = "",
 `;
 
 // Initialize New PDF & Word Converters
-if (ui.pdftoword) ui.pdftoword.innerHTML = generateSingleFileUI('pdftoword', 'fa-file-word', '#3b82f6', 'PDF to Word', 'Convert to Word');
+if (ui.pdftoword) ui.pdftoword.innerHTML = generateSingleFileUI('pdftoword', 'fa-file-word', '#3b82f6', 'PDF to Word', 'Convert to Word', `
+    <select id="pdftoword-mode" style="${inputStyle}">
+        <option value="text">Extract Editable Text (Basic Layout)</option>
+        <option value="exact">Keep Exact Layout (Scanned Image)</option>
+    </select>
+`);
 if (ui.wordtopdf) ui.wordtopdf.innerHTML = generateSingleFileUI('wordtopdf', 'fa-file-pdf', '#ef4444', 'Word to PDF', 'Convert to PDF', '', '.docx, application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
 // Visual Editors Initialize
@@ -1354,86 +1359,130 @@ setupSingleFileLogic('addtext', null);
 
 // Action Callbacks
 
-// --- NEW: PDF TO WORD ---
+// --- NEW: PDF TO WORD (With Double Option) ---
 setupSingleFileLogic('pdftoword', async (file) => {
-    // 1. Dynamic Import se crash bach jayega
-    const docx = await import('https://esm.sh/docx@8.2.3');
-
+    const docxLib = window.docx || await import('https://cdn.jsdelivr.net/npm/docx@8.5.0/+esm');
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
+    const mode = document.getElementById('pdftoword-mode') ? document.getElementById('pdftoword-mode').value : 'text';
     let paragraphs = [];
     
-    for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i); 
-        const textContent = await page.getTextContent();
-        
-        let lastY = -1;
-        let currentLine = "";
-        
-        textContent.items.forEach(item => {
-            if (lastY !== -1 && Math.abs(lastY - item.transform[5]) > 5) {
-                if(currentLine.trim()) {
-                    paragraphs.push(new docx.Paragraph({ children: [new docx.TextRun(currentLine)] }));
+    if (mode === 'text') {
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i); 
+            const textContent = await page.getTextContent();
+            
+            let lastY = -1;
+            let currentLine = "";
+            
+            textContent.items.forEach(item => {
+                if (lastY !== -1 && Math.abs(lastY - item.transform[5]) > 5) {
+                    if(currentLine.trim()) {
+                        paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.TextRun(currentLine)] }));
+                    }
+                    currentLine = item.str;
+                } else {
+                    currentLine += (currentLine ? " " : "") + item.str;
                 }
-                currentLine = item.str;
-            } else {
-                currentLine += (currentLine ? " " : "") + item.str;
+                lastY = item.transform[5];
+            });
+            if (currentLine.trim()) {
+                paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.TextRun(currentLine)] }));
             }
-            lastY = item.transform[5];
-        });
-        if (currentLine.trim()) {
-            paragraphs.push(new docx.Paragraph({ children: [new docx.TextRun(currentLine)] }));
+            
+            if (i < pdf.numPages) {
+                paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.PageBreak()] }));
+            }
         }
-        
-        if (i < pdf.numPages) {
-            paragraphs.push(new docx.Paragraph({ children: [new docx.PageBreak()] }));
+    } else {
+        // Exact Layout Mode (Scanned Image)
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i); 
+            const viewport = page.getViewport({ scale: 2.0 });
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            
+            const imgData = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+            const binaryString = window.atob(imgData);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let j = 0; j < len; j++) {
+                bytes[j] = binaryString.charCodeAt(j);
+            }
+            
+            paragraphs.push(new docxLib.Paragraph({
+                children: [
+                    new docxLib.ImageRun({
+                        data: bytes,
+                        transformation: { width: 800, height: Math.floor(viewport.height * (800 / viewport.width)) }
+                    })
+                ]
+            }));
         }
     }
     
-    const docObj = new docx.Document({
+    const docObj = new docxLib.Document({
         sections: [{
-            properties: {},
-            children: paragraphs.length ? paragraphs : [new docx.Paragraph("No text found in this PDF.")]
+            properties: {
+                page: mode === 'exact' ? { margin: { top: 0, right: 0, bottom: 0, left: 0 } } : {}
+            },
+            children: paragraphs.length ? paragraphs : [new docxLib.Paragraph("No content found.")]
         }]
     });
     
-    const blob = await docx.Packer.toBlob(docObj);
+    const blob = await docxLib.Packer.toBlob(docObj);
     return { bytes: new Uint8Array(await blob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.docx`, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
 });
 
-// --- NEW: WORD TO PDF ---
+// --- NEW: WORD TO PDF (Visual Render Engine) ---
 setupSingleFileLogic('wordtopdf', async (file) => {
-    // 1. Dynamic Import for Mammoth
-    const mammothModule = await import('https://esm.sh/mammoth@1.6.0');
-    const mammothLib = mammothModule.default || mammothModule;
-
+    // Dynamically loading docx-preview for exact visual rendering
+    const docxPreview = await import('https://cdn.jsdelivr.net/npm/docx-preview@0.3.32/dist/docx-preview.mjs');
+    
     const arrayBuffer = await file.arrayBuffer();
     
-    // 2. Convert Word to HTML
-    const result = await mammothLib.convertToHtml({arrayBuffer: arrayBuffer});
-    const htmlContent = result.value || "<p>Blank Document</p>"; 
-    
-    // 3. Create wrapper WITHOUT adding to document body (fixes blank page bug)
+    // Create hidden container
     const wrapper = document.createElement('div');
-    wrapper.innerHTML = htmlContent;
-    wrapper.style.padding = '30px';
-    wrapper.style.color = '#000000'; // Force black text
-    wrapper.style.background = '#ffffff'; // Force white background
+    wrapper.style.padding = '0';
+    wrapper.style.color = '#000000';
+    wrapper.style.background = '#ffffff';
     wrapper.style.width = '800px'; 
+    wrapper.style.position = 'absolute';
+    wrapper.style.top = '-9999px';
+    document.body.appendChild(wrapper);
     
-    // 4. Convert HTML to PDF
+    // Draw the Word file visually in the container
+    await docxPreview.renderAsync(arrayBuffer, wrapper, null, {
+        className: "docx",
+        inWrapper: true,
+        ignoreWidth: false,
+        ignoreHeight: false,
+        ignoreFonts: false,
+        breakPages: true,
+        useBase64URL: true
+    });
+    
+    // Take a Snapshot to create PDF
     const opt = {
-        margin:       10,
+        margin:       0,
         filename:     'temp.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
-    const pdfBlob = await html2pdf().set(opt).from(wrapper).output('blob');
+    const pdfBlob = await window.html2pdf().set(opt).from(wrapper).output('blob');
+    document.body.removeChild(wrapper); // Cleanup
     
     return { bytes: new Uint8Array(await pdfBlob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.pdf`, type: 'application/pdf' };
 });
-
 
 setupSingleFileLogic('split', async (file) => {
     const pagesToExtract = parseRange(document.getElementById('split-ranges').value);
