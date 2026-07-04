@@ -26,6 +26,10 @@
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Added Libraries for Local PDF to Word & Word to PDF processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
 
     <style>
         :root {
@@ -56,7 +60,6 @@
 
         body.is-editing {
             overflow: hidden !important;
-            touch-action: none;
         }
 
         /* Utility classes for clean scrollbars */
@@ -608,29 +611,23 @@
         <p style="font-family: 'Poppins', sans-serif; font-size: 1rem; color: #94a3b8; margin-top: 10px; max-width: 80%;">Please turn on your Wi-Fi or Mobile Data to use Amazing PDF Tool.</p>
     </div>
 
-        <!-- DYNAMIC PROGRESS & RESULT UI -->
-    <div id="dynamic-ui-overlay">
+        <div id="dynamic-ui-overlay">
         <div class="dynamic-ui-box glass" style="position: relative;">
             
-            <!-- ❌ NEW CLOSE BUTTON YAHAN HAI -->
             <i class="fas fa-times" id="dynamic-ui-close" style="position: absolute; top: 15px; right: 20px; color: var(--text-secondary); font-size: 1.3rem; cursor: pointer;"></i>
 
-            <!-- 🔄 STATE 1: Processing (Includes Loading Bar & Spinner) -->
             <div id="processing-state" style="width: 100%;">
                 <h2 class="dynamic-ui-title" id="action-title">Reading Files...</h2>
                 
-                <!-- Loading / Uploading Bar -->
                 <div id="loading-bar-container" style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin: 15px 0;">
                     <div id="loading-bar-fill" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.1s linear;"></div>
                 </div>
                 <p id="loading-text" class="dynamic-ui-text" style="margin-bottom: 20px;">0%</p>
 
-                <!-- Processing Spinner -->
                 <div id="processing-spinner" class="accent-loader" style="display: none;"></div>
                 <p id="processing-msg" class="dynamic-ui-text" style="display: none;">Please keep the app open.<br>This might take a moment.</p>
             </div>
 
-            <!-- ✅ STATE 2: Success Result -->
             <div id="success-state">
                 <h2 class="dynamic-ui-title" id="success-title">Task Completed!</h2>
                 
@@ -650,8 +647,6 @@
 
         </div>
     </div>
-    <!-- END DYNAMIC UI -->
-
     <input type="file" id="hidden-camera-input" accept="image/*" capture="environment" style="display: none;">
     <input type="file" id="hidden-gallery-input" accept="image/*" style="display: none;">
 
@@ -680,6 +675,9 @@
         </div>
         
         <div class="menu-label">Main Tools</div>
+        <!-- ADDED PDF to Word & Word to PDF Here -->
+        <div class="nav-btn" onclick="switchView('pdftoword')"><i class="fas fa-file-word"></i> PDF to Word</div>
+        <div class="nav-btn" onclick="switchView('wordtopdf')"><i class="fas fa-file-pdf"></i> Word to PDF</div>
         <div class="nav-btn" onclick="switchView('edit')"><i class="fas fa-edit"></i> Edit PDF</div>
         <div class="nav-btn" onclick="switchView('merge')"><i class="fas fa-object-group"></i> Merge PDF</div>
         <div class="nav-btn" onclick="switchView('split')"><i class="fas fa-cut"></i> Split PDF</div>
@@ -691,13 +689,17 @@
         <div class="nav-btn" onclick="switchView('watermark')"><i class="fas fa-stamp"></i> Watermark</div>
         <div class="nav-btn" onclick="switchView('sign')"><i class="fas fa-signature"></i> Sign PDF</div>
 
+        <div class="menu-label">Future Tools</div>
+        <div class="nav-btn" onclick="switchView('labs')"><i class="fas fa-flask"></i> Labs (Coming Soon)</div>
+
         <div class="menu-label">About & Legal</div>
+        <a href="blog.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-book-open"></i> Blog & Guides</a>
         <a href="about.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-info-circle"></i> About Us</a>
         <a href="contact.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-envelope"></i> Contact Us</a>
         <a href="privacy.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-user-shield"></i> Privacy Policy</a>
         <a href="terms.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-file-contract"></i> Terms & Cond.</a>
         <div style="text-align: center; margin-top: 30px; padding-bottom: 20px; color: #888; font-size: 0.95rem; font-weight: bold; letter-spacing: 1px;">
-        <span id="app-version-text">Version 1.9</span>
+        <span id="app-version-text">Version 2</span>
    </div> 
         
     </div>
@@ -732,6 +734,17 @@
                     <i class="fas fa-camera tool-icon" style="color: #10b981;"></i>
                     <h3>Smart Scanner</h3>
                     <p>Auto-enhance, size compress & scan.</p>
+                </div>
+                <!-- ADDED PDF to Word & Word to PDF Here -->
+                <div class="tool-card" onclick="switchView('pdftoword')">
+                    <i class="fas fa-file-word tool-icon" style="color: #3b82f6;"></i>
+                    <h3>PDF to Word</h3>
+                    <p>PDFs to editable Word files.</p>
+                </div>
+                <div class="tool-card" onclick="switchView('wordtopdf')">
+                    <i class="fas fa-file-pdf tool-icon" style="color: #ef4444;"></i>
+                    <h3>Word to PDF</h3>
+                    <p>Word files into secure PDFs.</p>
                 </div>
 
                 <div class="tool-card" onclick="switchView('history')">
@@ -879,6 +892,17 @@
             <div class="seo-section">
                 <h2 style="font-size: 1.8rem; margin-bottom: 20px;">Welcome to Amazing PDF - Your Ultimate Document Tool</h2>
                 <p style="margin-bottom: 20px;">Managing digital documents shouldn't be complicated. <strong>Amazing PDF</strong> is a fast, reliable, and 100% free online PDF utility designed to help you handle your files effortlessly.</p>
+                
+                <h3 style="font-size: 1.4rem; margin-top: 30px; margin-bottom: 15px; color: var(--text-main);">About Our Platform</h3>
+                <p style="margin-bottom: 20px;">Founded by Rishit Talesara with the mission to simplify digital workflows, Amazing PDF provides professional-grade tools for students, professionals, and everyday users. Whether you need to merge reports, split large eBooks, compress heavy files for email, or secure sensitive documents with a password, our platform does it all directly in your browser ensuring maximum privacy and speed.</p>
+
+                <h3 style="font-size: 1.4rem; margin-top: 30px; margin-bottom: 15px; color: var(--text-main);">Why Choose Amazing PDF?</h3>
+                <ul style="list-style-position: inside; margin-bottom: 20px; line-height: 1.8;">
+                    <li><strong>100% Secure & Private:</strong> We prioritize your data security. Your files are processed safely.</li>
+                    <li><strong>Completely Free:</strong> No hidden subscriptions or premium tiers. All core features are accessible to everyone.</li>
+                    <li><strong>All-in-One Solution:</strong> From converting HTML to PDF, extracting text (OCR), to adding custom watermarks and e-signatures.</li>
+                    <li><strong>Fast & Lightweight:</strong> Optimized for low-end devices and slow internet connections.</li>
+                </ul>
             </div>
         </div>
 
@@ -889,6 +913,10 @@
             <div id="history-list"></div>
         </div>
 
+        <!-- ADDED PDF to Word & Word to PDF UI Containers -->
+        <div id="view-pdftoword" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="pdftoword-ui-container"></div></div>
+        <div id="view-wordtopdf" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="wordtopdf-ui-container"></div></div>
+        
         <div id="view-edit" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="edit-ui-container"></div></div>
         <div id="view-merge" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="merge-ui-container"></div></div>
         <div id="view-split" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="split-ui-container"></div></div>
@@ -916,6 +944,47 @@
         <div id="view-addmargins" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="addmargins-ui-container"></div></div>
         <div id="view-removeannots" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="removeannots-ui-container"></div></div>
         <div id="view-pagenumbers" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="pagenumbers-ui-container"></div></div>
+
+        <div id="view-labs" class="view-section">
+            <div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div>
+            <div class="page-header" style="text-align: left; margin-bottom: 30px;">
+                <h1 style="display: flex; align-items: center; gap: 10px;"><i class="fas fa-flask" style="color: #3b82f6;"></i> Features in Pipeline</h1>
+                <p>We are constantly building new tools. Here is what's coming next to Amazing PDF!</p>
+            </div>
+            
+            <div class="dashboard-grid">
+                
+                <!-- Removed PDF to Word & Word to PDF from here -->
+
+                <div class="tool-card" style="opacity: 0.8; cursor: default; border: 1px dashed var(--glass-border);">
+                    <i class="fas fa-eye tool-icon" style="color: #10b981;"></i>
+                    <h3>OCR Scanner</h3>
+                    <p>Extract text from scanned images.</p>
+                    <div style="margin-top: 10px; font-size: 0.75rem; background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); padding: 4px 8px; border-radius: 4px; display: inline-block; font-weight: bold;">Planned</div>
+                </div>
+
+                <div class="tool-card" style="opacity: 0.8; cursor: default; border: 1px dashed var(--glass-border);">
+                    <i class="fas fa-signature tool-icon" style="color: #8b5cf6;"></i>
+                    <h3>E-Signature</h3>
+                    <p>Draw and apply digital signatures.</p>
+                    <div style="margin-top: 10px; font-size: 0.75rem; background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); padding: 4px 8px; border-radius: 4px; display: inline-block; font-weight: bold;">Planned</div>
+                </div>
+
+                <div class="tool-card" style="opacity: 0.8; cursor: default; border: 1px dashed var(--glass-border);">
+                    <i class="fas fa-layer-group tool-icon" style="color: #f59e0b;"></i>
+                    <h3>Batch Processing</h3>
+                    <p>Process multiple files at once.</p>
+                    <div style="margin-top: 10px; font-size: 0.75rem; background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); padding: 4px 8px; border-radius: 4px; display: inline-block; font-weight: bold;">Planned</div>
+                </div>
+
+                <div class="tool-card" style="opacity: 0.8; cursor: default; border: 1px dashed var(--glass-border);">
+                    <i class="fas fa-user-shield tool-icon" style="color: #14b8a6;"></i>
+                    <h3>Smart Vault</h3>
+                    <p>Secure offline folder for Aadhaar/PAN.</p>
+                    <div style="margin-top: 10px; font-size: 0.75rem; background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); padding: 4px 8px; border-radius: 4px; display: inline-block; font-weight: bold;">Research Phase</div>
+                </div>
+            </div>
+        </div>
 
     </div>
 
@@ -1168,7 +1237,7 @@
         const db = getFirestore(app);
 
         // Version variable for auto-update via sed
-        const CURRENT_APP_VERSION = 1.9;
+        const CURRENT_APP_VERSION = 2;
 
         async function checkAppVersion() {
             try {
