@@ -26,9 +26,6 @@
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
-    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
-    <script src="https://unpkg.com/docx-preview@0.3.32/dist/docx-preview.min.js"></script>
 
     <style>
         :root {
@@ -304,7 +301,7 @@
             display: block; 
         }
 
-        /* DEFAULT CANVAS CONTAINER (For PC - flexbox centering) */
+        /* DEFAULT CANVAS CONTAINER */
         .canvas-container {
             flex: 1; 
             width: 100%; 
@@ -367,9 +364,8 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
         }
 
-        /* --- MOBILE RESPONSIVENESS FIXES (Including Hamburger & Toolbar scroll) --- */
+        /* --- MOBILE RESPONSIVENESS FIXES --- */
         @media (max-width: 768px) {
-            /* Sidebar Slide-in Logic */
             .sidebar { 
                 position: fixed !important; 
                 top: 0; 
@@ -383,7 +379,6 @@
             }
             .sidebar.active { left: 0; }
             
-            /* Dark overlay jab menu open ho */
             #sidebar-overlay {
                 display: none;
                 position: fixed;
@@ -397,7 +392,6 @@
             .mobile-header { display: flex; }
             .desktop-search-container { display: none; }
             
-            /* FIXED: Force Deep Padding so tool buttons stop above the AdMob banner */
             .view-section { 
                 padding: 20px !important; 
                 padding-bottom: 120px !important; 
@@ -411,12 +405,11 @@
             .tool-card p { font-size: 0.75rem; }
             .download-btn { margin: 10px 15px; font-size: 0.9rem; padding: 10px; }
             
-            /* FIXED MOBILE TOOLBAR: Made thicker and more premium */
             #edit-toolbar { 
                 flex-wrap: nowrap !important; 
                 overflow-x: auto !important; 
                 justify-content: flex-start !important; 
-                padding: 16px 15px !important; /* Increased vertical padding to make bar thicker */
+                padding: 16px 15px !important; 
                 scrollbar-width: none; 
                 -ms-overflow-style: none; 
             }
@@ -425,8 +418,8 @@
             .edit-toolbar-btn { 
                 flex: 0 0 auto !important; 
                 margin-bottom: 0 !important; 
-                padding: 10px 16px !important; /* Made buttons larger and touch-friendly */
-                font-size: 0.95rem !important; /* Slightly bigger font */
+                padding: 10px 16px !important; 
+                font-size: 0.95rem !important; 
                 font-weight: 600 !important; 
             }
             .tool-settings { 
@@ -446,8 +439,6 @@
             .editor-header-select { width: 110px !important; font-size: 0.8rem !important; padding: 5px !important; }
         }
 
-        /* --- MOBILE & TOUCH DEVICES SPECIFIC FIXES (Scroll cut-off & Sticky Toolbar) --- */
-        /* PC will ignore this and use standard flexbox */
         @media (max-width: 1024px), (pointer: coarse) {
             .canvas-container {
                 display: block !important;
@@ -472,12 +463,12 @@
         }
 
         /* ==========================================
-           DYNAMIC PROCESSING & SUCCESS UI (CUSTOM THEME)
+           DYNAMIC PROCESSING & SUCCESS UI
            ========================================== */
         #dynamic-ui-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.85); /* Based on var(--bg-color) */
+            background: rgba(15, 23, 42, 0.85); 
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             z-index: 999999; 
@@ -511,7 +502,6 @@
             margin-bottom: 24px;
         }
 
-        /* Stylish Accent Loader */
         .accent-loader {
             border: 4px solid rgba(255, 255, 255, 0.05);
             border-top: 4px solid var(--accent);
@@ -533,7 +523,6 @@
             line-height: 1.5;
         }
 
-        /* Success Result Stats */
         #success-state {
             display: none;
         }
@@ -610,42 +599,35 @@
         <p style="font-family: 'Poppins', sans-serif; font-size: 1rem; color: #94a3b8; margin-top: 10px; max-width: 80%;">Please turn on your Wi-Fi or Mobile Data to use Amazing PDF Tool.</p>
     </div>
 
-        <div id="dynamic-ui-overlay">
+    <div id="dynamic-ui-overlay">
         <div class="dynamic-ui-box glass" style="position: relative;">
-            
             <i class="fas fa-times" id="dynamic-ui-close" style="position: absolute; top: 15px; right: 20px; color: var(--text-secondary); font-size: 1.3rem; cursor: pointer;"></i>
 
             <div id="processing-state" style="width: 100%;">
                 <h2 class="dynamic-ui-title" id="action-title">Reading Files...</h2>
-                
                 <div id="loading-bar-container" style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin: 15px 0;">
                     <div id="loading-bar-fill" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.1s linear;"></div>
                 </div>
                 <p id="loading-text" class="dynamic-ui-text" style="margin-bottom: 20px;">0%</p>
-
                 <div id="processing-spinner" class="accent-loader" style="display: none;"></div>
                 <p id="processing-msg" class="dynamic-ui-text" style="display: none;">Please keep the app open.<br>This might take a moment.</p>
             </div>
 
             <div id="success-state">
                 <h2 class="dynamic-ui-title" id="success-title">Task Completed!</h2>
-                
                 <div class="percent-saved-circle" id="percent-circle-ui">
                     <h3 id="saved-percent">0%</h3>
                     <p>SAVED</p>
                 </div>
-                
                 <p class="dynamic-ui-text" id="success-message" style="display: none;">Your file has been processed successfully.</p>
-
                 <div class="size-comparison-box" id="size-stats-ui">
                     <span id="old-size">0 MB</span> ➔ <b id="new-size">0 MB</b>
                 </div>
-
                 <button class="btn-primary-dynamic" id="final-download-btn">Download Now</button>
             </div>
-
         </div>
     </div>
+
     <input type="file" id="hidden-camera-input" accept="image/*" capture="environment" style="display: none;">
     <input type="file" id="hidden-gallery-input" accept="image/*" style="display: none;">
 
@@ -653,13 +635,13 @@
 
     <div class="sidebar">
         <div class="brand-logo" onclick="switchView('dashboard')" style="cursor: pointer;">
-     <img src="assets/icon.png?v=5" style="width: 60px !important; height: 60px !important; min-width: 60px !important; min-height: 60px !important; flex-shrink: 0 !important; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain; margin-right: 10px;">
-     <span>Amazing PDF</span>
+            <img src="assets/icon.png?v=5" style="width: 60px !important; height: 60px !important; min-width: 60px !important; min-height: 60px !important; flex-shrink: 0 !important; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain; margin-right: 10px;">
+            <span>Amazing PDF</span>
         </div>
 
-       <a href="https://github.com/rishjain86/Amazing-Pdf-Tool/releases/latest/download/AmazingPDF.apk" class="nav-btn download-btn">
-    <i class="fab fa-android" style="font-size: 1.2rem;"></i> Download App
-</a> 
+        <a href="https://github.com/rishjain86/Amazing-Pdf-Tool/releases/latest/download/AmazingPDF.apk" class="nav-btn download-btn">
+            <i class="fab fa-android" style="font-size: 1.2rem;"></i> Download App
+        </a> 
 
         <div class="nav-btn active" onclick="switchView('dashboard')">
             <i class="fas fa-home"></i> Dashboard
@@ -697,18 +679,16 @@
         <a href="privacy.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-user-shield"></i> Privacy Policy</a>
         <a href="terms.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-file-contract"></i> Terms & Cond.</a>
         <div style="text-align: center; margin-top: 30px; padding-bottom: 20px; color: #888; font-size: 0.95rem; font-weight: bold; letter-spacing: 1px;">
-        <span id="app-version-text">Version 2</span>
-   </div> 
-        
+            <span id="app-version-text">Version 2</span>
+        </div> 
     </div>
 
     <div class="main-wrapper">
-        
         <div class="mobile-header">
             <div style="display: flex; align-items: center; gap: 15px;">
                 <button onclick="toggleMenu()" style="background: transparent; color: white; border: none; font-size: 1.4rem; cursor: pointer; padding: 5px;"><i class="fas fa-bars"></i></button>
                 <div class="brand-logo" onclick="switchView('dashboard')" style="padding: 0; border: none; cursor: pointer;">
-                 <img src="assets/icon.png?v=5" style="width: 48px; height: 48px; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain; margin-right: 10px;">   
+                    <img src="assets/icon.png?v=5" style="width: 48px; height: 48px; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain; margin-right: 10px;">   
                 </div>
             </div>
             <input type="text" id="mobile-search" placeholder="Search..." style="width: 45%; padding: 10px; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; font-size: 0.85rem; padding-left: 15px; outline: none;">
@@ -743,7 +723,6 @@
                     <h3>Word to PDF</h3>
                     <p>Word files into secure PDFs.</p>
                 </div>
-
                 <div class="tool-card" onclick="switchView('history')">
                     <i class="fas fa-history tool-icon" style="color: #3b82f6;"></i>
                     <h3>My History</h3>
@@ -949,28 +928,24 @@
             </div>
             
             <div class="dashboard-grid">
-                
                 <div class="tool-card" style="opacity: 0.8; cursor: default; border: 1px dashed var(--glass-border);">
                     <i class="fas fa-eye tool-icon" style="color: #10b981;"></i>
                     <h3>OCR Scanner</h3>
                     <p>Extract text from scanned images.</p>
                     <div style="margin-top: 10px; font-size: 0.75rem; background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); padding: 4px 8px; border-radius: 4px; display: inline-block; font-weight: bold;">Planned</div>
                 </div>
-
                 <div class="tool-card" style="opacity: 0.8; cursor: default; border: 1px dashed var(--glass-border);">
                     <i class="fas fa-signature tool-icon" style="color: #8b5cf6;"></i>
                     <h3>E-Signature</h3>
                     <p>Draw and apply digital signatures.</p>
                     <div style="margin-top: 10px; font-size: 0.75rem; background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); padding: 4px 8px; border-radius: 4px; display: inline-block; font-weight: bold;">Planned</div>
                 </div>
-
                 <div class="tool-card" style="opacity: 0.8; cursor: default; border: 1px dashed var(--glass-border);">
                     <i class="fas fa-layer-group tool-icon" style="color: #f59e0b;"></i>
                     <h3>Batch Processing</h3>
                     <p>Process multiple files at once.</p>
                     <div style="margin-top: 10px; font-size: 0.75rem; background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); padding: 4px 8px; border-radius: 4px; display: inline-block; font-weight: bold;">Planned</div>
                 </div>
-
                 <div class="tool-card" style="opacity: 0.8; cursor: default; border: 1px dashed var(--glass-border);">
                     <i class="fas fa-user-shield tool-icon" style="color: #14b8a6;"></i>
                     <h3>Smart Vault</h3>
@@ -979,7 +954,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <div id="scanner-source-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.7); z-index: 100001; align-items: flex-end;">
@@ -1000,7 +974,6 @@
     </div>
 
     <div id="scanner-workspace" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: #000; z-index: 100000; flex-direction: column;">
-        
         <div id="scanner-default-top-bar" style="display: flex; justify-content: space-between; align-items: center; padding: max(15px, env(safe-area-inset-top)) 20px 15px 20px; background: #111; color: white; border-bottom: 1px solid #333;">
             <button id="btn-scanner-close" style="background: transparent; color: white; border: none; font-size: 1.2rem; cursor: pointer;"><i class="fas fa-times"></i></button>
             <div style="display: flex; gap: 15px;">
@@ -1044,16 +1017,13 @@
             <span style="font-weight: 600; color: white; flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px;">Document Preview</span>
             <div style="width: 60px; flex-shrink: 0;"></div>
         </div>
-        
         <div id="scanner-preview-list" style="flex: 1; min-height: 0; overflow-y: auto; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; background: #cbd5e1;"></div>
-
         <div style="padding: 20px; background: var(--surface-color); border-top: 1px solid var(--glass-border);">
             <button id="btn-scanner-export" style="background: #10b981; color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; font-weight: bold; font-size: 1.1rem; cursor: pointer;"><i class="fas fa-download"></i> Save & Download PDF</button>
         </div>
     </div>
 
     <div id="edit-workspace" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: var(--bg-color); z-index: 100000; flex-direction: column;">
-        
         <div style="display: flex; justify-content: space-between; align-items: center; padding: max(15px, env(safe-area-inset-top)) 20px 15px 20px; background: var(--surface-color); border-bottom: 1px solid var(--glass-border);">
             <button id="btn-close-editor" class="editor-header-btn" style="background: transparent; color: white; border: none; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 5px;"><i class="fas fa-times"></i> <span>Cancel</span></button>
             <span id="workspace-title" class="editor-header-title" style="font-weight: 600; font-size: 1.1rem;"><i class="fas fa-edit"></i> Visual Editor</span>
@@ -1066,8 +1036,7 @@
             </div>
         </div>
 
-        <div id="visual-tool-header" style="display: none; text-align: center; padding: 10px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.9rem; font-weight: 500;">
-            </div>
+        <div id="visual-tool-header" style="display: none; text-align: center; padding: 10px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.9rem; font-weight: 500;"></div>
 
         <div id="edit-toolbar" style="display: flex; gap: 10px; padding: 15px 20px; background: #1e293b; border-bottom: 1px solid var(--glass-border); flex-wrap: wrap; align-items: center; justify-content: center;">
             <button id="btn-edit-text" class="edit-toolbar-btn"><i class="fas fa-font"></i> Text</button>
@@ -1084,12 +1053,10 @@
                 <input type="color" id="edit-color-picker" value="#000000" style="width: 30px; height: 30px; border: none; cursor: pointer; border-radius: 4px; padding: 0; outline: none;">
                 <input type="range" id="edit-size-picker" min="1" max="100" value="20" style="width: 80px;">
             </div>
-
             <div id="watermark-settings" style="display: none; gap: 10px; align-items: center; border-left: 1px solid var(--glass-border); padding-left: 15px;">
                 <label style="font-size: 0.8rem; color: #94a3b8;">Opacity:</label>
                 <input type="range" id="watermark-opacity" min="0.1" max="1" step="0.1" value="0.5" style="width: 80px;">
             </div>
-
             <button id="btn-edit-clear" class="edit-toolbar-btn" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; margin-left: auto;"><i class="fas fa-trash-alt"></i> Clear</button>
         </div>
 
@@ -1098,7 +1065,6 @@
                 <canvas id="pdf-render-canvas" style="display: block; background: white;"></canvas>
                 <canvas id="pdf-overlay-canvas" style="position: absolute; top: 0; left: 0; cursor: crosshair;"></canvas>
             </div>
-            
             <div id="drag-trash-zone" style="display: none; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(239, 68, 68, 0.9); color: white; padding: 15px 30px; border-radius: 30px; align-items: center; justify-content: center; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-weight: bold; transition: 0.2s;">
                 <i class="fas fa-trash-alt" style="margin-right: 10px;"></i> Drag here to delete
             </div>
@@ -1168,7 +1134,6 @@
         <div style="font-size: 5rem; margin-bottom: 20px; filter: drop-shadow(0px 10px 15px rgba(16, 185, 129, 0.4));">🚀</div>
         <h2 style="font-size: 2rem; margin-bottom: 10px; font-family: 'Poppins', sans-serif;">Update Required!</h2>
         <p style="margin-bottom: 30px; color: var(--text-secondary); font-size: 1.1rem; max-width: 300px; font-family: 'Poppins', sans-serif;">A new version of Amazing PDF Tool is available. Please update the app to continue using it securely.</p>
-        
         <button onclick="window.open('https://github.com/rishjain86/Amazing-Pdf-Tool/releases/latest/download/AmazingPDF.apk', '_blank')" style="background: linear-gradient(45deg, #10b981, #3b82f6); color: white; border: none; padding: 15px 30px; font-size: 1.2rem; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); font-family: 'Poppins', sans-serif; transition: 0.3s;">Update App Now</button>
     </div>
 
@@ -1181,7 +1146,6 @@
                 overlay.classList.toggle('active');
             }
         }
-
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.sidebar .nav-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -1194,19 +1158,16 @@
         });
     </script>
 
-    <script type="module" src="app.js?v=10"></script>
+    <script type="module" src="app.js?v=11"></script>
 
     <script>
-    // 1. Disable Right Click (Context Menu)
     document.addEventListener('contextmenu', event => event.preventDefault());
-
-    // 2. Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U for PC Browsers
     document.onkeydown = function(e) {
         if (
-            e.keyCode === 123 || // Block F12
-            (e.ctrlKey && e.shiftKey && e.keyCode === 73) || // Block Ctrl+Shift+I
-            (e.ctrlKey && e.shiftKey && e.keyCode === 74) || // Block Ctrl+Shift+J
-            (e.ctrlKey && e.keyCode === 85) // Block Ctrl+U
+            e.keyCode === 123 || 
+            (e.ctrlKey && e.shiftKey && e.keyCode === 73) || 
+            (e.ctrlKey && e.shiftKey && e.keyCode === 74) || 
+            (e.ctrlKey && e.keyCode === 85)
         ) {
             return false;
         }
@@ -1229,32 +1190,22 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // Version variable for auto-update via sed
         const CURRENT_APP_VERSION = 2;
 
         async function checkAppVersion() {
             try {
                 const docRef = doc(db, "amazingpdf_settings", "app_config");
                 const docSnap = await getDoc(docRef);
-                
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     const latestVersionFromDB = parseFloat(data.latest_version);
-                    
                     const versionTextElement = document.getElementById('app-version-text');
                     if(versionTextElement) {
                         versionTextElement.innerText = "Version " + latestVersionFromDB;
                     }
-
                     const hostname = window.location.hostname;
                     const isWebsite = hostname.includes("amazingpdf.in") || hostname.includes("vercel.app") || hostname.includes("github.io");
-
-                    if (isWebsite) {
-                        console.log("Website detected. Update modal blocked.");
-                        return; 
-                    }
-
+                    if (isWebsite) return; 
                     if (latestVersionFromDB > CURRENT_APP_VERSION) {
                         document.getElementById('update-modal').style.display = 'flex';
                     }
@@ -1263,7 +1214,6 @@
                 console.error("Version fetch error:", error);
             }
         }
-
         setTimeout(checkAppVersion, 2000);
     </script>
 </body>
