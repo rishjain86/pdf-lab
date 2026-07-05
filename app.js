@@ -2,6 +2,7 @@ import { PDFDocument, degrees, StandardFonts, rgb, PDFName } from 'https://cdn.j
 import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs';
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
 import JSZip from 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
+window.JSZip = JSZip; // 🔥 FIX FOR DOCX-PREVIEW DEPENDENCY 🔥
 import { AdManager } from './adManager.js';
 import { Filesystem, Directory } from 'https://cdn.jsdelivr.net/npm/@capacitor/filesystem@6.0.0/+esm';
 import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@6.0.0/+esm';
@@ -16,8 +17,8 @@ forceScrollStyle.innerHTML = `
     .canvas-container { 
         touch-action: auto !important; 
         -webkit-overflow-scrolling: touch !important; 
-        min-height: 0 !important; /* FIX: Container ko infinitely lamba hone se rokega */
-        max-height: 100% !important; /* FIX: Zabardasti internal UP-DOWN scroll on karega */
+        min-height: 0 !important; 
+        max-height: 100% !important; 
         overflow: auto !important;
     }
     #pdf-overlay-canvas { touch-action: auto !important; }
@@ -1359,7 +1360,7 @@ setupSingleFileLogic('addtext', null);
 
 // Action Callbacks
 
-// --- NEW: PDF TO WORD (With Double Option & Global Fix) ---
+// --- NEW: PDF TO WORD (With Double Option & ESM Fix) ---
 setupSingleFileLogic('pdftoword', async (file) => {
     // Dynamically loading via reliable ESM so it doesn't conflict with global window.docx
     let docxLib;
@@ -1450,15 +1451,12 @@ setupSingleFileLogic('pdftoword', async (file) => {
 
 // --- NEW: WORD TO PDF (Visual Render Engine) ---
 setupSingleFileLogic('wordtopdf', async (file) => {
-    // Safe Dynamic Script Loading for docx-preview to ensure renderAsync is available
-    if (typeof window.docx === 'undefined' || typeof window.docx.renderAsync === 'undefined') {
-        await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/docx-preview@0.3.32/dist/docx-preview.min.js';
-            script.onload = resolve;
-            script.onerror = () => reject(new Error("Failed to load rendering engine. Please check your internet connection."));
-            document.head.appendChild(script);
-        });
+    // Dynamically loading via reliable ESM
+    let docxPreview;
+    try {
+        docxPreview = await import('https://cdn.jsdelivr.net/npm/docx-preview@0.3.32/+esm');
+    } catch(e) {
+        docxPreview = await import('https://esm.sh/docx-preview@0.3.32');
     }
     
     const arrayBuffer = await file.arrayBuffer();
@@ -1474,7 +1472,7 @@ setupSingleFileLogic('wordtopdf', async (file) => {
     document.body.appendChild(wrapper);
     
     // Draw the Word file visually in the container
-    await window.docx.renderAsync(arrayBuffer, wrapper, null, {
+    await docxPreview.renderAsync(arrayBuffer, wrapper, null, {
         className: "docx",
         inWrapper: true,
         ignoreWidth: false,
