@@ -1361,7 +1361,7 @@ setupSingleFileLogic('addtext', null);
 
 // --- NEW: PDF TO WORD (With Double Option) ---
 setupSingleFileLogic('pdftoword', async (file) => {
-    const docxLib = window.docx || await import('https://cdn.jsdelivr.net/npm/docx@8.5.0/+esm');
+    const docxLib = window.docx;
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
     const mode = document.getElementById('pdftoword-mode') ? document.getElementById('pdftoword-mode').value : 'text';
     let paragraphs = [];
@@ -1421,7 +1421,7 @@ setupSingleFileLogic('pdftoword', async (file) => {
                 children: [
                     new docxLib.ImageRun({
                         data: bytes,
-                        transformation: { width: 800, height: Math.floor(viewport.height * (800 / viewport.width)) }
+                        transformation: { width: 600, height: Math.floor(viewport.height * (600 / viewport.width)) }
                     })
                 ]
             }));
@@ -1443,9 +1443,6 @@ setupSingleFileLogic('pdftoword', async (file) => {
 
 // --- NEW: WORD TO PDF (Visual Render Engine) ---
 setupSingleFileLogic('wordtopdf', async (file) => {
-    // Dynamically loading docx-preview for exact visual rendering
-    const docxPreview = await import('https://cdn.jsdelivr.net/npm/docx-preview@0.3.32/dist/docx-preview.mjs');
-    
     const arrayBuffer = await file.arrayBuffer();
     
     // Create hidden container
@@ -1458,8 +1455,8 @@ setupSingleFileLogic('wordtopdf', async (file) => {
     wrapper.style.top = '-9999px';
     document.body.appendChild(wrapper);
     
-    // Draw the Word file visually in the container
-    await docxPreview.renderAsync(arrayBuffer, wrapper, null, {
+    // Draw the Word file visually in the container using global docx renderAsync
+    await window.docx.renderAsync(arrayBuffer, wrapper, null, {
         className: "docx",
         inWrapper: true,
         ignoreWidth: false,
@@ -2718,8 +2715,6 @@ function normalizeBox(box) {
 }
 
 overlayCanvas?.addEventListener('touchstart', (e) => { 
-    // Sirf Draw, Whiteout, aur Box banane ke time par scroll block hoga
-    // Text ya Image tool me empty space par touch karke user aaram se Up/Down Scroll kar payega
     if (e.touches.length === 1 && (currentTool === 'draw' || currentTool === 'whiteout' || currentTool === 'visual-box')) {
         e.preventDefault(); 
     }
