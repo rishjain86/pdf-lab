@@ -27,9 +27,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
-    <!-- Added Libraries for Local PDF to Word & Word to PDF processing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+    <script src="https://unpkg.com/docx-preview@0.3.32/dist/docx-preview.min.js"></script>
 
     <style>
         :root {
@@ -675,7 +674,6 @@
         </div>
         
         <div class="menu-label">Main Tools</div>
-        <!-- ADDED PDF to Word & Word to PDF Here -->
         <div class="nav-btn" onclick="switchView('pdftoword')"><i class="fas fa-file-word"></i> PDF to Word</div>
         <div class="nav-btn" onclick="switchView('wordtopdf')"><i class="fas fa-file-pdf"></i> Word to PDF</div>
         <div class="nav-btn" onclick="switchView('edit')"><i class="fas fa-edit"></i> Edit PDF</div>
@@ -735,7 +733,6 @@
                     <h3>Smart Scanner</h3>
                     <p>Auto-enhance, size compress & scan.</p>
                 </div>
-                <!-- ADDED PDF to Word & Word to PDF Here -->
                 <div class="tool-card" onclick="switchView('pdftoword')">
                     <i class="fas fa-file-word tool-icon" style="color: #3b82f6;"></i>
                     <h3>PDF to Word</h3>
@@ -913,7 +910,6 @@
             <div id="history-list"></div>
         </div>
 
-        <!-- ADDED PDF to Word & Word to PDF UI Containers -->
         <div id="view-pdftoword" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="pdftoword-ui-container"></div></div>
         <div id="view-wordtopdf" class="view-section"><div class="back-btn" onclick="switchView('dashboard')"><i class="fas fa-arrow-left"></i> Back to Home</div><div id="wordtopdf-ui-container"></div></div>
         
@@ -954,8 +950,6 @@
             
             <div class="dashboard-grid">
                 
-                <!-- Removed PDF to Word & Word to PDF from here -->
-
                 <div class="tool-card" style="opacity: 0.8; cursor: default; border: 1px dashed var(--glass-border);">
                     <i class="fas fa-eye tool-icon" style="color: #10b981;"></i>
                     <h3>OCR Scanner</h3>
