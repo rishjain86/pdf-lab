@@ -1356,21 +1356,13 @@ setupSingleFileLogic('sign', null);
 setupSingleFileLogic('watermark', null);
 setupSingleFileLogic('addtext', null);
 
-// ==========================================
-// FIXED PDF TO WORD (2-OPTION STABLE ENGINE)
-// ==========================================
-setupSingleFileLogic('pdftoword', async (file) => {
-    if (typeof window.docxDoc === 'undefined') {
-        await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/docx@8.5.0/build/index.js';
-            script.onload = () => { window.docxDoc = window.docx; resolve(); };
-            script.onerror = () => reject(new Error("Engine injection error. Check your network."));
-            document.head.appendChild(script);
-        });
-    }
+// Action Callbacks
 
-    const docxLib = window.docxDoc;
+// --- NEW: PDF TO WORD (Global Collision-Free Engine) ---
+setupSingleFileLogic('pdftoword', async (file) => {
+    if (!window.DocxLib) throw new Error("Word Generation engine not found. Please reload the app.");
+    
+    const docxLib = window.DocxLib;
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
     const mode = document.getElementById('pdftoword-mode') ? document.getElementById('pdftoword-mode').value : 'text';
     let paragraphs = [];
@@ -1379,64 +1371,94 @@ setupSingleFileLogic('pdftoword', async (file) => {
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i); 
             const textContent = await page.getTextContent();
+            
             let lastY = -1;
             let currentLine = "";
             
             textContent.items.forEach(item => {
                 if (lastY !== -1 && Math.abs(lastY - item.transform[5]) > 5) {
-                    if(currentLine.trim()) paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.TextRun(currentLine)] }));
+                    if(currentLine.trim()) {
+                        paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.TextRun(currentLine)] }));
+                    }
                     currentLine = item.str;
                 } else {
                     currentLine += (currentLine ? " " : "") + item.str;
                 }
                 lastY = item.transform[5];
             });
-            if (currentLine.trim()) paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.TextRun(currentLine)] }));
-            if (i < pdf.numPages) paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.PageBreak()] }));
+            if (currentLine.trim()) {
+                paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.TextRun(currentLine)] }));
+            }
+            
+            if (i < pdf.numPages) {
+                paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.PageBreak()] }));
+            }
         }
     } else {
+        // Exact Layout Mode (Scanned Image)
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i); 
             const viewport = page.getViewport({ scale: 2.0 });
+            
             const canvas = document.createElement('canvas');
-            canvas.width = viewport.width; canvas.height = viewport.height;
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            await page.render({ canvasContext: ctx, viewport }).promise;
             
             const imgData = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
-            const bytes = Uint8Array.from(atob(imgData), c => c.charCodeAt(0));
+            const binaryString = window.atob(imgData);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let j = 0; j < len; j++) {
+                bytes[j] = binaryString.charCodeAt(j);
+            }
             
             paragraphs.push(new docxLib.Paragraph({
-                children: [new docxLib.ImageRun({ data: bytes, transformation: { width: 600, height: Math.floor(viewport.height * (600 / viewport.width)) } })]
+                children: [
+                    new docxLib.ImageRun({
+                        data: bytes,
+                        transformation: { width: 600, height: Math.floor(viewport.height * (600 / viewport.width)) }
+                    })
+                ]
             }));
         }
     }
     
-    const docObj = new docxLib.Document({ sections: [{ properties: mode === 'exact' ? { margin: { top: 0, right: 0, bottom: 0, left: 0 } } : {}, children: paragraphs }] });
+    const docObj = new docxLib.Document({
+        sections: [{
+            properties: {
+                page: mode === 'exact' ? { margin: { top: 0, right: 0, bottom: 0, left: 0 } } : {}
+            },
+            children: paragraphs.length ? paragraphs : [new docxLib.Paragraph("No content found.")]
+        }]
+    });
+    
     const blob = await docxLib.Packer.toBlob(docObj);
     return { bytes: new Uint8Array(await blob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.docx`, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
 });
 
-// =========================================================================
-// FIXED WORD TO PDF (STABLE VISUAL ENGINE)
-// =========================================================================
+// --- NEW: WORD TO PDF (Visual Render Engine) ---
 setupSingleFileLogic('wordtopdf', async (file) => {
-    if (typeof window.docx === 'undefined' || typeof window.docx.renderAsync === 'undefined') {
-        await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/docx-preview@0.3.32/dist/docx-preview.min.js';
-            script.onload = resolve;
-            script.onerror = () => reject(new Error("Visual rendering engine failure. Check network connection."));
-            document.head.appendChild(script);
-        });
-    }
+    if (!window.docx || !window.docx.renderAsync) throw new Error("Visual rendering engine not found. Please reload the app.");
     
     const arrayBuffer = await file.arrayBuffer();
+    
+    // Create hidden container
     const wrapper = document.createElement('div');
+    wrapper.style.padding = '0';
+    wrapper.style.color = '#000000';
+    wrapper.style.background = '#ffffff';
     wrapper.style.width = '800px'; 
-    wrapper.style.position = 'absolute'; 
+    wrapper.style.position = 'absolute';
     wrapper.style.top = '-9999px';
     document.body.appendChild(wrapper);
     
+    // Draw the Word file visually in the container
     await window.docx.renderAsync(arrayBuffer, wrapper, null, {
         className: "docx",
         inWrapper: true,
@@ -1447,16 +1469,17 @@ setupSingleFileLogic('wordtopdf', async (file) => {
         useBase64URL: true
     });
     
+    // Take a Snapshot to create PDF
     const opt = {
-        margin: 0,
-        filename: 'temp.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        margin:       0,
+        filename:     'temp.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
     const pdfBlob = await window.html2pdf().set(opt).from(wrapper).output('blob');
-    document.body.removeChild(wrapper);
+    document.body.removeChild(wrapper); // Cleanup
     
     return { bytes: new Uint8Array(await pdfBlob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.pdf`, type: 'application/pdf' };
 });
