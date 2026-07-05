@@ -2,7 +2,7 @@ import { PDFDocument, degrees, StandardFonts, rgb, PDFName } from 'https://cdn.j
 import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs';
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
 import JSZip from 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
-window.JSZip = JSZip; // 🔥 FIX FOR DOCX-PREVIEW DEPENDENCY 🔥
+window.JSZip = JSZip; // 🔥 REQUIRED FOR DOCX-PREVIEW 🔥
 import { AdManager } from './adManager.js';
 import { Filesystem, Directory } from 'https://cdn.jsdelivr.net/npm/@capacitor/filesystem@6.0.0/+esm';
 import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@6.0.0/+esm';
@@ -135,14 +135,12 @@ async function simulateLoadingAndProcess(title, processCallback) {
         procMsg.style.display = 'none';
         barFill.style.width = '0%';
 
-        // Simulate reading progress to improve UX
         for(let i = 0; i <= 100; i += 15) {
             barFill.style.width = i + '%';
             loadingText.innerText = `${i}%`;
             await new Promise(r => setTimeout(r, 60)); 
         }
 
-        // Switch to Processing Mode
         actionTitle.innerText = title + '...';
         barContainer.style.display = 'none';
         loadingText.style.display = 'none';
@@ -401,7 +399,7 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
     
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
-            const chunkSize = 256 * 1024; // 256KB Chunks
+            const chunkSize = 256 * 1024; 
             const len = bytes.byteLength; 
             let isFirstChunk = true;
             
@@ -1360,16 +1358,20 @@ setupSingleFileLogic('addtext', null);
 
 // Action Callbacks
 
-// --- NEW: PDF TO WORD (With Double Option & ESM Fix) ---
+// --- NEW: PDF TO WORD (Script Injection Method) ---
 setupSingleFileLogic('pdftoword', async (file) => {
-    // Dynamically loading via reliable ESM so it doesn't conflict with global window.docx
-    let docxLib;
-    try {
-        docxLib = await import('https://cdn.jsdelivr.net/npm/docx@8.5.0/+esm');
-    } catch(e) {
-        docxLib = await import('https://esm.sh/docx@8.5.0');
+    // Safe Dynamic Script Loading (Bulletproof method)
+    if (typeof window.docx === 'undefined' || typeof window.docx.Document === 'undefined') {
+        await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/docx@8.5.0/build/index.js';
+            script.onload = resolve;
+            script.onerror = () => reject(new Error("Failed to load Word generator. Check your internet."));
+            document.head.appendChild(script);
+        });
     }
 
+    const docxLib = window.docx;
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
     const mode = document.getElementById('pdftoword-mode') ? document.getElementById('pdftoword-mode').value : 'text';
     let paragraphs = [];
@@ -1451,12 +1453,15 @@ setupSingleFileLogic('pdftoword', async (file) => {
 
 // --- NEW: WORD TO PDF (Visual Render Engine) ---
 setupSingleFileLogic('wordtopdf', async (file) => {
-    // Dynamically loading via reliable ESM
-    let docxPreview;
-    try {
-        docxPreview = await import('https://cdn.jsdelivr.net/npm/docx-preview@0.3.32/+esm');
-    } catch(e) {
-        docxPreview = await import('https://esm.sh/docx-preview@0.3.32');
+    // Safe Dynamic Script Loading (Bulletproof method)
+    if (typeof window.docx === 'undefined' || typeof window.docx.renderAsync === 'undefined') {
+        await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/docx-preview@0.3.32/dist/docx-preview.min.js';
+            script.onload = resolve;
+            script.onerror = () => reject(new Error("Failed to load Word rendering engine. Check your internet."));
+            document.head.appendChild(script);
+        });
     }
     
     const arrayBuffer = await file.arrayBuffer();
@@ -1472,7 +1477,7 @@ setupSingleFileLogic('wordtopdf', async (file) => {
     document.body.appendChild(wrapper);
     
     // Draw the Word file visually in the container
-    await docxPreview.renderAsync(arrayBuffer, wrapper, null, {
+    await window.docx.renderAsync(arrayBuffer, wrapper, null, {
         className: "docx",
         inWrapper: true,
         ignoreWidth: false,
