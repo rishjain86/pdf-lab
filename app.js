@@ -1359,9 +1359,16 @@ setupSingleFileLogic('addtext', null);
 
 // Action Callbacks
 
-// --- NEW: PDF TO WORD (With Double Option) ---
+// --- NEW: PDF TO WORD (With Double Option & Global Fix) ---
 setupSingleFileLogic('pdftoword', async (file) => {
-    const docxLib = window.docx;
+    // Dynamically loading via reliable ESM so it doesn't conflict with global window.docx
+    let docxLib;
+    try {
+        docxLib = await import('https://cdn.jsdelivr.net/npm/docx@8.5.0/+esm');
+    } catch(e) {
+        docxLib = await import('https://esm.sh/docx@8.5.0');
+    }
+
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
     const mode = document.getElementById('pdftoword-mode') ? document.getElementById('pdftoword-mode').value : 'text';
     let paragraphs = [];
@@ -1443,6 +1450,17 @@ setupSingleFileLogic('pdftoword', async (file) => {
 
 // --- NEW: WORD TO PDF (Visual Render Engine) ---
 setupSingleFileLogic('wordtopdf', async (file) => {
+    // Safe Dynamic Script Loading for docx-preview to ensure renderAsync is available
+    if (typeof window.docx === 'undefined' || typeof window.docx.renderAsync === 'undefined') {
+        await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/docx-preview@0.3.32/dist/docx-preview.min.js';
+            script.onload = resolve;
+            script.onerror = () => reject(new Error("Failed to load rendering engine. Please check your internet connection."));
+            document.head.appendChild(script);
+        });
+    }
+    
     const arrayBuffer = await file.arrayBuffer();
     
     // Create hidden container
@@ -1455,7 +1473,7 @@ setupSingleFileLogic('wordtopdf', async (file) => {
     wrapper.style.top = '-9999px';
     document.body.appendChild(wrapper);
     
-    // Draw the Word file visually in the container using global docx renderAsync
+    // Draw the Word file visually in the container
     await window.docx.renderAsync(arrayBuffer, wrapper, null, {
         className: "docx",
         inWrapper: true,
