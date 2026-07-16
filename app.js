@@ -1132,10 +1132,23 @@ setupSingleFileLogic('watermark', null);
 setupSingleFileLogic('addtext', null);
 
 // --- PDF TO WORD (Global Object Method) ---
+// --- NEW: PDF TO WORD (Safe Dynamic Injection) ---
 setupSingleFileLogic('pdftoword', async (file) => {
-    if (!window.docx) throw new Error("Word engine not loaded from index.html. Please refresh.");
+    // Injecting jsdelivr link safely
+    if (typeof window.docxCreator === 'undefined') {
+        await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js';
+            script.onload = () => { 
+                window.docxCreator = window.docx; // Save with unique name to prevent collision
+                resolve(); 
+            };
+            script.onerror = () => reject(new Error("Word engine failed to load. Please check internet."));
+            document.head.appendChild(script);
+        });
+    }
     
-    const docxLib = window.docx;
+    const docxLib = window.docxCreator;
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
     const mode = document.getElementById('pdftoword-mode') ? document.getElementById('pdftoword-mode').value : 'text';
     let paragraphs = [];
@@ -1190,9 +1203,20 @@ setupSingleFileLogic('pdftoword', async (file) => {
     return { bytes: new Uint8Array(await blob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.docx`, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
 });
 
-// --- WORD TO PDF (Visual Render Engine) ---
+// --- NEW: WORD TO PDF (Safe Dynamic Injection) ---
 setupSingleFileLogic('wordtopdf', async (file) => {
-    if (!window.docx || !window.docx.renderAsync) throw new Error("Visual rendering engine not loaded from index.html. Please refresh.");
+    if (typeof window.docxPreviewer === 'undefined') {
+        await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/docx-preview@0.3.32/dist/docx-preview.min.js';
+            script.onload = () => { 
+                window.docxPreviewer = window.docx; // Save with unique name to prevent collision
+                resolve(); 
+            };
+            script.onerror = () => reject(new Error("Visual engine failed to load. Please check internet."));
+            document.head.appendChild(script);
+        });
+    }
     
     const arrayBuffer = await file.arrayBuffer();
     const wrapper = document.createElement('div');
@@ -1200,7 +1224,7 @@ setupSingleFileLogic('wordtopdf', async (file) => {
     wrapper.style.width = '800px'; wrapper.style.position = 'absolute'; wrapper.style.top = '-9999px';
     document.body.appendChild(wrapper);
     
-    await window.docx.renderAsync(arrayBuffer, wrapper, null, {
+    await window.docxPreviewer.renderAsync(arrayBuffer, wrapper, null, {
         className: "docx", inWrapper: true, ignoreWidth: false, ignoreHeight: false, ignoreFonts: false, breakPages: true, useBase64URL: true
     });
     
