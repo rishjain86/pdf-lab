@@ -27,6 +27,11 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
+    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+    <script src="https://unpkg.com/docx-preview@0.3.32/dist/docx-preview.min.js"></script>
+    
+    <script src="https://unpkg.com/@pdf-lib/fontkit@0.0.4/dist/fontkit.umd.js"></script>
+
     <style>
         :root {
             --bg-color: #0f172a;
@@ -301,7 +306,7 @@
             display: block; 
         }
 
-        /* DEFAULT CANVAS CONTAINER (For PC - flexbox centering) */
+        /* DEFAULT CANVAS CONTAINER */
         .canvas-container {
             flex: 1; 
             width: 100%; 
@@ -364,9 +369,8 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
         }
 
-        /* --- MOBILE RESPONSIVENESS FIXES (Including Hamburger & Toolbar scroll) --- */
+        /* --- MOBILE RESPONSIVENESS FIXES --- */
         @media (max-width: 768px) {
-            /* Sidebar Slide-in Logic */
             .sidebar { 
                 position: fixed !important; 
                 top: 0; 
@@ -380,7 +384,6 @@
             }
             .sidebar.active { left: 0; }
             
-            /* Dark overlay jab menu open ho */
             #sidebar-overlay {
                 display: none;
                 position: fixed;
@@ -394,7 +397,6 @@
             .mobile-header { display: flex; }
             .desktop-search-container { display: none; }
             
-            /* FIXED: Force Deep Padding so tool buttons stop above the AdMob banner */
             .view-section { 
                 padding: 20px !important; 
                 padding-bottom: 120px !important; 
@@ -408,12 +410,11 @@
             .tool-card p { font-size: 0.75rem; }
             .download-btn { margin: 10px 15px; font-size: 0.9rem; padding: 10px; }
             
-            /* FIXED MOBILE TOOLBAR: Made thicker and more premium */
             #edit-toolbar { 
                 flex-wrap: nowrap !important; 
                 overflow-x: auto !important; 
                 justify-content: flex-start !important; 
-                padding: 16px 15px !important; /* Increased vertical padding to make bar thicker */
+                padding: 16px 15px !important; 
                 scrollbar-width: none; 
                 -ms-overflow-style: none; 
             }
@@ -422,8 +423,8 @@
             .edit-toolbar-btn { 
                 flex: 0 0 auto !important; 
                 margin-bottom: 0 !important; 
-                padding: 10px 16px !important; /* Made buttons larger and touch-friendly */
-                font-size: 0.95rem !important; /* Slightly bigger font */
+                padding: 10px 16px !important; 
+                font-size: 0.95rem !important; 
                 font-weight: 600 !important; 
             }
             .tool-settings { 
@@ -443,8 +444,6 @@
             .editor-header-select { width: 110px !important; font-size: 0.8rem !important; padding: 5px !important; }
         }
 
-        /* --- MOBILE & TOUCH DEVICES SPECIFIC FIXES (Scroll cut-off & Sticky Toolbar) --- */
-        /* PC will ignore this and use standard flexbox */
         @media (max-width: 1024px), (pointer: coarse) {
             .canvas-container {
                 display: block !important;
@@ -469,12 +468,12 @@
         }
 
         /* ==========================================
-           DYNAMIC PROCESSING & SUCCESS UI (CUSTOM THEME)
+           DYNAMIC PROCESSING & SUCCESS UI
            ========================================== */
         #dynamic-ui-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.85); /* Based on var(--bg-color) */
+            background: rgba(15, 23, 42, 0.85); 
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             z-index: 999999; 
@@ -508,7 +507,6 @@
             margin-bottom: 24px;
         }
 
-        /* Stylish Accent Loader */
         .accent-loader {
             border: 4px solid rgba(255, 255, 255, 0.05);
             border-top: 4px solid var(--accent);
@@ -530,7 +528,6 @@
             line-height: 1.5;
         }
 
-        /* Success Result Stats */
         #success-state {
             display: none;
         }
@@ -607,42 +604,35 @@
         <p style="font-family: 'Poppins', sans-serif; font-size: 1rem; color: #94a3b8; margin-top: 10px; max-width: 80%;">Please turn on your Wi-Fi or Mobile Data to use Amazing PDF Tool.</p>
     </div>
 
-        <div id="dynamic-ui-overlay">
+    <div id="dynamic-ui-overlay">
         <div class="dynamic-ui-box glass" style="position: relative;">
-            
             <i class="fas fa-times" id="dynamic-ui-close" style="position: absolute; top: 15px; right: 20px; color: var(--text-secondary); font-size: 1.3rem; cursor: pointer;"></i>
 
             <div id="processing-state" style="width: 100%;">
                 <h2 class="dynamic-ui-title" id="action-title">Reading Files...</h2>
-                
                 <div id="loading-bar-container" style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin: 15px 0;">
                     <div id="loading-bar-fill" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.1s linear;"></div>
                 </div>
                 <p id="loading-text" class="dynamic-ui-text" style="margin-bottom: 20px;">0%</p>
-
                 <div id="processing-spinner" class="accent-loader" style="display: none;"></div>
                 <p id="processing-msg" class="dynamic-ui-text" style="display: none;">Please keep the app open.<br>This might take a moment.</p>
             </div>
 
             <div id="success-state">
                 <h2 class="dynamic-ui-title" id="success-title">Task Completed!</h2>
-                
                 <div class="percent-saved-circle" id="percent-circle-ui">
                     <h3 id="saved-percent">0%</h3>
                     <p>SAVED</p>
                 </div>
-                
                 <p class="dynamic-ui-text" id="success-message" style="display: none;">Your file has been processed successfully.</p>
-
                 <div class="size-comparison-box" id="size-stats-ui">
                     <span id="old-size">0 MB</span> ➔ <b id="new-size">0 MB</b>
                 </div>
-
                 <button class="btn-primary-dynamic" id="final-download-btn">Download Now</button>
             </div>
-
         </div>
     </div>
+
     <input type="file" id="hidden-camera-input" accept="image/*" capture="environment" style="display: none;">
     <input type="file" id="hidden-gallery-input" accept="image/*" style="display: none;">
 
@@ -650,13 +640,13 @@
 
     <div class="sidebar">
         <div class="brand-logo" onclick="switchView('dashboard')" style="cursor: pointer;">
-     <img src="assets/icon.png?v=5" style="width: 60px !important; height: 60px !important; min-width: 60px !important; min-height: 60px !important; flex-shrink: 0 !important; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain; margin-right: 10px;">
-     <span>Amazing PDF</span>
+            <img src="assets/icon.png?v=5" style="width: 60px !important; height: 60px !important; min-width: 60px !important; min-height: 60px !important; flex-shrink: 0 !important; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain; margin-right: 10px;">
+            <span>Amazing PDF</span>
         </div>
 
-       <a href="https://github.com/rishjain86/Amazing-Pdf-Tool/releases/latest/download/AmazingPDF.apk" class="nav-btn download-btn">
-    <i class="fab fa-android" style="font-size: 1.2rem;"></i> Download App
-</a> 
+        <a href="https://github.com/rishjain86/Amazing-Pdf-Tool/releases/latest/download/AmazingPDF.apk" class="nav-btn download-btn">
+            <i class="fab fa-android" style="font-size: 1.2rem;"></i> Download App
+        </a> 
 
         <div class="nav-btn active" onclick="switchView('dashboard')">
             <i class="fas fa-home"></i> Dashboard
@@ -692,18 +682,16 @@
         <a href="privacy.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-user-shield"></i> Privacy Policy</a>
         <a href="terms.html" class="nav-btn" style="text-decoration: none;"><i class="fas fa-file-contract"></i> Terms & Cond.</a>
         <div style="text-align: center; margin-top: 30px; padding-bottom: 20px; color: #888; font-size: 0.95rem; font-weight: bold; letter-spacing: 1px;">
-        <span id="app-version-text">Version 2</span>
-   </div> 
-        
+            <span id="app-version-text">Version 2</span>
+        </div> 
     </div>
 
     <div class="main-wrapper">
-        
         <div class="mobile-header">
             <div style="display: flex; align-items: center; gap: 15px;">
                 <button onclick="toggleMenu()" style="background: transparent; color: white; border: none; font-size: 1.4rem; cursor: pointer; padding: 5px;"><i class="fas fa-bars"></i></button>
                 <div class="brand-logo" onclick="switchView('dashboard')" style="padding: 0; border: none; cursor: pointer;">
-                 <img src="assets/icon.png?v=5" style="width: 48px; height: 48px; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain; margin-right: 10px;">   
+                    <img src="assets/icon.png?v=5" style="width: 48px; height: 48px; border-radius: 8px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); object-fit: contain; margin-right: 10px;">   
                 </div>
             </div>
             <input type="text" id="mobile-search" placeholder="Search..." style="width: 45%; padding: 10px; border-radius: 20px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; font-size: 0.85rem; padding-left: 15px; outline: none;">
@@ -728,7 +716,6 @@
                     <h3>Smart Scanner</h3>
                     <p>Auto-enhance, size compress & scan.</p>
                 </div>
-
                 <div class="tool-card" onclick="switchView('history')">
                     <i class="fas fa-history tool-icon" style="color: #3b82f6;"></i>
                     <h3>My History</h3>
