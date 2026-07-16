@@ -1094,7 +1094,7 @@ if (ui.repair) {
 if (ui.addblank) {
     ui.addblank.innerHTML = generateSingleFileUI('addblank', 'fa-file-medical', '#10b981', 'Insert Blank Pages', 'Insert & Download', `
         <select id="addblank-position" style="${inputStyle}">
-            <option value="end">At the processing end</option>
+            <option value="end">At the very end</option>
             <option value="start">At the very beginning</option>
             <option value="after">After specific page...</option>
         </select>
@@ -1121,6 +1121,7 @@ if (ui.removeannots) ui.removeannots.innerHTML = generateSingleFileUI('removeann
 document.getElementById('addblank-position')?.addEventListener('change', (e) => { 
     document.getElementById('addblank-after-num').style.display = (e.target.value === 'after') ? 'block' : 'none'; 
 });
+
 
 // ==========================================
 // FILE LOGIC UTILITIES (Single/Multiple/ZIP)
@@ -1357,23 +1358,11 @@ setupSingleFileLogic('addtext', null);
 
 // Action Callbacks
 
-// --- NEW: PDF TO WORD (Script Injection Method) ---
+// --- NEW: PDF TO WORD (Global Object Method) ---
 setupSingleFileLogic('pdftoword', async (file) => {
-    // Safe Dynamic Script Loading (Bulletproof method)
-    if (typeof window.docxDoc === 'undefined') {
-        await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/docx@8.5.0/build/index.js';
-            script.onload = () => { 
-                window.docxDoc = window.docx; 
-                resolve(); 
-            };
-            script.onerror = () => reject(new Error("Word engine injection failure. Check connection."));
-            document.head.appendChild(script);
-        });
-    }
-
-    const docxLib = window.docxDoc;
+    if (!window.docx) throw new Error("Word engine not loaded from index.html. Please refresh.");
+    
+    const docxLib = window.docx;
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
     const mode = document.getElementById('pdftoword-mode') ? document.getElementById('pdftoword-mode').value : 'text';
     let paragraphs = [];
@@ -1406,13 +1395,13 @@ setupSingleFileLogic('pdftoword', async (file) => {
             }
         }
     } else {
-        // Keep Exact Layout (Scanned Image photostat)
+        // Keep Exact Layout (Scanned Image)
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i); 
             const viewport = page.getViewport({ scale: 2.0 });
-            const canvas = document.createElement('canvas'); 
             
-            canvas.width = viewport.width; 
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
             canvas.height = viewport.height;
             const ctx = canvas.getContext('2d');
             
@@ -1425,19 +1414,17 @@ setupSingleFileLogic('pdftoword', async (file) => {
             const binaryString = window.atob(imgData);
             const len = binaryString.length;
             const bytes = new Uint8Array(len);
-            
             for (let j = 0; j < len; j++) {
                 bytes[j] = binaryString.charCodeAt(j);
             }
             
             paragraphs.push(new docxLib.Paragraph({
-                children: [new docxLib.ImageRun({ 
-                    data: bytes, 
-                    transformation: { 
-                        width: 600, 
-                        height: Math.floor(viewport.height * (600 / viewport.width)) 
-                    } 
-                })]
+                children: [
+                    new docxLib.ImageRun({
+                        data: bytes,
+                        transformation: { width: 600, height: Math.floor(viewport.height * (600 / viewport.width)) }
+                    })
+                ]
             }));
         }
     }
@@ -1455,59 +1442,44 @@ setupSingleFileLogic('pdftoword', async (file) => {
 
 // --- NEW: WORD TO PDF (Visual Render Engine) ---
 setupSingleFileLogic('wordtopdf', async (file) => {
-    // Background Injection Engine (Guarantees isolation of namespace)
-    if (typeof window.docx === 'undefined' || typeof window.docx.renderAsync === 'undefined') {
-        await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/docx-preview@0.3.32/dist/docx-preview.min.js';
-            script.onload = resolve;
-            script.onerror = () => reject(new Error("Visual rendering engine failure. Check network connection."));
-            document.head.appendChild(script);
-        });
-    }
+    if (!window.docx || !window.docx.renderAsync) throw new Error("Visual rendering engine not loaded from index.html. Please refresh.");
     
     const arrayBuffer = await file.arrayBuffer();
     
-    // Create hidden rendering container
+    // Create hidden container
     const wrapper = document.createElement('div');
-    wrapper.style.padding = '0'; 
-    wrapper.style.color = '#000000'; 
-    wrapper.style.background = '#ffffff'; 
+    wrapper.style.padding = '0';
+    wrapper.style.color = '#000000';
+    wrapper.style.background = '#ffffff';
     wrapper.style.width = '800px'; 
-    wrapper.style.position = 'absolute'; 
+    wrapper.style.position = 'absolute';
     wrapper.style.top = '-9999px';
     document.body.appendChild(wrapper);
     
-    // Render Word file visually
-    await window.docx.renderAsync(arrayBuffer, wrapper, null, { 
-        className: "docx", 
-        inWrapper: true, 
-        ignoreWidth: false, 
-        ignoreHeight: false, 
-        ignoreFonts: false, 
-        breakPages: true, 
-        useBase64URL: true 
+    // Draw the Word file visually in the container
+    await window.docx.renderAsync(arrayBuffer, wrapper, null, {
+        className: "docx",
+        inWrapper: true,
+        ignoreWidth: false,
+        ignoreHeight: false,
+        ignoreFonts: false,
+        breakPages: true,
+        useBase64URL: true
     });
     
-    // Convert rendered visual to PDF
-    const opt = { 
-        margin: 0, 
-        filename: 'temp.pdf', 
-        image: { type: 'jpeg', quality: 0.98 }, 
-        html2canvas: { scale: 2, useCORS: true }, 
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+    // Take a Snapshot to create PDF
+    const opt = {
+        margin:       0,
+        filename:     'temp.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
     const pdfBlob = await window.html2pdf().set(opt).from(wrapper).output('blob');
+    document.body.removeChild(wrapper); // Cleanup
     
-    // Cleanup container
-    document.body.removeChild(wrapper);
-    
-    return { 
-        bytes: new Uint8Array(await pdfBlob.arrayBuffer()), 
-        filename: `${getBaseName(file.name)}_Converted.pdf`, 
-        type: 'application/pdf' 
-    };
+    return { bytes: new Uint8Array(await pdfBlob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.pdf`, type: 'application/pdf' };
 });
 
 setupSingleFileLogic('split', async (file) => {
