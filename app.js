@@ -1580,7 +1580,7 @@ document.getElementById('mobile-search')?.addEventListener('input', handleSearch
 document.getElementById('desktop-search')?.addEventListener('input', handleSearch);
 
 // ==========================================
-// UNIVERSAL PRO VISUAL EDITOR
+// UNIVERSAL PRO VISUAL EDITOR (SEJDA-STYLE UPGRADED)
 // ==========================================
 
 let editPdfDoc = null;
@@ -1593,6 +1593,28 @@ const renderCanvas = document.getElementById('pdf-render-canvas');
 const renderCtx = renderCanvas ? renderCanvas.getContext('2d') : null;
 const overlayCanvas = document.getElementById('pdf-overlay-canvas');
 const overlayCtx = overlayCanvas ? overlayCanvas.getContext('2d') : null;
+
+// [SEJDA EDITOR] Creating the DOM Text Layer
+let sejdaTextLayer = document.getElementById('sejda-text-layer');
+if (!sejdaTextLayer) {
+    sejdaTextLayer = document.createElement('div');
+    sejdaTextLayer.id = 'sejda-text-layer';
+    sejdaTextLayer.style.position = 'absolute';
+    sejdaTextLayer.style.top = '0';
+    sejdaTextLayer.style.left = '0';
+    sejdaTextLayer.style.width = '100%';
+    sejdaTextLayer.style.height = '100%';
+    sejdaTextLayer.style.pointerEvents = 'none'; // Click-through by default
+    
+    // Check if canvas-wrapper exists, else wait for it
+    const initLayer = setInterval(() => {
+        const wrapper = document.querySelector('.canvas-wrapper');
+        if (wrapper) {
+            wrapper.appendChild(sejdaTextLayer);
+            clearInterval(initLayer);
+        }
+    }, 500);
+}
 
 let currentTool = 'none'; 
 let currentVisualMode = 'edit';
@@ -1798,6 +1820,16 @@ function setToolActive(btnId, toolName) {
     
     currentTool = toolName; 
     selectedEditIndex = -1; 
+    
+    // Handle Sejda Interactive Layer visibility
+    if (sejdaTextLayer) {
+        if (toolName === 'none' && currentVisualMode === 'edit') {
+            sejdaTextLayer.style.pointerEvents = 'auto';
+        } else {
+            sejdaTextLayer.style.pointerEvents = 'none';
+        }
+    }
+    
     drawOverlay(); 
 }
 
@@ -1809,13 +1841,27 @@ document.getElementById('edit-size-picker')?.addEventListener('input', (e) => {
     editSize = parseInt(e.target.value) || 20;
 });
 
-document.getElementById('btn-edit-text')?.addEventListener('click', () => setToolActive('btn-edit-text', 'text'));
+// Using 'btn-edit-text' for overlay text, removing tool activation allows inline editing
+document.getElementById('btn-edit-text')?.addEventListener('click', () => {
+    setToolActive('btn-edit-text', 'text');
+    // We optionally hide inline editing while overlay tool is active
+});
 document.getElementById('btn-edit-whiteout')?.addEventListener('click', () => setToolActive('btn-edit-whiteout', 'whiteout'));
 document.getElementById('btn-edit-draw')?.addEventListener('click', () => setToolActive('btn-edit-draw', 'draw'));
 
 document.getElementById('btn-edit-clear')?.addEventListener('click', () => { 
     pageEdits[editPageNum] = []; 
     selectedEditIndex = -1; 
+    // Also reset inline edits
+    if(sejdaTextLayer) {
+        const edits = sejdaTextLayer.querySelectorAll('div[data-edited="true"]');
+        edits.forEach(div => {
+            div.innerText = div.dataset.origText;
+            div.dataset.edited = "false";
+            div.style.color = 'transparent';
+            div.style.backgroundColor = 'transparent';
+        });
+    }
     drawOverlay(); 
     showCustomAlert("Cleared!"); 
 });
@@ -1901,6 +1947,10 @@ function openVisualWorkspace(file, mode) {
     if(btnRotRight) btnRotRight.style.display = 'none';
     if(btnFlatten) btnFlatten.style.display = 'none'; 
     if(watermarkSettings) watermarkSettings.style.display = 'none';
+    if(sejdaTextLayer) {
+        sejdaTextLayer.innerHTML = '';
+        sejdaTextLayer.style.pointerEvents = 'none';
+    }
     
     document.body.classList.add('is-editing'); 
     
@@ -1924,6 +1974,13 @@ function openVisualWorkspace(file, mode) {
         if(toolSettings) toolSettings.style.display = 'flex'; 
         if(btnClear) btnClear.style.display = 'inline-flex';
         
+        if (mode === 'edit') {
+            if(headerHelp) { 
+                headerHelp.style.display = 'block'; 
+                headerHelp.innerHTML = "<i class='fas fa-magic'></i> Click on existing text to edit it, or use top tools."; 
+            }
+        }
+        
         if (mode === 'imagewatermark') { 
             if(watermarkSettings) watermarkSettings.style.display = 'flex'; 
             setToolActive('btn-edit-image', 'image'); 
@@ -1932,6 +1989,7 @@ function openVisualWorkspace(file, mode) {
             setToolActive('btn-edit-text', 'text'); 
         } else { 
             currentTool = 'none'; 
+            if (mode === 'edit' && sejdaTextLayer) sejdaTextLayer.style.pointerEvents = 'auto';
         }
 
     } else {
@@ -2044,6 +2102,7 @@ document.getElementById('btn-close-editor')?.addEventListener('click', () => {
     
     const upl = document.getElementById('edit-upload-section'); 
     if(upl) upl.style.display='block'; 
+    if(sejdaTextLayer) sejdaTextLayer.innerHTML = '';
     
     window.switchView('dashboard');
 });
@@ -2054,6 +2113,9 @@ document.getElementById('edit-pdf-input')?.addEventListener('change', function(e
 
 function renderEditPage(num) {
     if (!editPdfDoc) return;
+    
+    if (sejdaTextLayer) sejdaTextLayer.innerHTML = ''; // Clear previous text items
+
     editPdfDoc.getPage(num).then(page => {
         const viewport = page.getViewport({ scale: editScale, rotation: pageRotations[num] || 0 });
         
@@ -2065,9 +2127,81 @@ function renderEditPage(num) {
             overlayCanvas.height = viewport.height; 
             overlayCanvas.width = viewport.width; 
         }
+        if (sejdaTextLayer) {
+            sejdaTextLayer.style.width = viewport.width + 'px';
+            sejdaTextLayer.style.height = viewport.height + 'px';
+        }
         
         if(renderCtx) {
-            page.render({ canvasContext: renderCtx, viewport: viewport });
+            page.render({ canvasContext: renderCtx, viewport: viewport }).promise.then(() => {
+                // [SEJDA INLINE EDITOR LOGIC]
+                if (currentVisualMode === 'edit') {
+                    page.getTextContent().then(textContent => {
+                        textContent.items.forEach(item => {
+                            const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+                            const fontHeight = Math.sqrt((tx[2] * tx[2]) + (tx[3] * tx[3]));
+                            
+                            const div = document.createElement('div');
+                            div.innerText = item.str;
+                            div.style.position = 'absolute';
+                            div.style.left = tx[4] + 'px';
+                            div.style.top = (tx[5] - fontHeight) + 'px'; // Baseline adjustment
+                            div.style.fontSize = fontHeight + 'px';
+                            // Approximating exact font or falling back to safe defaults
+                            div.style.fontFamily = item.fontName || 'sans-serif';
+                            div.style.color = 'transparent'; // Invisible natively
+                            div.style.cursor = 'text';
+                            div.style.whiteSpace = 'pre';
+                            div.style.lineHeight = '1';
+                            div.style.transformOrigin = '0 0';
+
+                            // Storing data for PDF-lib reconstruction
+                            div.dataset.pdfX = item.transform[4];
+                            div.dataset.pdfY = item.transform[5];
+                            div.dataset.fontSize = item.transform[0];
+                            div.dataset.width = item.width;
+                            div.dataset.height = item.height;
+                            div.dataset.origText = item.str;
+                            div.dataset.edited = "false";
+                            
+                            // Sejda UX - Hover effect
+                            div.addEventListener('mouseenter', () => {
+                                if (div.contentEditable !== 'true') div.style.outline = '1px dashed #3b82f6';
+                            });
+                            div.addEventListener('mouseleave', () => {
+                                if (div.contentEditable !== 'true') div.style.outline = 'none';
+                            });
+                            
+                            // Edit Activation
+                            div.addEventListener('click', (e) => {
+                                if(currentTool !== 'none') return; // Only allow if specific tools aren't active
+                                div.contentEditable = 'true';
+                                div.style.color = '#000'; // Reveal for editing
+                                div.style.backgroundColor = '#fff';
+                                div.style.outline = '2px solid #10b981';
+                                div.focus();
+                            });
+                            
+                            // Done Editing
+                            div.addEventListener('blur', () => {
+                                div.contentEditable = 'false';
+                                div.style.outline = 'none';
+                                
+                                if (div.innerText !== item.str) {
+                                    div.dataset.edited = 'true';
+                                    div.style.color = '#0f172a'; // Keep visible representing edit
+                                    div.style.backgroundColor = 'rgba(255,255,255,0.9)'; // Keep whiteout effect alive visually
+                                } else {
+                                    div.style.color = 'transparent';
+                                    div.style.backgroundColor = 'transparent';
+                                }
+                            });
+
+                            sejdaTextLayer.appendChild(div);
+                        });
+                    });
+                }
+            });
         }
         
         const pNum = document.getElementById('page-num'); 
@@ -2519,6 +2653,10 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
 
         if (['edit', 'sign', 'watermark', 'imagewatermark', 'addtext'].includes(currentVisualMode)) {
             const pdfDoc = await PDFDocument.load(freshBuffer);
+            
+            // Register fontkit to handle dynamic fonts safely
+            if(window.fontkit) pdfDoc.registerFontkit(window.fontkit);
+
             const pages = pdfDoc.getPages();
             
             for (let pIdx = 0; pIdx < pages.length; pIdx++) {
@@ -2527,6 +2665,38 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                 
                 let editsToApply = (applyMode === 'all') ? (pageEdits[editPageNum] || []) : (pageEdits[pIdx + 1] || []);
 
+                // [SEJDA EDITOR] Process Inline DOM Text Edits
+                if (sejdaTextLayer && (applyMode === 'all' || pIdx + 1 === editPageNum)) {
+                    const editedNodes = sejdaTextLayer.querySelectorAll('div[data-edited="true"]');
+                    for (const node of editedNodes) {
+                        const pdfX = parseFloat(node.dataset.pdfX);
+                        const pdfY = parseFloat(node.dataset.pdfY);
+                        const fontSize = parseFloat(node.dataset.fontSize);
+                        const boxWidth = parseFloat(node.dataset.width);
+                        const boxHeight = parseFloat(node.dataset.height) || fontSize;
+                        
+                        // 1. Exact Whiteout to mask original text
+                        page.drawRectangle({
+                            x: pdfX,
+                            y: pdfY - (boxHeight * 0.2), // Baseline offset
+                            width: boxWidth + 5,
+                            height: boxHeight * 1.2,
+                            color: rgb(1, 1, 1)
+                        });
+                        
+                        // 2. Draw edited text with safe StandardFonts matching approximate style
+                        const newText = node.innerText;
+                        page.drawText(newText, {
+                            x: pdfX,
+                            y: pdfY,
+                            size: fontSize,
+                            font: await pdfDoc.embedFont(StandardFonts.Helvetica),
+                            color: rgb(0, 0, 0)
+                        });
+                    }
+                }
+
+                // Apply Overlay Edits
                 for (const edit of editsToApply) {
                     const pdfX = edit.x / editScale; 
                     const pdfY = height - (edit.y / editScale); 
@@ -2821,6 +2991,7 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
         
         const upl = document.getElementById('edit-upload-section'); 
         if(upl) upl.style.display='block'; 
+        if(sejdaTextLayer) sejdaTextLayer.innerHTML = '';
         
         window.switchView('dashboard');
         btn.innerHTML = oldText;
@@ -2847,7 +3018,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isDrawActive || isWhiteoutActive) {
                     overlayCanvas.style.touchAction = 'none';
                 } else {
-                    overlayCanvas.style.touchAction = 'auto'; // FIXED: Ab yaha 'auto' hai, 'pan-x pan-y' ka jhamela nahi
+                    overlayCanvas.style.touchAction = 'auto'; 
                 }
             }, 100); 
         });
@@ -2856,7 +3027,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 2. PINCH TO ZOOM LOGIC (FIXED: RACE CONDITION & DEBOUNCE) ---
     const overlayCanvas = document.getElementById('pdf-overlay-canvas');
     let initialPinchDistance = null;
-    let zoomTimeout = null; // Flicker aur takrav ko rokne ke liye timer
+    let zoomTimeout = null; 
 
     if (overlayCanvas) {
         overlayCanvas.addEventListener('touchstart', (e) => {
@@ -2870,7 +3041,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         overlayCanvas.addEventListener('touchmove', (e) => {
             if (e.touches.length === 2 && initialPinchDistance !== null) {
-                // Pinching ke waqt hi sirf preventDefault
                 e.preventDefault(); 
                 
                 const currentDistance = Math.hypot(
@@ -2889,8 +3059,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     initialPinchDistance = currentDistance; 
 
-                    // FIX: PDF ab har mili-second mein redraw nahi hogi. 
-                    // Jab user zoom karke slightly rukega (100ms pause), tabhi smooth render hoga.
                     clearTimeout(zoomTimeout);
                     zoomTimeout = setTimeout(() => {
                         if(typeof renderEditPage === 'function') {
