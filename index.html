@@ -27,11 +27,19 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <!-- REQUIRED LIBRARIES FOR PRO FEATURES (No Collisions) -->
-    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
-    <script src="https://unpkg.com/docx-preview@0.3.32/dist/docx-preview.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
+    <script>
+        // Isko naye naam se save karo aur purana hata do taaki takrav na ho
+        window.docxCreator = window.docx;
+        window.docx = undefined; 
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.32/dist/docx-preview.min.js"></script>
+    <script>
+        // Isko dusre naam se save kar lo
+        window.docxPreviewer = window.docx;
+    </script>
     
-    <!-- REQUIRED FOR SEJDA-STYLE ADVANCED FONT-AWARE EDITING -->
     <script src="https://unpkg.com/@pdf-lib/fontkit@0.0.4/dist/fontkit.umd.js"></script>
 
     <style>
