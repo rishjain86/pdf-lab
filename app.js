@@ -2932,3 +2932,4 @@ setTimeout(checkNetworkStatus, 1000);
 document.getElementById('dynamic-ui-close')?.addEventListener('click', () => {
     document.getElementById('dynamic-ui-overlay').style.display = 'none';
 });
+
