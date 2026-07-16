@@ -1131,22 +1131,9 @@ setupSingleFileLogic('sign', null);
 setupSingleFileLogic('watermark', null);
 setupSingleFileLogic('addtext', null);
 
-// --- PDF TO WORD (Global Object Method) ---
-// --- NEW: PDF TO WORD (Safe Dynamic Injection) ---
+// --- NEW: PDF TO WORD (No Dynamic Injection) ---
 setupSingleFileLogic('pdftoword', async (file) => {
-    // Injecting jsdelivr link safely
-    if (typeof window.docxCreator === 'undefined') {
-        await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js';
-            script.onload = () => { 
-                window.docxCreator = window.docx; // Save with unique name to prevent collision
-                resolve(); 
-            };
-            script.onerror = () => reject(new Error("Word engine failed to load. Please check internet."));
-            document.head.appendChild(script);
-        });
-    }
+    if (!window.docxCreator) throw new Error("Word engine missing! Please check internet and restart app.");
     
     const docxLib = window.docxCreator;
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
@@ -1203,20 +1190,9 @@ setupSingleFileLogic('pdftoword', async (file) => {
     return { bytes: new Uint8Array(await blob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.docx`, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
 });
 
-// --- NEW: WORD TO PDF (Safe Dynamic Injection) ---
+// --- NEW: WORD TO PDF (No Dynamic Injection) ---
 setupSingleFileLogic('wordtopdf', async (file) => {
-    if (typeof window.docxPreviewer === 'undefined') {
-        await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/docx-preview@0.3.32/dist/docx-preview.min.js';
-            script.onload = () => { 
-                window.docxPreviewer = window.docx; // Save with unique name to prevent collision
-                resolve(); 
-            };
-            script.onerror = () => reject(new Error("Visual engine failed to load. Please check internet."));
-            document.head.appendChild(script);
-        });
-    }
+    if (!window.docxPreviewer) throw new Error("Preview engine missing! Please check internet and restart app.");
     
     const arrayBuffer = await file.arrayBuffer();
     const wrapper = document.createElement('div');
