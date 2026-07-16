@@ -2,7 +2,7 @@ import { PDFDocument, degrees, StandardFonts, rgb, PDFName } from 'https://cdn.j
 import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs';
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
 import JSZip from 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm';
-window.JSZip = JSZip; // 🔥 REQUIRED FOR DOCX-PREVIEW 🔥
+window.JSZip = JSZip;
 import { AdManager } from './adManager.js';
 import { Filesystem, Directory } from 'https://cdn.jsdelivr.net/npm/@capacitor/filesystem@6.0.0/+esm';
 import { Share } from 'https://cdn.jsdelivr.net/npm/@capacitor/share@6.0.0/+esm';
@@ -25,7 +25,6 @@ forceScrollStyle.innerHTML = `
 `;
 document.head.appendChild(forceScrollStyle);
 
-
 // ==========================================
 // APP VERSION CHECKER
 // ==========================================
@@ -38,7 +37,6 @@ function checkForUpdates() {
         .then(response => response.json())
         .then(data => {
             const liveVersion = parseFloat(data.version);
-            
             if (liveVersion > CURRENT_APP_VERSION) {
                 let userWantsToUpdate = confirm(data.message || "New update available! Please update the app to use new features.");
                 if (userWantsToUpdate) {
@@ -48,7 +46,6 @@ function checkForUpdates() {
         })
         .catch(error => console.log("Update check failed:", error));
 }
-
 checkForUpdates();
 
 // ==========================================
@@ -56,7 +53,6 @@ checkForUpdates();
 // ==========================================
 function showCustomAlert(message) {
     let alertBox = document.getElementById('custom-alert-box');
-    
     if (!alertBox) {
         alertBox = document.createElement('div');
         alertBox.id = 'custom-alert-box';
@@ -70,14 +66,12 @@ function showCustomAlert(message) {
             </div>
         `;
         document.body.appendChild(alertBox);
-        
         document.getElementById('custom-alert-btn').addEventListener('click', () => {
             alertBox.style.opacity = '0';
             alertBox.style.pointerEvents = 'none';
             alertBox.children[0].style.transform = 'translateY(20px)';
         });
     }
-    
     document.getElementById('custom-alert-msg').innerHTML = message;
     alertBox.style.pointerEvents = 'auto';
     alertBox.style.opacity = '1';
@@ -210,11 +204,9 @@ function showSuccessResult(originalBytes, compressedBytes, successTitle, downloa
     
     if (originalBytes > 0 && (savedBytes > 0 || forceShowStats)) {
         percentSaved = savedBytes > 0 ? Math.round((savedBytes / originalBytes) * 100) : 0;
-        
         percentCircleUi.style.display = 'flex';
         sizeStatsUi.style.display = 'block';
         successMsgUi.style.display = 'none'; 
-        
         document.getElementById('saved-percent').innerText = percentSaved + '%';
         document.getElementById('old-size').innerText = formatBytes(originalBytes);
         document.getElementById('new-size').innerText = formatBytes(compressedBytes);
@@ -227,7 +219,6 @@ function showSuccessResult(originalBytes, compressedBytes, successTitle, downloa
 
     const newBtn = downloadBtn.cloneNode(true);
     downloadBtn.parentNode.replaceChild(newBtn, downloadBtn);
-    
     newBtn.onclick = () => {
         overlay.style.display = 'none'; 
         downloadCallback(); 
@@ -238,7 +229,6 @@ let lastBackPress = 0;
 if (window.Capacitor && window.Capacitor.isNativePlatform()) {
     App.addListener('backButton', () => {
         const activeView = document.querySelector('.view-section.active')?.id;
-        
         if (activeView && activeView !== 'view-dashboard') {
             window.switchView('dashboard');
         } else {
@@ -253,30 +243,16 @@ if (window.Capacitor && window.Capacitor.isNativePlatform()) {
 }
 
 window.switchView = (viewId) => {
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     const activeBtn = Array.from(document.querySelectorAll('.nav-btn')).find(btn => 
         btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(viewId)
     );
-    
-    if(activeBtn) {
-        activeBtn.classList.add('active');
-    }
+    if(activeBtn) activeBtn.classList.add('active');
 
-    document.querySelectorAll('.view-section').forEach(view => {
-        view.classList.remove('active');
-    });
-    
+    document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
     const targetView = document.getElementById(`view-${viewId}`);
-    if(targetView) {
-        targetView.classList.add('active');
-    }
-
-    if(viewId === 'history') {
-        window.renderHistory();
-    }
+    if(targetView) targetView.classList.add('active');
+    if(viewId === 'history') window.renderHistory();
 };
 
 const getBaseName = (filename) => filename.substring(0, filename.lastIndexOf('.')) || filename;
@@ -290,14 +266,12 @@ const STORE_NAME = 'files';
 function initDB() {
     return new Promise((resolve, reject) => {
         const req = indexedDB.open(DB_NAME, 1);
-        
         req.onupgradeneeded = (e) => {
             const db = e.target.result;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
             }
         };
-        
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
     });
@@ -307,7 +281,6 @@ async function saveToHistory(bytes, filename, type) {
     const db = await initDB();
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).add({ filename, type, data: bytes, date: new Date().getTime() });
-    
     return new Promise(resolve => tx.oncomplete = resolve);
 }
 
@@ -315,7 +288,6 @@ window.getHistory = async () => {
     const db = await initDB();
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).getAll();
-    
     return new Promise(resolve => {
         req.onsuccess = () => resolve(req.result.sort((a,b) => b.date - a.date));
     });
@@ -325,14 +297,12 @@ window.deleteHistory = async (id) => {
     const db = await initDB();
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).delete(id);
-    
     return new Promise(resolve => tx.oncomplete = resolve);
 };
 
 window.renderHistory = async () => {
     const list = document.getElementById('history-list');
     if (!list) return;
-    
     list.innerHTML = '<p>Loading...</p>';
     const items = await window.getHistory();
     
@@ -370,7 +340,6 @@ window.removeHistoryItem = async (id) => {
 window.triggerHistoryDownload = async (id) => {
     const items = await window.getHistory();
     const item = items.find(i => i.id === id);
-    
     if(item) {
         await processAndDownload(item.data, item.filename, item.type, false);
     }
@@ -379,22 +348,16 @@ window.triggerHistoryDownload = async (id) => {
 function bytesToBase64(bytes) {
     let binary = ''; 
     const len = bytes.byteLength;
-    
     for (let i = 0; i < len; i++) {
         binary += String.fromCharCode(bytes[i]);
     }
-    
     return window.btoa(binary);
 }
 
 // BULK UPLOAD CHUNKED WRITER
 async function processAndDownload(bytes, filename, type, saveToDb = true) {
     if(saveToDb) { 
-        try { 
-            await saveToHistory(bytes, filename, type); 
-        } catch(e) {
-            console.error("History save error:", e);
-        } 
+        try { await saveToHistory(bytes, filename, type); } catch(e) { console.error("History save error:", e); } 
     }
     
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
@@ -406,7 +369,6 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
             for (let i = 0; i < len; i += chunkSize) {
                 const chunk = bytes.subarray(i, Math.min(i + chunkSize, len));
                 const base64Chunk = bytesToBase64(chunk);
-                
                 if (isFirstChunk) { 
                     await Filesystem.writeFile({ path: filename, data: base64Chunk, directory: Directory.Documents }); 
                     isFirstChunk = false; 
@@ -414,37 +376,25 @@ async function processAndDownload(bytes, filename, type, saveToDb = true) {
                     await Filesystem.appendFile({ path: filename, data: base64Chunk, directory: Directory.Documents }); 
                 }
             }
-            
             const savedFile = await Filesystem.getUri({ path: filename, directory: Directory.Documents });
             await Share.share({ title: filename, text: 'Processed via Amazing PDF', url: savedFile.uri });
-            
         } catch (e) { 
             try {
                 const blob = new Blob([bytes], { type }); 
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a'); 
-                
-                a.href = url; 
-                a.download = filename; 
-                document.body.appendChild(a); 
-                a.click(); 
-                document.body.removeChild(a); 
-                URL.revokeObjectURL(url);
-            } catch(err) { 
-                showCustomAlert("Saved to Documents & History!"); 
-            }
+                a.href = url; a.download = filename; 
+                document.body.appendChild(a); a.click(); 
+                document.body.removeChild(a); URL.revokeObjectURL(url);
+            } catch(err) { showCustomAlert("Saved to Documents & History!"); }
         }
     } else {
         const blob = new Blob([bytes], { type }); 
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); 
-        
-        a.href = url; 
-        a.download = filename; 
-        document.body.appendChild(a); 
-        a.click(); 
-        document.body.removeChild(a); 
-        URL.revokeObjectURL(url);
+        a.href = url; a.download = filename; 
+        document.body.appendChild(a); a.click(); 
+        document.body.removeChild(a); URL.revokeObjectURL(url);
     }
 }
 
@@ -468,9 +418,7 @@ const cropCtx = cropCanvas ? cropCanvas.getContext('2d') : null;
 window.handleScanInput = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
     scannerOriginalName = file.name.substring(0, file.name.lastIndexOf('.')) || "Scanned_Document";
-    
     if (scannerModal) scannerModal.style.display = 'none';
     if (scannerWorkspace) scannerWorkspace.style.display = 'flex';
     document.body.classList.add('is-editing');
@@ -491,13 +439,9 @@ document.getElementById('hidden-gallery-input')?.addEventListener('change', wind
 
 function renderScannerWorkspace() {
     if (currentScannerIndex === -1 || !scanCtx || isCroppingMode) return;
-    
     const pageData = scannerPages[currentScannerIndex];
     const counter = document.getElementById('scanner-page-counter');
-    
-    if (counter) {
-        counter.innerText = `Page ${currentScannerIndex + 1}`;
-    }
+    if (counter) counter.innerText = `Page ${currentScannerIndex + 1}`;
     
     document.querySelectorAll('.scanner-filter-btn').forEach(btn => { 
         btn.style.borderColor = btn.dataset.filter === pageData.filter ? '#10b981' : 'transparent'; 
@@ -507,7 +451,6 @@ function renderScannerWorkspace() {
     renderImg.onload = () => {
         const angle = pageData.rotation || 0;
         const isRotated = angle === 90 || angle === 270;
-        
         scanCanvas.width = isRotated ? renderImg.height : renderImg.width;
         scanCanvas.height = isRotated ? renderImg.width : renderImg.height;
         
@@ -534,13 +477,11 @@ document.getElementById('btn-scanner-rotate-left')?.addEventListener('click', ()
     scannerPages[currentScannerIndex].rotation = (scannerPages[currentScannerIndex].rotation + 270) % 360; 
     renderScannerWorkspace(); 
 });
-
 document.getElementById('btn-scanner-rotate-right')?.addEventListener('click', () => { 
     if(currentScannerIndex === -1 || isCroppingMode) return; 
     scannerPages[currentScannerIndex].rotation = (scannerPages[currentScannerIndex].rotation + 90) % 360; 
     renderScannerWorkspace(); 
 });
-
 document.getElementById('btn-scanner-crop-trigger')?.addEventListener('click', () => {
     if(currentScannerIndex === -1) return;
     document.getElementById('scanner-default-top-bar').style.display = 'none';
@@ -572,17 +513,9 @@ function startCropMode() {
         cropCanvas.height = scanCanvas.height; 
         cropCanvas.style.display = 'block';
 
-        const w = cropCanvas.width; 
-        const h = cropCanvas.height; 
+        const w = cropCanvas.width; const h = cropCanvas.height; 
         const offset = Math.min(w, h) * 0.15;
-        
-        cropPoints = [ 
-            { x: offset, y: offset }, 
-            { x: w - offset, y: offset }, 
-            { x: w - offset, y: h - offset }, 
-            { x: offset, y: h - offset } 
-        ];
-        
+        cropPoints = [ { x: offset, y: offset }, { x: w - offset, y: offset }, { x: w - offset, y: h - offset }, { x: offset, y: h - offset } ];
         drawCropPolygon();
     };
     tempImg.src = pageData.original;
@@ -590,104 +523,63 @@ function startCropMode() {
 
 function drawCropPolygon() {
     if (!cropCtx) return;
-    
     cropCtx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
     cropCtx.fillStyle = 'rgba(0, 0, 0, 0.5)'; 
     cropCtx.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
     
     cropCtx.globalCompositeOperation = 'destination-out';
-    cropCtx.beginPath(); 
-    cropCtx.moveTo(cropPoints[0].x, cropPoints[0].y); 
-    
-    for (let i = 1; i < 4; i++) {
-        cropCtx.lineTo(cropPoints[i].x, cropPoints[i].y);
-    }
-    
-    cropCtx.closePath(); 
-    cropCtx.fill();
+    cropCtx.beginPath(); cropCtx.moveTo(cropPoints[0].x, cropPoints[0].y); 
+    for (let i = 1; i < 4; i++) cropCtx.lineTo(cropPoints[i].x, cropPoints[i].y);
+    cropCtx.closePath(); cropCtx.fill();
     
     cropCtx.globalCompositeOperation = 'source-over';
-    cropCtx.strokeStyle = '#10b981'; 
-    cropCtx.lineWidth = Math.max(4, cropCanvas.width * 0.005); 
-    cropCtx.stroke();
+    cropCtx.strokeStyle = '#10b981'; cropCtx.lineWidth = Math.max(4, cropCanvas.width * 0.005); cropCtx.stroke();
     cropCtx.fillStyle = '#10b981';
     
     const isMobile = window.innerWidth <= 768;
     const radius = isMobile ? Math.max(25, cropCanvas.width * 0.035) : Math.max(10, cropCanvas.width * 0.015);
     
     for (let i = 0; i < 4; i++) {
-        cropCtx.beginPath(); 
-        cropCtx.arc(cropPoints[i].x, cropPoints[i].y, radius, 0, Math.PI * 2); 
-        cropCtx.fill(); 
-        cropCtx.stroke();
+        cropCtx.beginPath(); cropCtx.arc(cropPoints[i].x, cropPoints[i].y, radius, 0, Math.PI * 2); cropCtx.fill(); cropCtx.stroke();
     }
 }
 
 function getScannerCropCursorPos(e) {
     if (!cropCanvas) return { x: 0, y: 0 };
-    
     const rect = cropCanvas.getBoundingClientRect();
-    const canvasRatio = cropCanvas.width / cropCanvas.height; 
-    const rectRatio = rect.width / rect.height;
-    
-    let actualWidth = rect.width; 
-    let actualHeight = rect.height; 
-    let offsetX = 0; 
-    let offsetY = 0;
+    const canvasRatio = cropCanvas.width / cropCanvas.height; const rectRatio = rect.width / rect.height;
+    let actualWidth = rect.width; let actualHeight = rect.height; let offsetX = 0; let offsetY = 0;
 
-    if (canvasRatio > rectRatio) { 
-        actualHeight = rect.width / canvasRatio; 
-        offsetY = (rect.height - actualHeight) / 2; 
-    } else { 
-        actualWidth = rect.height * canvasRatio; 
-        offsetX = (rect.width - actualWidth) / 2; 
-    }
+    if (canvasRatio > rectRatio) { actualHeight = rect.width / canvasRatio; offsetY = (rect.height - actualHeight) / 2; } 
+    else { actualWidth = rect.height * canvasRatio; offsetX = (rect.width - actualWidth) / 2; }
 
-    const scaleX = cropCanvas.width / actualWidth; 
-    const scaleY = cropCanvas.height / actualHeight;
-    
-    let clientX = e.clientX || (e.touches && e.touches[0].clientX); 
-    let clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    
-    return { 
-        x: (clientX - rect.left - offsetX) * scaleX, 
-        y: (clientY - rect.top - offsetY) * scaleY 
-    };
+    const scaleX = cropCanvas.width / actualWidth; const scaleY = cropCanvas.height / actualHeight;
+    let clientX = e.clientX || (e.touches && e.touches[0].clientX); let clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    return { x: (clientX - rect.left - offsetX) * scaleX, y: (clientY - rect.top - offsetY) * scaleY };
 }
 
 cropCanvas?.addEventListener('pointerdown', (e) => {
     if (!isCroppingMode) return;
-    
     const pos = getScannerCropCursorPos(e);
     const hitRadius = Math.max(60, cropCanvas.width * 0.08); 
-    
     for (let i = 0; i < 4; i++) {
-        const dx = pos.x - cropPoints[i].x; 
-        const dy = pos.y - cropPoints[i].y;
-        if (Math.sqrt(dx * dx + dy * dy) < hitRadius) { 
-            activeCropPoint = i; 
-            break; 
-        }
+        const dx = pos.x - cropPoints[i].x; const dy = pos.y - cropPoints[i].y;
+        if (Math.sqrt(dx * dx + dy * dy) < hitRadius) { activeCropPoint = i; break; }
     }
 });
 
 window.addEventListener('pointermove', (e) => {
     if (!isCroppingMode || activeCropPoint === -1) return;
-    
     const pos = getScannerCropCursorPos(e);
     cropPoints[activeCropPoint].x = Math.max(0, Math.min(pos.x, cropCanvas.width)); 
     cropPoints[activeCropPoint].y = Math.max(0, Math.min(pos.y, cropCanvas.height));
-    
     drawCropPolygon();
 });
 
-window.addEventListener('pointerup', () => { 
-    if (isCroppingMode) activeCropPoint = -1; 
-});
+window.addEventListener('pointerup', () => { if (isCroppingMode) activeCropPoint = -1; });
 
 document.getElementById('btn-cancel-crop')?.addEventListener('click', () => { 
-    isCroppingMode = false; 
-    cropCanvas.style.display = 'none'; 
+    isCroppingMode = false; cropCanvas.style.display = 'none'; 
     document.getElementById('scanner-crop-top-bar').style.display = 'none'; 
     document.getElementById('scanner-default-top-bar').style.display = 'flex'; 
     renderScannerWorkspace(); 
@@ -695,132 +587,63 @@ document.getElementById('btn-cancel-crop')?.addEventListener('click', () => {
 
 document.getElementById('btn-apply-crop')?.addEventListener('click', () => {
     const tl = cropPoints[0], tr = cropPoints[1], br = cropPoints[2], bl = cropPoints[3];
+    const w1 = Math.hypot(tr.x - tl.x, tr.y - tl.y); const w2 = Math.hypot(br.x - bl.x, br.y - bl.y); const destW = Math.max(w1, w2);
+    const h1 = Math.hypot(bl.x - tl.x, bl.y - tl.y); const h2 = Math.hypot(br.x - tr.x, br.y - tr.y); const destH = Math.max(h1, h2);
     
-    const w1 = Math.hypot(tr.x - tl.x, tr.y - tl.y); 
-    const w2 = Math.hypot(br.x - bl.x, br.y - bl.y); 
-    const destW = Math.max(w1, w2);
-    
-    const h1 = Math.hypot(bl.x - tl.x, bl.y - tl.y); 
-    const h2 = Math.hypot(br.x - tr.x, br.y - tr.y); 
-    const destH = Math.max(h1, h2);
-    
-    const tempCanvas = document.createElement('canvas'); 
-    tempCanvas.width = destW; 
-    tempCanvas.height = destH; 
-    const ctx = tempCanvas.getContext('2d');
+    const tempCanvas = document.createElement('canvas'); tempCanvas.width = destW; tempCanvas.height = destH; const ctx = tempCanvas.getContext('2d');
 
     function drawTriangle(ctx, img, p0, p1, p2, uv0, uv1, uv2) {
-        ctx.save(); 
-        ctx.beginPath(); 
-        ctx.moveTo(p0.x, p0.y); 
-        ctx.lineTo(p1.x, p1.y); 
-        ctx.lineTo(p2.x, p2.y); 
-        ctx.closePath(); 
-        ctx.clip();
-        
+        ctx.save(); ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.closePath(); ctx.clip();
         const det = uv0.x * (uv1.y - uv2.y) - uv1.x * (uv0.y - uv2.y) + uv2.x * (uv0.y - uv1.y);
         if (det === 0) { ctx.restore(); return; }
-        
         const a = (p0.x * (uv1.y - uv2.y) - p1.x * (uv0.y - uv2.y) + p2.x * (uv0.y - uv1.y)) / det;
         const c = (uv0.x * (p1.x - p2.x) - uv1.x * (p0.x - p2.x) + uv2.x * (p0.x - p1.x)) / det;
         const e = p0.x - a * uv0.x - c * uv0.y;
         const b = (p0.y * (uv1.y - uv2.y) - p1.y * (uv0.y - uv2.y) + p2.y * (uv0.y - uv1.y)) / det;
         const d = (uv0.x * (p1.y - p2.y) - uv1.x * (p0.y - p2.y) + uv2.x * (p0.y - p1.y)) / det;
         const f = p0.y - b * uv0.x - d * uv0.y;
-        
-        ctx.transform(a, b, c, d, e, f); 
-        ctx.imageSmoothingEnabled = true; 
-        ctx.imageSmoothingQuality = 'high'; 
-        ctx.drawImage(img, 0, 0); 
-        ctx.restore();
+        ctx.transform(a, b, c, d, e, f); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(img, 0, 0); ctx.restore();
     }
     
-    const dTl = {x:0, y:0}, dTr = {x:destW, y:0}, dBr = {x:destW, y:destH}, dBl = {x:0, y:destH}; 
-    const pad = 1;
-    
+    const dTl = {x:0, y:0}, dTr = {x:destW, y:0}, dBr = {x:destW, y:destH}, dBl = {x:0, y:destH}; const pad = 1;
     drawTriangle(ctx, scanCanvas, dTl, {x:dTr.x+pad, y:dTr.y}, {x:dBl.x, y:dBl.y+pad}, tl, tr, bl);
     drawTriangle(ctx, scanCanvas, {x:dTr.x+pad, y:dTr.y-pad}, {x:dBr.x+pad, y:dBr.y+pad}, {x:dBl.x-pad, y:dBl.y+pad}, tr, br, bl);
     
-    scannerPages[currentScannerIndex].original = tempCanvas.toDataURL('image/jpeg', 0.95); 
-    scannerPages[currentScannerIndex].rotation = 0; 
-    
-    isCroppingMode = false; 
-    cropCanvas.style.display = 'none'; 
-    document.getElementById('scanner-crop-top-bar').style.display = 'none'; 
-    document.getElementById('scanner-default-top-bar').style.display = 'flex';
-    
-    renderScannerWorkspace(); 
-    renderScannerThumbnails();
+    scannerPages[currentScannerIndex].original = tempCanvas.toDataURL('image/jpeg', 0.95); scannerPages[currentScannerIndex].rotation = 0; 
+    isCroppingMode = false; cropCanvas.style.display = 'none'; document.getElementById('scanner-crop-top-bar').style.display = 'none'; document.getElementById('scanner-default-top-bar').style.display = 'flex';
+    renderScannerWorkspace(); renderScannerThumbnails();
 });
 
 function renderScannerThumbnails() {
-    const list = document.getElementById('scanner-page-list'); 
-    if (!list) return; 
-    
-    list.innerHTML = '';
-    
+    const list = document.getElementById('scanner-page-list'); if (!list) return; list.innerHTML = '';
     scannerPages.forEach((page, index) => {
-        const img = document.createElement('img'); 
-        img.src = page.original; 
-        img.className = `scanned-thumb ${index === currentScannerIndex ? 'active' : ''}`;
-        
-        img.onclick = () => { 
-            if(isCroppingMode) return; 
-            currentScannerIndex = index; 
-            renderScannerWorkspace(); 
-            renderScannerThumbnails(); 
-        };
+        const img = document.createElement('img'); img.src = page.original; img.className = `scanned-thumb ${index === currentScannerIndex ? 'active' : ''}`;
+        img.onclick = () => { if(isCroppingMode) return; currentScannerIndex = index; renderScannerWorkspace(); renderScannerThumbnails(); };
         list.appendChild(img);
     });
 }
 
 document.querySelectorAll('.scanner-filter-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => { 
-        if (currentScannerIndex === -1 || isCroppingMode) return; 
-        scannerPages[currentScannerIndex].filter = e.target.dataset.filter; 
-        renderScannerWorkspace(); 
-    });
+    btn.addEventListener('click', (e) => { if (currentScannerIndex === -1 || isCroppingMode) return; scannerPages[currentScannerIndex].filter = e.target.dataset.filter; renderScannerWorkspace(); });
 });
 
 document.getElementById('btn-scanner-close')?.addEventListener('click', () => { 
-    if (scannerWorkspace) {
-        scannerWorkspace.style.display = 'none'; 
-    }
-    document.body.classList.remove('is-editing'); 
-    scannerPages = []; 
-    isCroppingMode = false; 
+    if (scannerWorkspace) { scannerWorkspace.style.display = 'none'; }
+    document.body.classList.remove('is-editing'); scannerPages = []; isCroppingMode = false; 
 });
 
 document.getElementById('btn-scanner-preview')?.addEventListener('click', async () => {
     if (scannerPages.length === 0 || isCroppingMode) return;
-    
-    const previewModal = document.getElementById('scanner-preview-modal'); 
-    const previewList = document.getElementById('scanner-preview-list');
+    const previewModal = document.getElementById('scanner-preview-modal'); const previewList = document.getElementById('scanner-preview-list');
     if (!previewModal || !previewList) return;
-    
-    previewList.innerHTML = '<p style="color:white; margin-top: 20px;">Generating preview...</p>'; 
-    previewModal.style.display = 'flex'; 
-    previewList.innerHTML = '';
+    previewList.innerHTML = '<p style="color:white; margin-top: 20px;">Generating preview...</p>'; previewModal.style.display = 'flex'; previewList.innerHTML = '';
     
     for (let i = 0; i < scannerPages.length; i++) {
-        const page = scannerPages[i]; 
-        const tempImg = new Image(); 
-        tempImg.src = page.original; 
-        await new Promise(res => tempImg.onload = res);
-        
-        const angle = page.rotation || 0; 
-        const isRotated = angle === 90 || angle === 270;
-        const cw = isRotated ? tempImg.height : tempImg.width; 
-        const ch = isRotated ? tempImg.width : tempImg.height;
-        
-        const tempCanvas = document.createElement('canvas'); 
-        tempCanvas.width = cw; 
-        tempCanvas.height = ch; 
-        const tCtx = tempCanvas.getContext('2d');
-        
-        tCtx.translate(cw / 2, ch / 2); 
-        tCtx.rotate((angle * Math.PI) / 180); 
-        tCtx.translate(-tempImg.width / 2, -tempImg.height / 2);
+        const page = scannerPages[i]; const tempImg = new Image(); tempImg.src = page.original; await new Promise(res => tempImg.onload = res);
+        const angle = page.rotation || 0; const isRotated = angle === 90 || angle === 270;
+        const cw = isRotated ? tempImg.height : tempImg.width; const ch = isRotated ? tempImg.width : tempImg.height;
+        const tempCanvas = document.createElement('canvas'); tempCanvas.width = cw; tempCanvas.height = ch; const tCtx = tempCanvas.getContext('2d');
+        tCtx.translate(cw / 2, ch / 2); tCtx.rotate((angle * Math.PI) / 180); tCtx.translate(-tempImg.width / 2, -tempImg.height / 2);
         
         if (page.filter === 'lighten') tCtx.filter = 'brightness(1.15) contrast(1.05)'; 
         else if (page.filter === 'magic') tCtx.filter = 'brightness(1.1) contrast(1.15) saturate(1.1)'; 
@@ -830,41 +653,22 @@ document.getElementById('btn-scanner-preview')?.addEventListener('click', async 
         else tCtx.filter = 'none';
         
         tCtx.drawImage(tempImg, 0, 0);
-        
-        const finalImg = document.createElement('img'); 
-        finalImg.src = tempCanvas.toDataURL('image/jpeg', 0.8); 
-        finalImg.className = 'preview-img'; 
-        previewList.appendChild(finalImg);
+        const finalImg = document.createElement('img'); finalImg.src = tempCanvas.toDataURL('image/jpeg', 0.8); finalImg.className = 'preview-img'; previewList.appendChild(finalImg);
     }
 });
 
 document.getElementById('btn-scanner-export')?.addEventListener('click', async () => {
     if (scannerPages.length === 0) return;
-    
-    const btn = document.getElementById('btn-scanner-export'); 
-    const oldText = btn.innerHTML; 
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading PDF...';
+    const btn = document.getElementById('btn-scanner-export'); const oldText = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading PDF...';
     
     simulateLoadingAndProcess("Generating PDF", async () => {
         const pdfDoc = await PDFDocument.create();
         for (let page of scannerPages) {
-            const tempImg = new Image(); 
-            tempImg.src = page.original; 
-            await new Promise(res => tempImg.onload = res);
-            
-            const angle = page.rotation || 0; 
-            const isRotated = angle === 90 || angle === 270; 
-            const cw = isRotated ? tempImg.height : tempImg.width; 
-            const ch = isRotated ? tempImg.width : tempImg.height;
-            
-            const tempCanvas = document.createElement('canvas'); 
-            tempCanvas.width = cw; 
-            tempCanvas.height = ch; 
-            const tCtx = tempCanvas.getContext('2d');
-            
-            tCtx.translate(cw / 2, ch / 2); 
-            tCtx.rotate((angle * Math.PI) / 180); 
-            tCtx.translate(-tempImg.width / 2, -tempImg.height / 2);
+            const tempImg = new Image(); tempImg.src = page.original; await new Promise(res => tempImg.onload = res);
+            const angle = page.rotation || 0; const isRotated = angle === 90 || angle === 270; 
+            const cw = isRotated ? tempImg.height : tempImg.width; const ch = isRotated ? tempImg.width : tempImg.height;
+            const tempCanvas = document.createElement('canvas'); tempCanvas.width = cw; tempCanvas.height = ch; const tCtx = tempCanvas.getContext('2d');
+            tCtx.translate(cw / 2, ch / 2); tCtx.rotate((angle * Math.PI) / 180); tCtx.translate(-tempImg.width / 2, -tempImg.height / 2);
             
             if (page.filter === 'lighten') tCtx.filter = 'brightness(1.15) contrast(1.05)'; 
             else if (page.filter === 'magic') tCtx.filter = 'brightness(1.1) contrast(1.15) saturate(1.1)'; 
@@ -874,33 +678,20 @@ document.getElementById('btn-scanner-export')?.addEventListener('click', async (
             else tCtx.filter = 'none';
             
             tCtx.drawImage(tempImg, 0, 0);
-            
-            const optimizedBase64 = tempCanvas.toDataURL('image/jpeg', 0.85).split(',')[1]; 
-            const pdfImage = await pdfDoc.embedJpg(optimizedBase64);
-            const dims = pdfImage.scale(1); 
-            const pdfPage = pdfDoc.addPage([dims.width, dims.height]); 
-            pdfPage.drawImage(pdfImage, { x: 0, y: 0, width: dims.width, height: dims.height });
+            const optimizedBase64 = tempCanvas.toDataURL('image/jpeg', 0.85).split(',')[1]; const pdfImage = await pdfDoc.embedJpg(optimizedBase64);
+            const dims = pdfImage.scale(1); const pdfPage = pdfDoc.addPage([dims.width, dims.height]); pdfPage.drawImage(pdfImage, { x: 0, y: 0, width: dims.width, height: dims.height });
         }
         
         const bytes = await pdfDoc.save();
-
         showSuccessResult(0, bytes.length, "Scan Completed!", async () => {
-            if(typeof AdManager !== 'undefined' && AdManager) {
-                await AdManager.showInterstitial();
-            }
+            if(typeof AdManager !== 'undefined' && AdManager) { await AdManager.showInterstitial(); }
             await processAndDownload(bytes, `${scannerOriginalName}_Scanned.pdf`, 'application/pdf');
         });
         
-        document.getElementById('scanner-preview-modal').style.display = 'none'; 
-        if (scannerWorkspace) {
-            scannerWorkspace.style.display = 'none'; 
-        }
-        document.body.classList.remove('is-editing'); 
-        scannerPages = [];
-        btn.innerHTML = oldText;
+        document.getElementById('scanner-preview-modal').style.display = 'none'; if (scannerWorkspace) { scannerWorkspace.style.display = 'none'; }
+        document.body.classList.remove('is-editing'); scannerPages = []; btn.innerHTML = oldText;
     });
 });
-
 
 // ==========================================
 // UI GENERATION FOR TOOLS
@@ -914,9 +705,7 @@ const views = [
 ];
 
 const ui = {};
-views.forEach(v => {
-    ui[v] = document.getElementById(`${v}-ui-container`);
-});
+views.forEach(v => { ui[v] = document.getElementById(`${v}-ui-container`); });
 
 const dropZoneStyle = "border: 2px dashed var(--accent); border-radius: 16px; padding: 40px 20px; text-align: center; cursor: pointer; background: rgba(59, 130, 246, 0.05); transition: 0.3s; margin-bottom: 20px;";
 const btnStyle = "background: var(--accent); color: white; border: none; padding: 14px 24px; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; width: 100%; margin-top: 15px;";
@@ -1122,7 +911,6 @@ document.getElementById('addblank-position')?.addEventListener('change', (e) => 
     document.getElementById('addblank-after-num').style.display = (e.target.value === 'after') ? 'block' : 'none'; 
 });
 
-
 // ==========================================
 // FILE LOGIC UTILITIES (Single/Multiple/ZIP)
 // ==========================================
@@ -1181,13 +969,11 @@ function setupSingleFileLogic(id, actionCallback) {
         const file = e.target.files[0];
         if (file) {
             currentFile = file;
-            
             if (['edit', 'crop', 'addmargins', 'pagenumbers', 'sign', 'watermark', 'addtext', 'rotate', 'flatten', 'imagewatermark'].includes(id) || (id === 'extract' && document.getElementById('extract-mode').value === 'visual')) {
                 openVisualWorkspace(currentFile, id); 
                 input.value = ''; 
                 return;
             }
-            
             dropZone.style.display = 'none';
             info.innerHTML = `
                 <div style="${fileItemStyle}">
@@ -1215,17 +1001,13 @@ function setupSingleFileLogic(id, actionCallback) {
     if(btn) {
         btn.addEventListener('click', async () => {
             if (!currentFile) return; 
-            
             const originalText = btn.innerHTML; 
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            
             const totalOriginalSize = currentFile.size;
             
             simulateLoadingAndProcess(`Processing File`, async () => {
                 const result = await actionCallback(currentFile); 
                 document.getElementById(`reset-${id}`)?.click();
-
-                // Un tools ke liye true jo size badalte hain
                 const forceStats = ['split', 'wordtopdf', 'pdftoword'].includes(id);
 
                 showSuccessResult(totalOriginalSize, result.bytes.length, "Task Completed!", async () => {
@@ -1234,7 +1016,6 @@ function setupSingleFileLogic(id, actionCallback) {
                     }
                     await processAndDownload(result.bytes, result.filename, result.type); 
                 }, forceStats);
-                
             });
             btn.innerHTML = originalText;
         });
@@ -1284,13 +1065,11 @@ function setupMultipleFileLogic(id, actionCallback) {
         if(currentFiles.length > 0) {
             controls.style.display = 'block'; 
             dropZone.style.display = 'none';
-            
             if(!document.getElementById(`add-more-${id}`)) {
                const addMoreBtn = document.createElement('button'); 
                addMoreBtn.id = `add-more-${id}`; 
                addMoreBtn.innerHTML = '<i class="fas fa-plus"></i> Add More PDFs';
                addMoreBtn.style = `background:var(--surface-color); color:var(--text-main); border:1px dashed var(--glass-border); padding:10px; width:100%; border-radius:8px; margin-bottom:15px; cursor:pointer; font-weight:600;`;
-               
                addMoreBtn.addEventListener('click', () => input.click()); 
                listContainer.appendChild(addMoreBtn);
             }
@@ -1309,17 +1088,14 @@ function setupMultipleFileLogic(id, actionCallback) {
 
     btn.addEventListener('click', async () => {
         if (!currentFiles.length) return; 
-        
         const originalText = btn.innerHTML; 
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-        
         const totalOriginalSize = currentFiles.reduce((acc, f) => acc + f.size, 0);
         
         simulateLoadingAndProcess(`Processing ${currentFiles.length} File(s)`, async () => {
             const result = await actionCallback(currentFiles); 
             currentFiles = []; 
             renderList(); 
-            
             const forceStats = id === 'compress';
 
             showSuccessResult(totalOriginalSize, result.bytes.length, "Task Completed!", async () => {
@@ -1328,7 +1104,6 @@ function setupMultipleFileLogic(id, actionCallback) {
                 }
                 await processAndDownload(result.bytes, result.filename, result.type); 
             }, forceStats);
-            
         });
         btn.innerHTML = originalText;
     });
@@ -1344,7 +1119,7 @@ function hexToRgbPdf(hex) {
     return rgb(r, g, b);
 }
 
-// Visual tool mappings handled inside `openVisualWorkspace`
+// Visual tool mappings handled inside openVisualWorkspace
 setupSingleFileLogic('edit', null);
 setupSingleFileLogic('rotate', null);
 setupSingleFileLogic('flatten', null);
@@ -1356,9 +1131,7 @@ setupSingleFileLogic('sign', null);
 setupSingleFileLogic('watermark', null);
 setupSingleFileLogic('addtext', null);
 
-// Action Callbacks
-
-// --- NEW: PDF TO WORD (Global Object Method) ---
+// --- PDF TO WORD (Global Object Method) ---
 setupSingleFileLogic('pdftoword', async (file) => {
     if (!window.docx) throw new Error("Word engine not loaded from index.html. Please refresh.");
     
@@ -1371,60 +1144,38 @@ setupSingleFileLogic('pdftoword', async (file) => {
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i); 
             const textContent = await page.getTextContent();
-            
             let lastY = -1;
             let currentLine = "";
-            
             textContent.items.forEach(item => {
                 if (lastY !== -1 && Math.abs(lastY - item.transform[5]) > 5) {
-                    if(currentLine.trim()) {
-                        paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.TextRun(currentLine)] }));
-                    }
+                    if(currentLine.trim()) paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.TextRun(currentLine)] }));
                     currentLine = item.str;
                 } else {
                     currentLine += (currentLine ? " " : "") + item.str;
                 }
                 lastY = item.transform[5];
             });
-            if (currentLine.trim()) {
-                paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.TextRun(currentLine)] }));
-            }
-            
-            if (i < pdf.numPages) {
-                paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.PageBreak()] }));
-            }
+            if (currentLine.trim()) paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.TextRun(currentLine)] }));
+            if (i < pdf.numPages) paragraphs.push(new docxLib.Paragraph({ children: [new docxLib.PageBreak()] }));
         }
     } else {
-        // Keep Exact Layout (Scanned Image)
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i); 
             const viewport = page.getViewport({ scale: 2.0 });
-            
             const canvas = document.createElement('canvas');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
+            canvas.width = viewport.width; canvas.height = viewport.height;
             const ctx = canvas.getContext('2d');
-            
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
+            ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height);
             await page.render({ canvasContext: ctx, viewport }).promise;
             
             const imgData = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
             const binaryString = window.atob(imgData);
             const len = binaryString.length;
             const bytes = new Uint8Array(len);
-            for (let j = 0; j < len; j++) {
-                bytes[j] = binaryString.charCodeAt(j);
-            }
+            for (let j = 0; j < len; j++) bytes[j] = binaryString.charCodeAt(j);
             
             paragraphs.push(new docxLib.Paragraph({
-                children: [
-                    new docxLib.ImageRun({
-                        data: bytes,
-                        transformation: { width: 600, height: Math.floor(viewport.height * (600 / viewport.width)) }
-                    })
-                ]
+                children: [new docxLib.ImageRun({ data: bytes, transformation: { width: 600, height: Math.floor(viewport.height * (600 / viewport.width)) } })]
             }));
         }
     }
@@ -1435,76 +1186,44 @@ setupSingleFileLogic('pdftoword', async (file) => {
             children: paragraphs.length ? paragraphs : [new docxLib.Paragraph("No content found.")]
         }]
     });
-    
     const blob = await docxLib.Packer.toBlob(docObj);
     return { bytes: new Uint8Array(await blob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.docx`, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
 });
 
-// --- NEW: WORD TO PDF (Visual Render Engine) ---
+// --- WORD TO PDF (Visual Render Engine) ---
 setupSingleFileLogic('wordtopdf', async (file) => {
     if (!window.docx || !window.docx.renderAsync) throw new Error("Visual rendering engine not loaded from index.html. Please refresh.");
     
     const arrayBuffer = await file.arrayBuffer();
-    
-    // Create hidden container
     const wrapper = document.createElement('div');
-    wrapper.style.padding = '0';
-    wrapper.style.color = '#000000';
-    wrapper.style.background = '#ffffff';
-    wrapper.style.width = '800px'; 
-    wrapper.style.position = 'absolute';
-    wrapper.style.top = '-9999px';
+    wrapper.style.padding = '0'; wrapper.style.color = '#000000'; wrapper.style.background = '#ffffff'; 
+    wrapper.style.width = '800px'; wrapper.style.position = 'absolute'; wrapper.style.top = '-9999px';
     document.body.appendChild(wrapper);
     
-    // Draw the Word file visually in the container
     await window.docx.renderAsync(arrayBuffer, wrapper, null, {
-        className: "docx",
-        inWrapper: true,
-        ignoreWidth: false,
-        ignoreHeight: false,
-        ignoreFonts: false,
-        breakPages: true,
-        useBase64URL: true
+        className: "docx", inWrapper: true, ignoreWidth: false, ignoreHeight: false, ignoreFonts: false, breakPages: true, useBase64URL: true
     });
     
-    // Take a Snapshot to create PDF
-    const opt = {
-        margin:       0,
-        filename:     'temp.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    
+    const opt = { margin: 0, filename: 'temp.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
     const pdfBlob = await window.html2pdf().set(opt).from(wrapper).output('blob');
-    document.body.removeChild(wrapper); // Cleanup
-    
+    document.body.removeChild(wrapper);
     return { bytes: new Uint8Array(await pdfBlob.arrayBuffer()), filename: `${getBaseName(file.name)}_Converted.pdf`, type: 'application/pdf' };
 });
 
 setupSingleFileLogic('split', async (file) => {
     const pagesToExtract = parseRange(document.getElementById('split-ranges').value);
     if (!pagesToExtract.length) throw new Error("Range required");
-    
     const sourcePdf = await PDFDocument.load(await file.arrayBuffer()); 
     const newPdf = await PDFDocument.create();
-    
     const copiedPages = await newPdf.copyPages(sourcePdf, pagesToExtract); 
     copiedPages.forEach(p => newPdf.addPage(p));
-    
     return { bytes: await newPdf.save(), filename: `${getBaseName(file.name)}_Split.pdf`, type: 'application/pdf' };
 });
 
 setupSingleFileLogic('delete', async (file) => {
     const pagesToDelete = parseRange(document.getElementById('delete-ranges').value);
     const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
-    
-    pagesToDelete.sort((a, b) => b - a).forEach(i => { 
-        if (i >= 0 && i < pdfDoc.getPageCount()) {
-            pdfDoc.removePage(i); 
-        }
-    });
-    
+    pagesToDelete.sort((a, b) => b - a).forEach(i => { if (i >= 0 && i < pdfDoc.getPageCount()) pdfDoc.removePage(i); });
     return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_Deleted.pdf`, type: 'application/pdf' };
 });
 
@@ -1512,26 +1231,17 @@ setupSingleFileLogic('reorder', async (file) => {
     const rawInput = document.getElementById('reorder-input').value;
     const srcDoc = await PDFDocument.load(await file.arrayBuffer()); 
     const maxPages = srcDoc.getPageCount();
-    
     let indices = [];
     rawInput.split(',').forEach(part => {
         if (part.includes('-')) { 
-            const nums = part.split('-').map(n => parseInt(n.trim()) - 1).filter(n => !isNaN(n) && n >= 0 && n < maxPages); 
-            indices.push(...nums); 
+            const nums = part.split('-').map(n => parseInt(n.trim()) - 1).filter(n => !isNaN(n) && n >= 0 && n < maxPages); indices.push(...nums); 
         } else { 
-            const n = parseInt(part.trim()) - 1; 
-            if (!isNaN(n) && n >= 0 && n < maxPages) {
-                indices.push(n); 
-            }
+            const n = parseInt(part.trim()) - 1; if (!isNaN(n) && n >= 0 && n < maxPages) indices.push(n); 
         }
     });
-    
-    if (!indices.length) throw new Error("Invalid page numbers provided. Please check the sequence.");
-    
+    if (!indices.length) throw new Error("Invalid page numbers.");
     const newPdf = await PDFDocument.create(); 
-    const copied = await newPdf.copyPages(srcDoc, indices); 
-    copied.forEach(p => newPdf.addPage(p));
-    
+    const copied = await newPdf.copyPages(srcDoc, indices); copied.forEach(p => newPdf.addPage(p));
     return { bytes: await newPdf.save(), filename: `${getBaseName(file.name)}_Reordered.pdf`, type: 'application/pdf' };
 });
 
@@ -1539,10 +1249,7 @@ setupSingleFileLogic('metadata', async (file) => {
     const title = document.getElementById('meta-title').value; 
     const author = document.getElementById('meta-author').value;
     const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
-    
-    if(title) pdfDoc.setTitle(title); 
-    if(author) pdfDoc.setAuthor(author);
-    
+    if(title) pdfDoc.setTitle(title); if(author) pdfDoc.setAuthor(author);
     return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_Metadata.pdf`, type: 'application/pdf' };
 });
 
@@ -1556,189 +1263,110 @@ setupSingleFileLogic('addblank', async (file) => {
     const afterNum = parseInt(document.getElementById('addblank-after-num').value);
     const count = parseInt(document.getElementById('addblank-count').value) || 1;
     const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
-    
     for(let i=0; i<count; i++) {
-        if (pos === 'start') {
-            pdfDoc.insertPage(0); 
-        } else if (pos === 'after' && afterNum > 0 && afterNum <= pdfDoc.getPageCount()) {
-            pdfDoc.insertPage(afterNum);
-        } else {
-            pdfDoc.addPage();
-        }
+        if (pos === 'start') pdfDoc.insertPage(0); 
+        else if (pos === 'after' && afterNum > 0 && afterNum <= pdfDoc.getPageCount()) pdfDoc.insertPage(afterNum);
+        else pdfDoc.addPage();
     }
-    
     return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_AddedPages.pdf`, type: 'application/pdf' };
 });
 
 setupSingleFileLogic('resizepdf', async (file) => {
     const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
     const profile = document.getElementById('resize-profile').value;
-    
-    let targetW = 595.28, targetH = 841.89; // A4 default
+    let targetW = 595.28, targetH = 841.89;
     if(profile === 'Letter') { targetW = 612; targetH = 792; }
     if(profile === 'Legal') { targetW = 612; targetH = 1008; }
 
     pdfDoc.getPages().forEach(page => {
         const { width, height } = page.getSize();
         const scale = Math.min(targetW / width, targetH / height);
-        
-        page.scaleContent(scale, scale);
-        page.setSize(targetW, targetH);
-        
-        const newX = (targetW - (width * scale)) / 2;
-        const newY = (targetH - (height * scale)) / 2;
-        
+        page.scaleContent(scale, scale); page.setSize(targetW, targetH);
+        const newX = (targetW - (width * scale)) / 2; const newY = (targetH - (height * scale)) / 2;
         page.translateContent(newX, newY);
     });
-    
     return { bytes: await pdfDoc.save(), filename: `${getBaseName(file.name)}_Resized.pdf`, type: 'application/pdf' };
 });
 
 setupSingleFileLogic('removeannots', async (file) => {
     const doc = await PDFDocument.load(await file.arrayBuffer());
-    
-    doc.getPages().forEach(page => { 
-        if(page.node.Annots) {
-            page.node.delete(PDFName.of('Annots')); 
-        }
-    });
-    
+    doc.getPages().forEach(page => { if(page.node.Annots) page.node.delete(PDFName.of('Annots')); });
     return { bytes: await doc.save(), filename: `${getBaseName(file.name)}_Cleaned.pdf`, type: 'application/pdf' };
 });
 
 setupSingleFileLogic('splitevenodd', async (file) => {
     const srcDoc = await PDFDocument.load(await file.arrayBuffer());
-    const oddDoc = await PDFDocument.create();
-    const evenDoc = await PDFDocument.create();
-    
+    const oddDoc = await PDFDocument.create(); const evenDoc = await PDFDocument.create();
     let oddIdx = [], evenIdx = [];
-    
-    for(let i=0; i<srcDoc.getPageCount(); i++) { 
-        if(i%2===0) {
-            oddIdx.push(i); 
-        } else {
-            evenIdx.push(i); 
-        }
-    }
-    
+    for(let i=0; i<srcDoc.getPageCount(); i++) { if(i%2===0) oddIdx.push(i); else evenIdx.push(i); }
     const zip = new JSZip();
-    
-    if(oddIdx.length) { 
-        const oP = await oddDoc.copyPages(srcDoc, oddIdx); 
-        oP.forEach(p => oddDoc.addPage(p)); 
-        zip.file("Odd_Pages.pdf", await oddDoc.save()); 
-    }
-    
-    if(evenIdx.length) { 
-        const eP = await evenDoc.copyPages(srcDoc, evenIdx); 
-        eP.forEach(p => evenDoc.addPage(p)); 
-        zip.file("Even_Pages.pdf", await evenDoc.save()); 
-    }
-    
+    if(oddIdx.length) { const oP = await oddDoc.copyPages(srcDoc, oddIdx); oP.forEach(p => oddDoc.addPage(p)); zip.file("Odd_Pages.pdf", await oddDoc.save()); }
+    if(evenIdx.length) { const eP = await evenDoc.copyPages(srcDoc, evenIdx); eP.forEach(p => evenDoc.addPage(p)); zip.file("Even_Pages.pdf", await evenDoc.save()); }
     return { bytes: await zip.generateAsync({type: 'uint8array'}), filename: `${getBaseName(file.name)}_EvenOdd.zip`, type: 'application/zip' };
 });
 
 setupSingleFileLogic('pdftojpg', async (file) => {
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
     const zip = new JSZip();
-    
     for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i); 
-        const canvas = document.createElement('canvas'); 
-        const viewport = page.getViewport({ scale: 2.0 });
-        
-        canvas.height = viewport.height; 
-        canvas.width = viewport.width; 
-        
+        const page = await pdf.getPage(i); const canvas = document.createElement('canvas'); const viewport = page.getViewport({ scale: 2.0 });
+        canvas.height = viewport.height; canvas.width = viewport.width; 
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        
         zip.file(`Page_${i}.jpg`, canvas.toDataURL('image/jpeg', 0.9).split(',')[1], {base64: true});
     }
-    
     return { bytes: await zip.generateAsync({type: 'uint8array'}), filename: `${getBaseName(file.name)}_Images.zip`, type: 'application/zip' };
 });
 
 setupSingleFileLogic('extract', async (file) => {
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; 
     let fullText = "";
-    
     for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i); 
-        const textContent = await page.getTextContent();
-        
+        const page = await pdf.getPage(i); const textContent = await page.getTextContent();
         fullText += `--- Page ${i} ---\n${textContent.items.map(item => item.str).join(" ")}\n\n`;
     }
-    
     return { bytes: new TextEncoder().encode(fullText), filename: `${getBaseName(file.name)}_Extracted.txt`, type: 'text/plain' };
 });
 
-// ===============================================
-// 🔥 AGGRESSIVE HYBRID COMPRESSION ENGINE (FIXED)
-// ===============================================
 setupMultipleFileLogic('compress', async (files) => {
-    
     const compressSingleFile = async (file) => {
         const originalSize = file.size;
-        
-        // Convert to PDF-lib for safety & basic compression check
         let standardBytes = new Uint8Array();
         try {
             const tempDoc = await PDFDocument.load(await file.arrayBuffer(), { updateMetadata: false });
             standardBytes = await tempDoc.save({ useObjectStreams: true, compress: true });
         } catch(e) { }
 
-        // --- AGGRESSIVE CANVAS ENGINE ---
-        // This will ALWAYS shrink the file size by converting vector data into highly compressed JPEGs
         const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
         const newPdf = await PDFDocument.create();
+        let dynamicScale = 1.0; let quality = 0.7;
 
-        let dynamicScale = 1.0;
-        let quality = 0.7;
-
-        // Auto-Scale Logic (Shrink heavily for large files, preserve quality for small text files)
         if (originalSize > 50 * 1024 * 1024) { dynamicScale = 0.4; quality = 0.5; } 
         else if (originalSize > 15 * 1024 * 1024) { dynamicScale = 0.6; quality = 0.6; } 
         else if (originalSize > 5 * 1024 * 1024) { dynamicScale = 0.8; quality = 0.65; } 
         else if (originalSize > 1 * 1024 * 1024) { dynamicScale = 1.0; quality = 0.7; } 
-        else { dynamicScale = 1.2; quality = 0.6; } // < 1MB files need to be squashed aggressively if converted to image
+        else { dynamicScale = 1.2; quality = 0.6; }
 
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const baseViewport = page.getViewport({ scale: 1.0 });
-            
-            // Critical Fix: Prevent canvas from blowing up on huge A4 DPI pages
             let finalScale = dynamicScale;
-            if (baseViewport.width * dynamicScale > 1500) {
-                finalScale = 1500 / baseViewport.width;
-            }
+            if (baseViewport.width * dynamicScale > 1500) finalScale = 1500 / baseViewport.width;
 
             const viewport = page.getViewport({ scale: finalScale }); 
-            const canvas = document.createElement('canvas');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            const ctx = canvas.getContext('2d');
-
-            // Force White Background (PDF transparent base causes black blocks in JPEG)
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+            const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d'); ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height);
             await page.render({ canvasContext: ctx, viewport }).promise;
 
             const imgData = canvas.toDataURL('image/jpeg', quality).split(',')[1];
             const pdfImage = await newPdf.embedJpg(imgData);
-
-            // Re-create page to original dimensions
             const newPage = newPdf.addPage([baseViewport.width, baseViewport.height]);
             newPage.drawImage(pdfImage, { x: 0, y: 0, width: baseViewport.width, height: baseViewport.height });
         }
         
         let extremeBytes = await newPdf.save();
-        
-        // Pick the smallest among (Original, Standard, Canvas)
         let bestBytes = new Uint8Array(await file.arrayBuffer());
         if (standardBytes.length > 0 && standardBytes.length < bestBytes.length) bestBytes = standardBytes;
         if (extremeBytes.length > 0 && extremeBytes.length < bestBytes.length) bestBytes = extremeBytes;
-
         return bestBytes;
     };
 
@@ -1759,14 +1387,10 @@ setupMultipleFileLogic('unlock', async (files) => {
     const passwordInput = document.getElementById('unlock-password');
     const rememberCheck = document.getElementById('unlock-remember');
     const password = passwordInput.value; 
-    
     if (!password) throw new Error("Please enter a password to unlock the file.");
     
-    if (rememberCheck && rememberCheck.checked) {
-        localStorage.setItem('amazingpdf_unlock_pass', password);
-    } else {
-        localStorage.removeItem('amazingpdf_unlock_pass');
-    }
+    if (rememberCheck && rememberCheck.checked) localStorage.setItem('amazingpdf_unlock_pass', password);
+    else localStorage.removeItem('amazingpdf_unlock_pass');
     
     const unlockSingleFile = async (file, pwd) => {
         try { 
@@ -1774,14 +1398,9 @@ setupMultipleFileLogic('unlock', async (files) => {
             return await pdfDoc.save(); 
         } catch (err) {
             if (!navigator.onLine) throw new Error("Please turn on internet to unlock via Cloud.");
-            
-            const formData = new FormData(); 
-            formData.append('file', file); 
-            formData.append('password', pwd);
-            
+            const formData = new FormData(); formData.append('file', file); formData.append('password', pwd);
             const response = await fetch("https://amazing-pdf-tool.vercel.app/api/unlock", { method: 'POST', body: formData });
             if (!response.ok) throw new Error("Unlock Failed"); 
-            
             return new Uint8Array(await (await response.blob()).arrayBuffer());
         }
     };
@@ -1790,17 +1409,10 @@ setupMultipleFileLogic('unlock', async (files) => {
         const bytes = await unlockSingleFile(files[0], password); 
         return { bytes, filename: `${getBaseName(files[0].name)}_Unlocked.pdf`, type: 'application/pdf' }; 
     } else {
-        const zip = new JSZip(); 
-        let successCount = 0;
-        
+        const zip = new JSZip(); let successCount = 0;
         for (const file of files) { 
-            try { 
-                const bytes = await unlockSingleFile(file, password); 
-                zip.file(`${getBaseName(file.name)}_Unlocked.pdf`, bytes); 
-                successCount++; 
-            } catch (e) { } 
+            try { const bytes = await unlockSingleFile(file, password); zip.file(`${getBaseName(file.name)}_Unlocked.pdf`, bytes); successCount++; } catch (e) { } 
         }
-        
         if (successCount === 0) throw new Error("Failed to unlock."); 
         return { bytes: await zip.generateAsync({type: 'uint8array'}), filename: `Batch_Unlocked.zip`, type: 'application/zip' };
     }
@@ -1810,134 +1422,81 @@ setupMultipleFileLogic('protect', async (files) => {
     const passwordInput = document.getElementById('protect-password');
     const rememberCheck = document.getElementById('protect-remember');
     const password = passwordInput.value; 
-    
     if (!password) throw new Error("Password required"); 
     if (!navigator.onLine) throw new Error("Online required for Secure Cloud Protect.");
     
-    if (rememberCheck && rememberCheck.checked) {
-        localStorage.setItem('amazingpdf_protect_pass', password);
-    } else {
-        localStorage.removeItem('amazingpdf_protect_pass');
-    }
+    if (rememberCheck && rememberCheck.checked) localStorage.setItem('amazingpdf_protect_pass', password);
+    else localStorage.removeItem('amazingpdf_protect_pass');
     
     const VERCEL_API_URL = "https://amazing-pdf-tool.vercel.app/api/protect"; 
     
     if (files.length === 1) {
-        const formData = new FormData(); 
-        formData.append('file', new Blob([await files[0].arrayBuffer()], {type: 'application/pdf'}), files[0].name); 
-        formData.append('password', password);
-        
+        const formData = new FormData(); formData.append('file', new Blob([await files[0].arrayBuffer()], {type: 'application/pdf'}), files[0].name); formData.append('password', password);
         const response = await fetch(VERCEL_API_URL, { method: 'POST', body: formData });
         if (!response.ok) throw new Error("Server error."); 
-        
         const bytes = new Uint8Array(await (await response.blob()).arrayBuffer());
         return { bytes, filename: `${getBaseName(files[0].name)}_Protected.pdf`, type: 'application/pdf' };
     } else {
         const zip = new JSZip();
         for (const file of files) {
-            const formData = new FormData(); 
-            formData.append('file', new Blob([await file.arrayBuffer()], {type: 'application/pdf'}), file.name); 
-            formData.append('password', password);
-            
+            const formData = new FormData(); formData.append('file', new Blob([await file.arrayBuffer()], {type: 'application/pdf'}), file.name); formData.append('password', password);
             const response = await fetch(VERCEL_API_URL, { method: 'POST', body: formData });
-            if (response.ok) { 
-                const bytes = new Uint8Array(await (await response.blob()).arrayBuffer()); 
-                zip.file(`${getBaseName(file.name)}_Protected.pdf`, bytes); 
-            }
+            if (response.ok) { const bytes = new Uint8Array(await (await response.blob()).arrayBuffer()); zip.file(`${getBaseName(file.name)}_Protected.pdf`, bytes); }
         }
         return { bytes: await zip.generateAsync({type: 'uint8array'}), filename: `Batch_Protected.zip`, type: 'application/zip' };
     }
 });
 
-// HTML TO PDF FIX (Iframe Method)
 if (ui.htmltopdf) {
     document.getElementById('btn-htmltopdf-action')?.addEventListener('click', async () => {
         const htmlContent = document.getElementById('html-input').value; 
         if (!htmlContent) return showCustomAlert("Enter HTML first.");
-        
-        const btn = document.getElementById('btn-htmltopdf-action'); 
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Converting...';
+        const btn = document.getElementById('btn-htmltopdf-action'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Converting...';
         
         simulateLoadingAndProcess("Converting HTML", async () => {
-            const iframe = document.createElement('iframe');
-            iframe.style.position = 'absolute'; 
-            iframe.style.top = '-9999px'; 
-            iframe.style.width = '800px';
-            document.body.appendChild(iframe);
-            
-            iframe.contentDocument.open(); 
-            iframe.contentDocument.write(htmlContent); 
-            iframe.contentDocument.close();
-            
+            const iframe = document.createElement('iframe'); iframe.style.position = 'absolute'; iframe.style.top = '-9999px'; iframe.style.width = '800px'; document.body.appendChild(iframe);
+            iframe.contentDocument.open(); iframe.contentDocument.write(htmlContent); iframe.contentDocument.close();
             const opt = { margin: 1, jsPDF: { format: 'letter' } };
             const blob = await window.html2pdf().set(opt).from(iframe.contentDocument.body).output('blob');
             const bytes = new Uint8Array(await blob.arrayBuffer()); 
-            
-            document.getElementById('html-input').value = '';
-            document.body.removeChild(iframe);
+            document.getElementById('html-input').value = ''; document.body.removeChild(iframe);
             
             showSuccessResult(0, bytes.length, "PDF Generated!", async () => {
-                if(typeof AdManager !== 'undefined' && AdManager) {
-                    await AdManager.showInterstitial();
-                }
+                if(typeof AdManager !== 'undefined' && AdManager) { await AdManager.showInterstitial(); }
                 await processAndDownload(bytes, 'HTML_Converted.pdf', 'application/pdf'); 
             }, true);
-            
         });
         btn.innerHTML = '<i class="fas fa-code"></i> Convert to PDF';
     });
 }
 
-// MERGE LOGIC (Updated for ZIP)
 let mergeFiles = [];
 if (ui.merge) {
     const mergeInput = document.getElementById('merge-file-input');
-    
-    document.getElementById('merge-drop-zone')?.addEventListener('click', (e) => { 
-        if(e.target.tagName !== 'BUTTON') mergeInput.click(); 
-    });
+    document.getElementById('merge-drop-zone')?.addEventListener('click', (e) => { if(e.target.tagName !== 'BUTTON') mergeInput.click(); });
     
     function renderMergeList() {
-        const list = document.getElementById('merge-file-list'); 
-        list.innerHTML = '';
-        
+        const list = document.getElementById('merge-file-list'); list.innerHTML = '';
         mergeFiles.forEach((f, i) => { 
             list.innerHTML += `
                 <div style="${fileItemStyle}">
-                    <div class="text-container">
-                        <b class="text-ellipsis">${f.name}</b>
-                    </div>
-                    <button class="remove-merge" data-index="${i}" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div class="text-container"><b class="text-ellipsis">${f.name}</b></div>
+                    <button class="remove-merge" data-index="${i}" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;"><i class="fas fa-times"></i></button>
                 </div>
             `; 
         });
-        
         list.querySelectorAll('.remove-merge').forEach(btn => {
-            btn.addEventListener('click', (e) => { 
-                mergeFiles.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1); 
-                renderMergeList(); 
-            });
+            btn.addEventListener('click', (e) => { mergeFiles.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1); renderMergeList(); });
         });
-        
-        const actionBtn = document.getElementById('btn-merge-action'); 
-        if (actionBtn) {
-            actionBtn.style.display = mergeFiles.length > 1 ? 'block' : 'none';
-        }
+        const actionBtn = document.getElementById('btn-merge-action'); if (actionBtn) actionBtn.style.display = mergeFiles.length > 1 ? 'block' : 'none';
     }
     
     mergeInput?.addEventListener('change', async (e) => { 
-        const files = await handleFilesOrZip(Array.from(e.target.files));
-        mergeFiles = [...mergeFiles, ...files]; 
-        renderMergeList(); 
-        mergeInput.value = ''; 
+        const files = await handleFilesOrZip(Array.from(e.target.files)); mergeFiles = [...mergeFiles, ...files]; renderMergeList(); mergeInput.value = ''; 
     });
     
     document.getElementById('btn-merge-action')?.addEventListener('click', async () => {
-        const btn = document.getElementById('btn-merge-action'); 
-        btn.innerHTML = 'Processing...';
-        
+        const btn = document.getElementById('btn-merge-action'); btn.innerHTML = 'Processing...';
         const totalOriginalSize = mergeFiles.reduce((acc, f) => acc + f.size, 0);
         
         simulateLoadingAndProcess("Merging Files", async () => {
@@ -1947,116 +1506,64 @@ if (ui.merge) {
                 const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices()); 
                 copiedPages.forEach(p => mergedPdf.addPage(p)); 
             }
-            
             const bytes = await mergedPdf.save(); 
             const outputName = mergeFiles.length > 0 ? `${getBaseName(mergeFiles[0].name)}_Merged.pdf` : 'Amazing_Merged.pdf';
-            
-            mergeFiles = []; 
-            renderMergeList(); 
+            mergeFiles = []; renderMergeList(); 
             
             showSuccessResult(totalOriginalSize, bytes.length, "PDF Merged!", async () => {
-                if(typeof AdManager !== 'undefined' && AdManager) {
-                    await AdManager.showInterstitial();
-                }
+                if(typeof AdManager !== 'undefined' && AdManager) { await AdManager.showInterstitial(); }
                 await processAndDownload(bytes, outputName, 'application/pdf');
             }, true);
-            
         });
         btn.innerHTML = 'Merge Files Now';
     });
 }
 
-// JPG TO PDF
 let imageFiles = [];
 if (ui.jpgtopdf) {
     const imgInput = document.getElementById('jpgtopdf-file-input'); 
-    
-    document.getElementById('jpgtopdf-drop-zone')?.addEventListener('click', (e) => { 
-        if(e.target.tagName !== 'BUTTON') imgInput.click(); 
-    });
+    document.getElementById('jpgtopdf-drop-zone')?.addEventListener('click', (e) => { if(e.target.tagName !== 'BUTTON') imgInput.click(); });
     
     function renderImgList() {
-        const list = document.getElementById('jpgtopdf-file-list'); 
-        list.innerHTML = '';
-        
+        const list = document.getElementById('jpgtopdf-file-list'); list.innerHTML = '';
         imageFiles.forEach((f, i) => { 
             list.innerHTML += `
                 <div style="${fileItemStyle}">
-                    <div class="text-container">
-                        <b class="text-ellipsis">${f.name}</b>
-                    </div>
-                    <button class="remove-img" data-index="${i}" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div class="text-container"><b class="text-ellipsis">${f.name}</b></div>
+                    <button class="remove-img" data-index="${i}" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;"><i class="fas fa-times"></i></button>
                 </div>
             `; 
         });
-        
         list.querySelectorAll('.remove-img').forEach(btn => {
-            btn.addEventListener('click', (e) => { 
-                imageFiles.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1); 
-                renderImgList(); 
-            });
+            btn.addEventListener('click', (e) => { imageFiles.splice(parseInt(e.currentTarget.getAttribute('data-index')), 1); renderImgList(); });
         });
-        
-        const actionBtn = document.getElementById('btn-jpgtopdf-action'); 
-        if (actionBtn) {
-            actionBtn.style.display = imageFiles.length > 0 ? 'block' : 'none';
-        }
+        const actionBtn = document.getElementById('btn-jpgtopdf-action'); if (actionBtn) actionBtn.style.display = imageFiles.length > 0 ? 'block' : 'none';
     }
     
     imgInput?.addEventListener('change', (e) => { 
-        imageFiles = [...imageFiles, ...Array.from(e.target.files).filter(f => f.type.startsWith('image/'))]; 
-        renderImgList(); 
-        imgInput.value = ''; 
+        imageFiles = [...imageFiles, ...Array.from(e.target.files).filter(f => f.type.startsWith('image/'))]; renderImgList(); imgInput.value = ''; 
     });
     
     document.getElementById('btn-jpgtopdf-action')?.addEventListener('click', async () => {
-        const btn = document.getElementById('btn-jpgtopdf-action'); 
-        btn.innerHTML = 'Converting...';
-        
+        const btn = document.getElementById('btn-jpgtopdf-action'); btn.innerHTML = 'Converting...';
         const totalOriginalSize = imageFiles.reduce((acc, f) => acc + f.size, 0);
         
         simulateLoadingAndProcess("Converting Images", async () => {
             const pdfDoc = await PDFDocument.create();
             for (const file of imageFiles) {
-                const dataUrl = await new Promise(resolve => { 
-                    const reader = new FileReader(); 
-                    reader.onload = e => resolve(e.target.result); 
-                    reader.readAsDataURL(file); 
-                });
-                
-                const imgObj = new Image(); 
-                imgObj.src = dataUrl; 
-                await new Promise(resolve => imgObj.onload = resolve);
-                
-                const canvas = document.createElement('canvas'); 
-                canvas.width = imgObj.width; 
-                canvas.height = imgObj.height; 
-                const ctx = canvas.getContext('2d'); 
-                ctx.drawImage(imgObj, 0, 0);
-                
-                const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1]; 
-                const pdfImage = await pdfDoc.embedJpg(optimizedBase64);
-                
-                const dims = pdfImage.scale(1); 
-                const page = pdfDoc.addPage([dims.width, dims.height]); 
-                page.drawImage(pdfImage, { x: 0, y: 0, width: dims.width, height: dims.height });
+                const dataUrl = await new Promise(resolve => { const reader = new FileReader(); reader.onload = e => resolve(e.target.result); reader.readAsDataURL(file); });
+                const imgObj = new Image(); imgObj.src = dataUrl; await new Promise(resolve => imgObj.onload = resolve);
+                const canvas = document.createElement('canvas'); canvas.width = imgObj.width; canvas.height = imgObj.height; const ctx = canvas.getContext('2d'); ctx.drawImage(imgObj, 0, 0);
+                const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1]; const pdfImage = await pdfDoc.embedJpg(optimizedBase64);
+                const dims = pdfImage.scale(1); const page = pdfDoc.addPage([dims.width, dims.height]); page.drawImage(pdfImage, { x: 0, y: 0, width: dims.width, height: dims.height });
             }
-            
-            const bytes = await pdfDoc.save(); 
-            const outputName = imageFiles.length > 0 ? `${getBaseName(imageFiles[0].name)}_Images.pdf` : 'Amazing_Images.pdf';
-            
-            imageFiles = []; 
-            renderImgList(); 
+            const bytes = await pdfDoc.save(); const outputName = imageFiles.length > 0 ? `${getBaseName(imageFiles[0].name)}_Images.pdf` : 'Amazing_Images.pdf';
+            imageFiles = []; renderImgList(); 
             
             showSuccessResult(totalOriginalSize, bytes.length, "PDF Generated!", async () => {
-                if(typeof AdManager !== 'undefined' && AdManager) {
-                    await AdManager.showInterstitial();
-                }
+                if(typeof AdManager !== 'undefined' && AdManager) { await AdManager.showInterstitial(); }
                 await processAndDownload(bytes, outputName, 'application/pdf');
             }, true);
-            
         });
         btn.innerHTML = 'Convert to PDF';
     });
@@ -2134,6 +1641,7 @@ document.getElementById('btn-zoom-fit')?.addEventListener('click', () => {
         renderEditPage(editPageNum);
     });
 });
+
 let pendingTextAction = null; 
 let tmState = { bold: false, italic: false, underline: false, align: 'left', bgColor: 'transparent' };
 
