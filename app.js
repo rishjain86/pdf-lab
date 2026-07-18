@@ -1583,7 +1583,16 @@ document.getElementById('desktop-search')?.addEventListener('input', handleSearc
 // UNIVERSAL PRO VISUAL EDITOR (SEJDA-STYLE UPGRADED)
 // ==========================================
 
-window.sejdaCopiedStyle = null; // Global variable for Font Copy-Paste
+// [NEW] Global Style Buffer for Font Copy-Paste
+window.sejdaCopiedStyle = null;
+
+// [NEW] Helper to extract & apply style to Div
+function applyStyleToDiv(div, styleObj) {
+    div.style.fontFamily = styleObj.fontFamily;
+    div.style.fontWeight = styleObj.fontWeight;
+    div.style.fontStyle = styleObj.fontStyle;
+    div.style.fontSize = styleObj.fontSize;
+}
 
 let editPdfDoc = null;
 let currentEditFile = null; 
@@ -1670,10 +1679,7 @@ function showStylePicker(targetDiv) {
     picker.children[1].onclick = (e) => {
         e.preventDefault();
         if(window.sejdaCopiedStyle) {
-            targetDiv.style.fontFamily = window.sejdaCopiedStyle.fontFamily;
-            targetDiv.style.fontWeight = window.sejdaCopiedStyle.fontWeight;
-            targetDiv.style.fontStyle = window.sejdaCopiedStyle.fontStyle;
-            targetDiv.style.fontSize = window.sejdaCopiedStyle.fontSize;
+            applyStyleToDiv(targetDiv, window.sejdaCopiedStyle);
             
             targetDiv.dataset.isBold = window.sejdaCopiedStyle.isBold;
             targetDiv.dataset.isItalic = window.sejdaCopiedStyle.isItalic;
@@ -2189,6 +2195,7 @@ document.getElementById('edit-pdf-input')?.addEventListener('change', function(e
     if (e.target.files[0]) openVisualWorkspace(e.target.files[0], 'edit'); 
 });
 
+// [UPDATED] Render function with Style Picker and Fixes applied correctly
 function renderEditPage(num) {
     if (!editPdfDoc) return;
     
@@ -2240,12 +2247,13 @@ function renderEditPage(num) {
                             div.style.position = 'absolute';
                             div.style.left = tx[4] + 'px';
                             div.style.top = (tx[5] - fontHeight) + 'px'; // Baseline adjustment
-                            div.style.fontSize = fontHeight + 'px';
                             
-                            // Apply intelligently detected CSS styles to DOM
-                            div.style.fontFamily = baseFont;
-                            div.style.fontWeight = isBold ? 'bold' : 'normal';
-                            div.style.fontStyle = isItalic ? 'italic' : 'normal';
+                            applyStyleToDiv(div, { 
+                                fontFamily: baseFont, 
+                                fontWeight: isBold ? 'bold' : 'normal', 
+                                fontStyle: isItalic ? 'italic' : 'normal',
+                                fontSize: fontHeight + 'px'
+                            });
                             
                             // Fixed jumping issue via explicit CSS resets
                             div.style.margin = '0';
