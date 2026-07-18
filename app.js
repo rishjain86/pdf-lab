@@ -1583,6 +1583,8 @@ document.getElementById('desktop-search')?.addEventListener('input', handleSearc
 // UNIVERSAL PRO VISUAL EDITOR (SEJDA-STYLE UPGRADED)
 // ==========================================
 
+window.sejdaCopiedStyle = null; // Global variable for Font Copy-Paste
+
 let editPdfDoc = null;
 let currentEditFile = null; 
 let editOriginalFileName = "";
@@ -1606,7 +1608,6 @@ if (!sejdaTextLayer) {
     sejdaTextLayer.style.height = '100%';
     sejdaTextLayer.style.pointerEvents = 'none'; // Click-through by default
     
-    // Check if canvas-wrapper exists, else wait for it
     const initLayer = setInterval(() => {
         const wrapper = document.querySelector('.canvas-wrapper');
         if (wrapper) {
@@ -1615,6 +1616,84 @@ if (!sejdaTextLayer) {
         }
     }, 500);
 }
+
+// UI FUNCTION FOR FLOATING STYLE PICKER
+function showStylePicker(targetDiv) {
+    let picker = document.getElementById('sejda-style-picker');
+    if (!picker) {
+        picker = document.createElement('div');
+        picker.id = 'sejda-style-picker';
+        picker.style.position = 'absolute';
+        picker.style.zIndex = '1001';
+        picker.style.background = '#1e293b';
+        picker.style.padding = '5px';
+        picker.style.borderRadius = '6px';
+        picker.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
+        picker.style.display = 'flex';
+        picker.style.gap = '5px';
+        
+        const btnCopy = document.createElement('button');
+        btnCopy.innerHTML = '<i class="fas fa-copy"></i> Copy Font';
+        btnCopy.style = 'background: #3b82f6; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px;';
+        
+        const btnPaste = document.createElement('button');
+        btnPaste.innerHTML = '<i class="fas fa-paste"></i> Paste Font';
+        btnPaste.style = 'background: #10b981; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px;';
+        
+        picker.appendChild(btnCopy);
+        picker.appendChild(btnPaste);
+        document.body.appendChild(picker);
+    }
+    
+    picker.style.display = 'flex';
+    const rect = targetDiv.getBoundingClientRect();
+    picker.style.top = Math.max(0, (rect.top + window.scrollY - 40)) + 'px';
+    picker.style.left = (rect.left + window.scrollX) + 'px';
+    
+    // Update listeners for current target
+    picker.children[0].onclick = (e) => {
+        e.preventDefault();
+        window.sejdaCopiedStyle = {
+            fontFamily: targetDiv.style.fontFamily,
+            fontWeight: targetDiv.style.fontWeight,
+            fontStyle: targetDiv.style.fontStyle,
+            fontSize: targetDiv.style.fontSize,
+            isBold: targetDiv.dataset.isBold,
+            isItalic: targetDiv.dataset.isItalic,
+            baseFont: targetDiv.dataset.baseFont,
+            rawFontSize: targetDiv.dataset.fontSize
+        };
+        picker.children[0].innerHTML = '<i class="fas fa-check"></i> Copied';
+        setTimeout(() => picker.children[0].innerHTML = '<i class="fas fa-copy"></i> Copy Font', 2000);
+    };
+    
+    picker.children[1].onclick = (e) => {
+        e.preventDefault();
+        if(window.sejdaCopiedStyle) {
+            targetDiv.style.fontFamily = window.sejdaCopiedStyle.fontFamily;
+            targetDiv.style.fontWeight = window.sejdaCopiedStyle.fontWeight;
+            targetDiv.style.fontStyle = window.sejdaCopiedStyle.fontStyle;
+            targetDiv.style.fontSize = window.sejdaCopiedStyle.fontSize;
+            
+            targetDiv.dataset.isBold = window.sejdaCopiedStyle.isBold;
+            targetDiv.dataset.isItalic = window.sejdaCopiedStyle.isItalic;
+            targetDiv.dataset.baseFont = window.sejdaCopiedStyle.baseFont;
+            targetDiv.dataset.fontSize = window.sejdaCopiedStyle.rawFontSize;
+            targetDiv.dataset.edited = 'true';
+            
+            picker.children[1].innerHTML = '<i class="fas fa-check"></i> Pasted';
+            setTimeout(() => picker.children[1].innerHTML = '<i class="fas fa-paste"></i> Paste Font', 2000);
+        } else {
+            showCustomAlert("Please copy a font style first!");
+        }
+    };
+}
+
+function hideStylePicker() {
+    const picker = document.getElementById('sejda-style-picker');
+    if(picker) picker.style.display = 'none';
+}
+
 
 let currentTool = 'none'; 
 let currentVisualMode = 'edit';
@@ -1841,10 +1920,8 @@ document.getElementById('edit-size-picker')?.addEventListener('input', (e) => {
     editSize = parseInt(e.target.value) || 20;
 });
 
-// Using 'btn-edit-text' for overlay text, removing tool activation allows inline editing
 document.getElementById('btn-edit-text')?.addEventListener('click', () => {
     setToolActive('btn-edit-text', 'text');
-    // We optionally hide inline editing while overlay tool is active
 });
 document.getElementById('btn-edit-whiteout')?.addEventListener('click', () => setToolActive('btn-edit-whiteout', 'whiteout'));
 document.getElementById('btn-edit-draw')?.addEventListener('click', () => setToolActive('btn-edit-draw', 'draw'));
@@ -1852,7 +1929,7 @@ document.getElementById('btn-edit-draw')?.addEventListener('click', () => setToo
 document.getElementById('btn-edit-clear')?.addEventListener('click', () => { 
     pageEdits[editPageNum] = []; 
     selectedEditIndex = -1; 
-    // Also reset inline edits
+    // Reset inline edits and show them again
     if(sejdaTextLayer) {
         const edits = sejdaTextLayer.querySelectorAll('div[data-edited="true"]');
         edits.forEach(div => {
@@ -1860,6 +1937,7 @@ document.getElementById('btn-edit-clear')?.addEventListener('click', () => {
             div.dataset.edited = "false";
             div.style.color = 'transparent';
             div.style.backgroundColor = 'transparent';
+            div.style.display = 'block'; // Unhide deleted ones
         });
     }
     drawOverlay(); 
@@ -1926,6 +2004,7 @@ function openVisualWorkspace(file, mode) {
     pageEdits = {}; 
     pageRotations = {}; 
     selectedEditIndex = -1;
+    hideStylePicker();
 
     const title = document.getElementById('workspace-title'); 
     const headerHelp = document.getElementById('visual-tool-header');
@@ -2103,7 +2182,7 @@ document.getElementById('btn-close-editor')?.addEventListener('click', () => {
     const upl = document.getElementById('edit-upload-section'); 
     if(upl) upl.style.display='block'; 
     if(sejdaTextLayer) sejdaTextLayer.innerHTML = '';
-    
+    hideStylePicker();
     window.switchView('dashboard');
 });
 
@@ -2115,6 +2194,7 @@ function renderEditPage(num) {
     if (!editPdfDoc) return;
     
     if (sejdaTextLayer) sejdaTextLayer.innerHTML = ''; // Clear previous text items
+    hideStylePicker();
 
     editPdfDoc.getPage(num).then(page => {
         const viewport = page.getViewport({ scale: editScale, rotation: pageRotations[num] || 0 });
@@ -2165,11 +2245,19 @@ function renderEditPage(num) {
                             div.style.fontWeight = isBold ? 'bold' : 'normal';
                             div.style.fontStyle = isItalic ? 'italic' : 'normal';
                             
+                            // Fixed jumping issue via explicit CSS resets
+                            div.style.margin = '0';
+                            div.style.padding = '0';
+                            div.style.border = 'none';
+                            div.style.background = 'transparent';
+                            
                             div.style.color = 'transparent'; // Invisible natively
                             div.style.cursor = 'text';
                             div.style.whiteSpace = 'pre';
                             div.style.lineHeight = '1';
                             div.style.transformOrigin = '0 0';
+                            div.style.userSelect = 'text';
+                            div.style.pointerEvents = 'auto';
 
                             // Storing core geometric data
                             div.dataset.pdfX = item.transform[4];
@@ -2184,6 +2272,13 @@ function renderEditPage(num) {
                             div.dataset.isBold = isBold;
                             div.dataset.isItalic = isItalic;
                             div.dataset.baseFont = baseFont;
+                            
+                            // Prevent rich text pasting (HTML injection)
+                            div.addEventListener('paste', (e) => {
+                                e.preventDefault();
+                                const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+                                document.execCommand('insertText', false, text);
+                            });
                             
                             // Sejda UX - Hover effect
                             div.addEventListener('mouseenter', () => {
@@ -2200,18 +2295,32 @@ function renderEditPage(num) {
                                 div.style.color = '#000'; // Reveal for editing
                                 div.style.backgroundColor = '#fff';
                                 div.style.outline = '2px solid #10b981';
+                                div.style.zIndex = '1000';
                                 div.focus();
+                                
+                                showStylePicker(div);
                             });
                             
                             // Done Editing
                             div.addEventListener('blur', () => {
                                 div.contentEditable = 'false';
                                 div.style.outline = 'none';
+                                div.style.zIndex = '1';
+                                setTimeout(hideStylePicker, 200); // Allow click to register
+                                
+                                const currentText = div.innerText.replace(/\n/g, '').trim();
+                                
+                                // Fix Ghosting/Leftover on delete
+                                if (currentText === '') {
+                                    div.dataset.edited = 'true';
+                                    div.style.display = 'none'; // Completely hidden visually
+                                    return;
+                                }
                                 
                                 if (div.innerText !== item.str) {
                                     div.dataset.edited = 'true';
                                     div.style.color = '#0f172a'; // Keep visible representing edit
-                                    div.style.backgroundColor = 'rgba(255,255,255,0.9)'; // Keep whiteout effect alive visually
+                                    div.style.backgroundColor = 'rgba(255,255,255,1)'; // Solid whiteout
                                 } else {
                                     div.style.color = 'transparent';
                                     div.style.backgroundColor = 'transparent';
@@ -2392,6 +2501,7 @@ overlayCanvas?.addEventListener('pointerdown', (e) => {
     const pos = getCursorPos(e); 
     const edits = pageEdits[editPageNum] || []; 
     hasMovedDuringClick = false; 
+    hideStylePicker();
     
     if (selectedEditIndex !== -1 && edits[selectedEditIndex]?.type === 'image') {
         const edit = edits[selectedEditIndex]; 
@@ -2658,6 +2768,7 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
     const btn = document.getElementById('btn-edit-save'); 
     const oldText = btn.innerHTML; 
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    hideStylePicker();
     
     const totalOriginalSize = currentEditFile.size;
     
@@ -2730,14 +2841,16 @@ document.getElementById('btn-edit-save')?.addEventListener('click', async () => 
                         }
                         
                         // 3. Draw edited text with exact matched font
-                        const newText = node.innerText;
-                        page.drawText(newText, {
-                            x: pdfX,
-                            y: pdfY,
-                            size: fontSize,
-                            font: await pdfDoc.embedFont(selectedFont),
-                            color: rgb(0, 0, 0)
-                        });
+                        const newText = node.innerText.replace(/\n/g, '').trim();
+                        if (newText !== '') {
+                            page.drawText(newText, {
+                                x: pdfX,
+                                y: pdfY,
+                                size: fontSize,
+                                font: await pdfDoc.embedFont(selectedFont),
+                                color: rgb(0, 0, 0)
+                            });
+                        }
                     }
                 }
 
