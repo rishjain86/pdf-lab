@@ -1937,7 +1937,6 @@ document.getElementById('btn-edit-clear')?.addEventListener('click', () => {
             div.dataset.edited = "false";
             div.style.color = 'transparent';
             div.style.backgroundColor = 'transparent';
-            div.style.display = 'block'; // Unhide deleted ones
         });
     }
     drawOverlay(); 
@@ -2222,14 +2221,17 @@ function renderEditPage(num) {
                             const fontHeight = Math.sqrt((tx[2] * tx[2]) + (tx[3] * tx[3]));
                             
                             // --- INTELLIGENT FONT DETECTION ---
+                            const style = textContent.styles[item.fontName];
+                            const actualFontName = (style && style.fontFamily) ? style.fontFamily.toLowerCase() : '';
                             const fName = (item.fontName || '').toLowerCase();
-                            const isBold = fName.includes('bold') || fName.includes('black');
-                            const isItalic = fName.includes('italic') || fName.includes('oblique');
+                            
+                            const isBold = actualFontName.includes('bold') || actualFontName.includes('black') || fName.includes('bold') || fName.includes('black');
+                            const isItalic = actualFontName.includes('italic') || actualFontName.includes('oblique') || fName.includes('italic');
                             
                             let baseFont = 'sans-serif';
-                            if (fName.includes('times') || fName.includes('serif')) {
+                            if (actualFontName.includes('times') || actualFontName.includes('serif') || fName.includes('serif')) {
                                 baseFont = 'serif';
-                            } else if (fName.includes('courier') || fName.includes('mono')) {
+                            } else if (actualFontName.includes('courier') || actualFontName.includes('mono') || fName.includes('mono')) {
                                 baseFont = 'monospace';
                             }
                             
@@ -2258,6 +2260,11 @@ function renderEditPage(num) {
                             div.style.transformOrigin = '0 0';
                             div.style.userSelect = 'text';
                             div.style.pointerEvents = 'auto';
+
+                            // KEY FIX: Prevent whiteout background from shrinking smaller than original text
+                            const scaledWidth = item.width * editScale;
+                            div.style.minWidth = scaledWidth + 'px';
+                            div.style.minHeight = fontHeight + 'px';
 
                             // Storing core geometric data
                             div.dataset.pdfX = item.transform[4];
@@ -2308,19 +2315,17 @@ function renderEditPage(num) {
                                 div.style.zIndex = '1';
                                 setTimeout(hideStylePicker, 200); // Allow click to register
                                 
-                                const currentText = div.innerText.replace(/\n/g, '').trim();
+                                const currentText = div.innerText.replace(/\n/g, '');
                                 
-                                // Fix Ghosting/Leftover on delete
-                                if (currentText === '') {
+                                if (currentText !== item.str) {
                                     div.dataset.edited = 'true';
-                                    div.style.display = 'none'; // Completely hidden visually
-                                    return;
-                                }
-                                
-                                if (div.innerText !== item.str) {
-                                    div.dataset.edited = 'true';
-                                    div.style.color = '#0f172a'; // Keep visible representing edit
-                                    div.style.backgroundColor = 'rgba(255,255,255,1)'; // Solid whiteout
+                                    div.style.backgroundColor = '#ffffff'; // Always solid whiteout to mask original
+                                    
+                                    if (currentText.trim() === '') {
+                                        div.style.color = 'transparent'; // Hide the cursor/empty space but keep mask
+                                    } else {
+                                        div.style.color = '#0f172a'; // Show the new typed text
+                                    }
                                 } else {
                                     div.style.color = 'transparent';
                                     div.style.backgroundColor = 'transparent';
